@@ -1,0 +1,192 @@
+[
+  {
+    "name": "Foundations",
+    "level": "Beginner",
+    "daysPerWeek": 3,
+    "split": "Full Body",
+    "description": "A simple 3-day full-body plan to learn the main lifts and build a base.",
+    "days": [
+      {
+        "label": "Full Body A",
+        "exercises": [
+          { "name": "Back Squat", "sets": 3, "repMin": 5, "repMax": 8 },
+          { "name": "Barbell Bench Press", "sets": 3, "repMin": 5, "repMax": 8 },
+          { "name": "Seated Cable Row", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Lateral Raise", "sets": 2, "repMin": 12, "repMax": 15 },
+          { "name": "Plank", "sets": 3, "repMin": 1, "repMax": 1 }
+        ]
+      },
+      {
+        "label": "Full Body B",
+        "exercises": [
+          { "name": "Romanian Deadlift", "sets": 3, "repMin": 6, "repMax": 10 },
+          { "name": "Overhead Press", "sets": 3, "repMin": 5, "repMax": 8 },
+          { "name": "Lat Pulldown", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Leg Press", "sets": 3, "repMin": 10, "repMax": 15 },
+          { "name": "Barbell Curl", "sets": 2, "repMin": 10, "repMax": 15 }
+        ]
+      },
+      {
+        "label": "Full Body C",
+        "exercises": [
+          { "name": "Goblet Squat", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Incline Dumbbell Press", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Barbell Row", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Calf Raise", "sets": 3, "repMin": 10, "repMax": 15 },
+          { "name": "Tricep Pushdown", "sets": 2, "repMin": 10, "repMax": 15 }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Minimalist",
+    "level": "Beginner",
+    "daysPerWeek": 2,
+    "split": "Full Body",
+    "description": "Two efficient full-body sessions for busy weeks.",
+    "days": [
+      {
+        "label": "Day A",
+        "exercises": [
+          { "name": "Back Squat", "sets": 3, "repMin": 6, "repMax": 10 },
+          { "name": "Barbell Bench Press", "sets": 3, "repMin": 6, "repMax": 10 },
+          { "name": "Dumbbell Row", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Hanging Leg Raise", "sets": 3, "repMin": 8, "repMax": 15 }
+        ]
+      },
+      {
+        "label": "Day B",
+        "exercises": [
+          { "name": "Deadlift", "sets": 3, "repMin": 4, "repMax": 6 },
+          { "name": "Overhead Press", "sets": 3, "repMin": 6, "repMax": 10 },
+          { "name": "Lat Pulldown", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Leg Press", "sets": 3, "repMin": 10, "repMax": 15 }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Upper / Lower Builder",
+    "level": "Intermediate",
+    "daysPerWeek": 4,
+    "split": "Upper / Lower",
+    "description": "A balanced 4-day upper/lower split for steady muscle and strength gains.",
+    "days": [
+      {
+        "label": "Upper A",
+        "exercises": [
+          { "name": "Barbell Bench Press", "sets": 4, "repMin": 5, "repMax": 8 },
+          { "name": "Barbell Row", "sets": 4, "repMin": 6, "repMax": 10 },
+          { "name": "Seated Dumbbell Press", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Lat Pulldown", "sets": 3, "repMin": 10, "repMax": 12 },
+          { "name": "Barbell Curl", "sets": 3, "repMin": 10, "repMax": 15 },
+          { "name": "Tricep Pushdown", "sets": 3, "repMin": 10, "repMax": 15 }
+        ]
+      },
+      {
+        "label": "Lower A",
+        "exercises": [
+          { "name": "Back Squat", "sets": 4, "repMin": 5, "repMax": 8 },
+          { "name": "Romanian Deadlift", "sets": 3, "repMin": 6, "repMax": 10 },
+          { "name": "Leg Press", "sets": 3, "repMin": 10, "repMax": 15 },
+          { "name": "Leg Curl", "sets": 3, "repMin": 10, "repMax": 15 },
+          { "name": "Calf Raise", "sets": 4, "repMin": 10, "repMax": 15 }
+        ]
+      },
+      {
+        "label": "Upper B",
+        "exercises": [
+          { "name": "Incline Barbell Bench Press", "sets": 4, "repMin": 6, "repMax": 10 },
+          { "name": "Pull-Up", "sets": 4, "repMin": 6, "repMax": 10 },
+          { "name": "Cable Crossover", "sets": 3, "repMin": 12, "repMax": 15 },
+          { "name": "Seated Cable Row", "sets": 3, "repMin": 10, "repMax": 12 },
+          { "name": "Hammer Curl", "sets": 3, "repMin": 10, "repMax": 15 },
+          { "name": "Overhead Tricep Extension", "sets": 3, "repMin": 10, "repMax": 15 }
+        ]
+      },
+      {
+        "label": "Lower B",
+        "exercises": [
+          { "name": "Front Squat", "sets": 4, "repMin": 6, "repMax": 10 },
+          { "name": "Hip Thrust", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Bulgarian Split Squat", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Leg Extension", "sets": 3, "repMin": 12, "repMax": 15 },
+          { "name": "Calf Raise", "sets": 4, "repMin": 10, "repMax": 15 }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Push / Pull / Legs",
+    "level": "Advanced",
+    "daysPerWeek": 6,
+    "split": "Push / Pull / Legs",
+    "description": "A high-volume 6-day PPL split for experienced lifters chasing hypertrophy.",
+    "days": [
+      {
+        "label": "Push A",
+        "exercises": [
+          { "name": "Barbell Bench Press", "sets": 4, "repMin": 5, "repMax": 8 },
+          { "name": "Seated Dumbbell Press", "sets": 4, "repMin": 8, "repMax": 12 },
+          { "name": "Incline Dumbbell Press", "sets": 3, "repMin": 10, "repMax": 12 },
+          { "name": "Lateral Raise", "sets": 4, "repMin": 12, "repMax": 20 },
+          { "name": "Tricep Pushdown", "sets": 3, "repMin": 10, "repMax": 15 },
+          { "name": "Overhead Tricep Extension", "sets": 3, "repMin": 10, "repMax": 15 }
+        ]
+      },
+      {
+        "label": "Pull A",
+        "exercises": [
+          { "name": "Deadlift", "sets": 3, "repMin": 3, "repMax": 5 },
+          { "name": "Pull-Up", "sets": 4, "repMin": 6, "repMax": 10 },
+          { "name": "Barbell Row", "sets": 4, "repMin": 8, "repMax": 12 },
+          { "name": "Face Pull", "sets": 3, "repMin": 15, "repMax": 20 },
+          { "name": "Barbell Curl", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Hammer Curl", "sets": 3, "repMin": 10, "repMax": 15 }
+        ]
+      },
+      {
+        "label": "Legs A",
+        "exercises": [
+          { "name": "Back Squat", "sets": 4, "repMin": 5, "repMax": 8 },
+          { "name": "Romanian Deadlift", "sets": 4, "repMin": 6, "repMax": 10 },
+          { "name": "Leg Press", "sets": 3, "repMin": 10, "repMax": 15 },
+          { "name": "Leg Curl", "sets": 4, "repMin": 10, "repMax": 15 },
+          { "name": "Calf Raise", "sets": 5, "repMin": 10, "repMax": 15 }
+        ]
+      },
+      {
+        "label": "Push B",
+        "exercises": [
+          { "name": "Incline Barbell Bench Press", "sets": 4, "repMin": 6, "repMax": 10 },
+          { "name": "Overhead Press", "sets": 4, "repMin": 6, "repMax": 10 },
+          { "name": "Cable Crossover", "sets": 3, "repMin": 12, "repMax": 15 },
+          { "name": "Lateral Raise", "sets": 4, "repMin": 12, "repMax": 20 },
+          { "name": "Close-Grip Bench Press", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Skull Crusher", "sets": 3, "repMin": 10, "repMax": 15 }
+        ]
+      },
+      {
+        "label": "Pull B",
+        "exercises": [
+          { "name": "T-Bar Row", "sets": 4, "repMin": 8, "repMax": 12 },
+          { "name": "Lat Pulldown", "sets": 4, "repMin": 10, "repMax": 12 },
+          { "name": "Seated Cable Row", "sets": 3, "repMin": 10, "repMax": 12 },
+          { "name": "Rear Delt Fly", "sets": 3, "repMin": 15, "repMax": 20 },
+          { "name": "Preacher Curl", "sets": 3, "repMin": 10, "repMax": 15 },
+          { "name": "Concentration Curl", "sets": 3, "repMin": 12, "repMax": 15 }
+        ]
+      },
+      {
+        "label": "Legs B",
+        "exercises": [
+          { "name": "Front Squat", "sets": 4, "repMin": 6, "repMax": 10 },
+          { "name": "Hip Thrust", "sets": 4, "repMin": 8, "repMax": 12 },
+          { "name": "Bulgarian Split Squat", "sets": 3, "repMin": 8, "repMax": 12 },
+          { "name": "Leg Extension", "sets": 3, "repMin": 12, "repMax": 20 },
+          { "name": "Calf Raise", "sets": 5, "repMin": 10, "repMax": 15 }
+        ]
+      }
+    ]
+  }
+]
