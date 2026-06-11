@@ -1,0 +1,25 @@
+# Netlify deploy config for the Expo web (SPA) build.
+
+[build]
+  command = "npx expo export --platform web"
+  publish = "dist"
+
+[build.environment]
+  # React 19 peer-dep conflict — same flag we use locally (.npmrc).
+  NPM_FLAGS = "--legacy-peer-deps"
+  NODE_VERSION = "20"
+
+# Required so expo-sqlite's WebAssembly worker (SharedArrayBuffer) works in the
+# browser. Without these the database fails to initialize.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Embedder-Policy = "credentialless"
+
+# SPA fallback: every route is served by the single-page app shell so client
+# routing (including dynamic routes) works on direct loads / refreshes.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
