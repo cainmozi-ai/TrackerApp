@@ -96,33 +96,45 @@ export default function ExerciseLibraryScreen() {
         {exercises.length === 0 ? (
           <Text variant="bodyMedium" style={styles.emptyText}>No exercises found</Text>
         ) : (
-          exercises.map(ex => (
-            <TouchableRipple
-              key={ex.id}
-              onPress={() => handleSelect(ex.id)}
-              style={styles.touchable}
-              borderless
-            >
-              <Surface style={styles.exCard} elevation={1}>
-                <View style={styles.exInfo}>
-                  <Text variant="titleSmall">{ex.name}</Text>
-                  <Text variant="bodySmall" style={styles.exMeta}>
-                    {ex.muscleGroup} · {ex.equipment}
-                    {ex.isCustom ? ' · Custom' : ''}
+          exercises.map((ex, i) => {
+            // Section header whenever the target head changes (exercises arrive
+            // sorted by muscle group then target, so heads cluster together).
+            const prev = exercises[i - 1];
+            const showHeader = group !== 'All' && !!ex.target && (!prev || prev.target !== ex.target);
+            return (
+              <View key={ex.id}>
+                {showHeader && (
+                  <Text variant="labelLarge" style={[styles.targetHeader, { color: moduleColors.workout }]}>
+                    {ex.target}
                   </Text>
-                </View>
-                {isSelectMode ? (
-                  <>
-                    <IconButton icon="information-outline" size={20}
-                      onPress={() => router.push(`/fitness/exercise-detail?id=${ex.id}`)} />
-                    <MaterialCommunityIcons name="plus-circle" size={24} color={moduleColors.workout} />
-                  </>
-                ) : (
-                  <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
                 )}
-              </Surface>
-            </TouchableRipple>
-          ))
+                <TouchableRipple
+                  onPress={() => handleSelect(ex.id)}
+                  style={styles.touchable}
+                  borderless
+                >
+                  <Surface style={styles.exCard} elevation={1}>
+                    <View style={styles.exInfo}>
+                      <Text variant="titleSmall">{ex.name}</Text>
+                      <Text variant="bodySmall" style={styles.exMeta}>
+                        {group === 'All' && ex.target ? `${ex.target} · ` : ''}{ex.equipment}
+                        {ex.isCustom ? ' · Custom' : ''}
+                      </Text>
+                    </View>
+                    {isSelectMode ? (
+                      <>
+                        <IconButton icon="information-outline" size={20}
+                          onPress={() => router.push(`/fitness/exercise-detail?id=${ex.id}`)} />
+                        <MaterialCommunityIcons name="plus-circle" size={24} color={moduleColors.workout} />
+                      </>
+                    ) : (
+                      <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+                    )}
+                  </Surface>
+                </TouchableRipple>
+              </View>
+            );
+          })
         )}
       </ScrollView>
 
@@ -168,6 +180,7 @@ const styles = StyleSheet.create({
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   emptyText: { color: theme.colors.onSurfaceVariant, textAlign: 'center', marginTop: spacing.xl },
   touchable: { borderRadius: 12, marginBottom: spacing.sm },
+  targetHeader: { fontWeight: '800', marginTop: spacing.sm, marginBottom: spacing.xs, textTransform: 'uppercase', letterSpacing: 0.5 },
   exCard: {
     flexDirection: 'row',
     alignItems: 'center',

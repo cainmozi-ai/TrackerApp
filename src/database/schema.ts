@@ -17,6 +17,7 @@ let db: SQLite.SQLiteDatabase | null = null;
 interface ExerciseSeed {
   name: string;
   muscleGroup: string;
+  target?: string;
   equipment: string;
   description: string;
   tips?: string[];
@@ -226,6 +227,7 @@ export async function initializeDatabase(): Promise<void> {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       muscle_group TEXT,
+      target TEXT,
       equipment TEXT,
       description TEXT,
       tips TEXT,
@@ -406,6 +408,8 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     // Phase 13 — exercise tips + gym equipment selector
     'ALTER TABLE exercises ADD COLUMN tips TEXT',
     'ALTER TABLE user_profile ADD COLUMN equipment TEXT',
+    // Phase 14 — muscle-head targeting
+    'ALTER TABLE exercises ADD COLUMN target TEXT',
   ];
   for (const sql of alters) {
     try {
@@ -489,7 +493,7 @@ async function seedExercises(db: SQLite.SQLiteDatabase): Promise<void> {
   // Sync with the seed file: insert exercises that are new since the last app
   // version, and backfill tips/descriptions on ones that already exist.
   const seeded = await db.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM exercises WHERE is_custom = 0 AND tips IS NOT NULL'
+    'SELECT COUNT(*) as count FROM exercises WHERE is_custom = 0 AND target IS NOT NULL'
   );
   if (seeded && seeded.count >= exercises.length) return;
 
@@ -502,13 +506,13 @@ async function seedExercises(db: SQLite.SQLiteDatabase): Promise<void> {
       );
       if (found) {
         await db.runAsync(
-          'UPDATE exercises SET muscle_group = ?, equipment = ?, description = ?, tips = ? WHERE id = ?',
-          [ex.muscleGroup, ex.equipment, ex.description, tips, found.id]
+          'UPDATE exercises SET muscle_group = ?, target = ?, equipment = ?, description = ?, tips = ? WHERE id = ?',
+          [ex.muscleGroup, ex.target ?? null, ex.equipment, ex.description, tips, found.id]
         );
       } else {
         await db.runAsync(
-          'INSERT INTO exercises (name, muscle_group, equipment, description, tips, is_custom) VALUES (?, ?, ?, ?, ?, 0)',
-          [ex.name, ex.muscleGroup, ex.equipment, ex.description, tips]
+          'INSERT INTO exercises (name, muscle_group, target, equipment, description, tips, is_custom) VALUES (?, ?, ?, ?, ?, ?, 0)',
+          [ex.name, ex.muscleGroup, ex.target ?? null, ex.equipment, ex.description, tips]
         );
       }
     }

@@ -63,6 +63,7 @@ export default function ExerciseDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.tagRow}>
           <Chip icon="arm-flex" compact>{exercise.muscleGroup}</Chip>
+          {!!exercise.target && <Chip icon="target" compact>{exercise.target}</Chip>}
           <Chip icon="dumbbell" compact>{exercise.equipment}</Chip>
           {exercise.isCustom && <Chip icon="account" compact>Custom</Chip>}
         </View>

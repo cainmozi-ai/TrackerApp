@@ -102,6 +102,8 @@ export interface Exercise {
   id: number;
   name: string;
   muscleGroup: string;
+  /** Specific head/region the exercise emphasizes, e.g. "Biceps — long head". */
+  target: string;
   equipment: string;
   description: string;
   tips: string[];

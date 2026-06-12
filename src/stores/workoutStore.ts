@@ -1,10 +1,23 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import type { Exercise, WorkoutTemplate, WorkoutLog, WorkoutSet, TemplateExercise } from '@/types';
 import { getDatabase } from '@/database/schema';
 import { localNow, localDaysAgo } from '@/utils/dates';
 
-/** Every equipment type used by the exercise database — drives the gym equipment selector. */
-export const EQUIPMENT_OPTIONS = ['Barbell', 'Dumbbell', 'Kettlebell', 'Cable', 'Machine', 'Band', 'Bodyweight', 'Other'];
+/** Gym equipment grouped by category — drives the My Gym selector and exercise filtering. */
+export const EQUIPMENT_GROUPS: { label: string; items: string[] }[] = [
+  { label: 'Small Weights', items: ['Dumbbell', 'Kettlebell', 'Medicine Ball'] },
+  { label: 'Bars & Plates', items: ['Barbell', 'EZ Bar', 'Trap Bar', 'Landmine', 'Weight Plate', "Farmer's Handles"] },
+  { label: 'Benches & Racks', items: ['Squat Rack', 'Flat Bench', 'Incline Bench', 'Decline Bench', 'Pull-Up Bar', 'Dip Bars', 'Preacher Bench', 'Back Extension Bench', 'GHD Bench', 'Reverse Hyper Bench'] },
+  { label: 'Cables', items: ['Cable Machine', 'Cable Crossover', 'Lat Pulldown', 'Cable Row Station'] },
+  { label: 'Machines', items: ['Smith Machine', 'Leg Press', 'Hack Squat Machine', 'Leg Extension Machine', 'Leg Curl Machine', 'Calf Raise Machine', 'Chest Press Machine', 'Fly Machine', 'Shoulder Press Machine', 'Lateral Raise Machine', 'Row Machine', 'Preacher Curl Machine', 'Bicep Curl Machine', 'Triceps Extension Machine', 'Dip Machine', 'Assisted Pull-Up Machine', 'Ab Crunch Machine', 'Adductor Machine', 'Abductor Machine', 'Glute Kickback Machine', 'Hammer Strength', 'T-Bar Row'] },
+  { label: 'Bands', items: ['Resistance Band', 'Mini Band'] },
+  { label: 'Bodyweight & Suspension', items: ['Bodyweight', 'TRX', 'Rings', 'Parallettes', 'Ab Wheel', 'Climbing Rope'] },
+  { label: 'Balls & Conditioning', items: ['BOSU', 'Swiss Ball', 'Box', 'Sled', 'Tire', 'Battle Ropes', 'Jump Rope'] },
+  { label: 'Cardio Machines', items: ['Treadmill', 'Exercise Bike', 'Rowing Machine', 'Elliptical', 'Stair Climber', 'Ski Erg', 'Assault Bike'] },
+];
+
+/** Flat list of every equipment item. */
+export const EQUIPMENT_OPTIONS = EQUIPMENT_GROUPS.flatMap(g => g.items);
 
 export interface ProgramDay {
   templateId: number;
@@ -119,7 +132,9 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       query += ` AND (is_custom = 1 OR equipment IN (${equipmentIn.map(() => '?').join(',')}))`;
       params.push(...equipmentIn);
     }
-    query += ' ORDER BY muscle_group, name';
+    // Targets sort alphabetically, which naturally groups heads together
+    // (e.g. "Biceps — long head" rows sit beside "Biceps — short head").
+    query += ' ORDER BY muscle_group, target, name';
     const rows = await db.getAllAsync<Record<string, unknown>>(query, params);
     set({ exercises: rows.map(mapExercise) });
   },
@@ -197,7 +212,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     for (const day of days) {
       const result = await db.runAsync(
         'INSERT INTO workout_templates (name, description) VALUES (?, ?)',
-        [`${programName} · ${day.day_label as string}`, day.description as string | null]
+        [`${programName} Â· ${day.day_label as string}`, day.description as string | null]
       );
       const newId = result.lastInsertRowId;
       const exs = await db.getAllAsync<Record<string, unknown>>(
@@ -265,6 +280,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         muscleGroup: r.muscle_group as string,
         equipment: r.equipment as string,
         description: r.description as string,
+        target: (r.target as string | null) ?? '',
         tips: [],
         isCustom: (r.is_custom as number) === 1,
       },
@@ -424,6 +440,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         muscleGroup: r.muscle_group as string,
         equipment: '',
         description: '',
+        target: '',
         tips: [],
         isCustom: false,
       },
@@ -613,6 +630,7 @@ async function refreshActiveSets(
         muscleGroup: r.muscle_group as string,
         equipment: '',
         description: '',
+        target: '',
         tips: [],
         isCustom: false,
       },
@@ -646,6 +664,7 @@ function mapExercise(r: Record<string, unknown>): Exercise {
     id: r.id as number,
     name: r.name as string,
     muscleGroup: r.muscle_group as string,
+    target: (r.target as string | null) ?? '',
     equipment: r.equipment as string,
     description: r.description as string,
     tips,

@@ -34,11 +34,34 @@ export function getXpForCurrentLevel(level: number): number {
   return XP_PER_LEVEL[Math.min(level - 1, XP_PER_LEVEL.length - 1)] || 0;
 }
 
+/** Old app versions stored coarse equipment names — expand them to the granular list. */
+const LEGACY_EQUIPMENT: Record<string, string[]> = {
+  Band: ['Resistance Band', 'Mini Band'],
+  Cable: ['Cable Machine', 'Cable Crossover', 'Lat Pulldown', 'Cable Row Station'],
+  Machine: [
+    'Smith Machine', 'Leg Press', 'Hack Squat Machine', 'Leg Extension Machine', 'Leg Curl Machine',
+    'Calf Raise Machine', 'Chest Press Machine', 'Fly Machine', 'Shoulder Press Machine',
+    'Lateral Raise Machine', 'Row Machine', 'Preacher Curl Machine', 'Bicep Curl Machine',
+    'Triceps Extension Machine', 'Dip Machine', 'Assisted Pull-Up Machine', 'Ab Crunch Machine',
+    'Adductor Machine', 'Abductor Machine', 'Glute Kickback Machine', 'Hammer Strength', 'T-Bar Row',
+    'Treadmill', 'Exercise Bike', 'Rowing Machine', 'Elliptical', 'Stair Climber', 'Ski Erg', 'Assault Bike',
+  ],
+  Barbell: ['Barbell', 'EZ Bar', 'Trap Bar', 'Landmine', 'Weight Plate', 'Squat Rack', 'Flat Bench', 'Incline Bench', 'Decline Bench', 'Preacher Bench', 'T-Bar Row'],
+  Bodyweight: ['Bodyweight', 'Pull-Up Bar', 'Dip Bars', 'Back Extension Bench', 'Ab Wheel', 'Jump Rope', 'Box'],
+  Other: ['Battle Ropes', 'Sled', 'Tire'],
+};
+
 function parseEquipment(raw: string | null): string[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    const expanded = new Set<string>();
+    for (const item of parsed) {
+      if (LEGACY_EQUIPMENT[item]) LEGACY_EQUIPMENT[item].forEach(e => expanded.add(e));
+      else expanded.add(item);
+    }
+    return Array.from(expanded);
   } catch {
     return [];
   }

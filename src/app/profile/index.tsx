@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { Text, Surface, TextInput, Button, SegmentedButtons, Snackbar, TouchableRipple, Switch, Chip, Portal, Dialog } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -8,7 +8,7 @@ import { theme, moduleColors, spacing } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useUserStore, getLevelName, getXpForCurrentLevel, getXpForNextLevel } from '@/stores/userStore';
-import { EQUIPMENT_OPTIONS } from '@/stores/workoutStore';
+import { EQUIPMENT_GROUPS } from '@/stores/workoutStore';
 import { exportBackup, pickBackupFile, importBackup } from '@/services/backup';
 
 export default function ProfileScreen() {
@@ -72,6 +72,14 @@ export default function ProfileScreen() {
 
   const toggleEquipment = (item: string) => {
     setEquipment(prev => prev.includes(item) ? prev.filter(e => e !== item) : [...prev, item]);
+  };
+
+  const toggleCategory = (items: string[]) => {
+    setEquipment(prev => {
+      const allSelected = items.every(i => prev.includes(i));
+      if (allSelected) return prev.filter(e => !items.includes(e));
+      return Array.from(new Set([...prev, ...items]));
+    });
   };
 
   useEffect(() => {
@@ -179,21 +187,37 @@ export default function ProfileScreen() {
 
         <Text variant="titleSmall" style={styles.sectionTitle}>My Gym Equipment</Text>
         <Text variant="bodySmall" style={styles.equipmentHint}>
-          Pick what your gym has — exercise lists can then filter to moves you can actually do. Leave empty to always show everything.
+          Pick what your gym has — exercise lists can then filter to moves you can actually do. Tap a category name to select the whole category. Leave empty to always show everything.
         </Text>
-        <View style={styles.equipmentWrap}>
-          {EQUIPMENT_OPTIONS.map(item => (
-            <Chip
-              key={item}
-              selected={equipment.includes(item)}
-              onPress={() => toggleEquipment(item)}
-              showSelectedOverlay
-              style={styles.equipmentChip}
-            >
-              {item}
-            </Chip>
-          ))}
-        </View>
+        {EQUIPMENT_GROUPS.map(group => {
+          const allOn = group.items.every(i => equipment.includes(i));
+          return (
+            <View key={group.label}>
+              <Pressable onPress={() => toggleCategory(group.items)} style={styles.equipCatRow}>
+                <Text variant="labelLarge" style={[styles.equipCatLabel, allOn && { color: theme.colors.primary }]}>
+                  {group.label}
+                </Text>
+                <Text variant="labelSmall" style={styles.equipCatHint}>
+                  {allOn ? 'all selected — tap to clear' : 'tap to select all'}
+                </Text>
+              </Pressable>
+              <View style={styles.equipmentWrap}>
+                {group.items.map(item => (
+                  <Chip
+                    key={item}
+                    selected={equipment.includes(item)}
+                    onPress={() => toggleEquipment(item)}
+                    showSelectedOverlay
+                    compact
+                    style={styles.equipmentChip}
+                  >
+                    {item}
+                  </Chip>
+                ))}
+              </View>
+            </View>
+          );
+        })}
 
         <Text variant="titleSmall" style={styles.sectionTitle}>Daily Targets</Text>
         <TextInput label="Calorie target" value={calorieTarget} onChangeText={setCalorieTarget} mode="outlined" keyboardType="numeric" style={styles.input} />
@@ -284,6 +308,9 @@ const styles = StyleSheet.create({
   equipmentHint: { color: theme.colors.onSurfaceVariant, marginBottom: spacing.sm },
   equipmentWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
   equipmentChip: { backgroundColor: theme.colors.surface },
+  equipCatRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginTop: spacing.xs, marginBottom: spacing.xs },
+  equipCatLabel: { fontWeight: '700' },
+  equipCatHint: { color: theme.colors.onSurfaceVariant },
   segmented: { marginBottom: spacing.sm },
   saveBtn: { marginTop: spacing.lg },
   version: { textAlign: 'center', color: theme.colors.onSurfaceVariant, marginTop: spacing.lg },
