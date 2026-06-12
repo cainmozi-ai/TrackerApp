@@ -42,10 +42,12 @@ const LEGACY_EQUIPMENT: Record<string, string[]> = {
     'Smith Machine', 'Leg Press', 'Hack Squat Machine', 'Leg Extension Machine', 'Leg Curl Machine',
     'Calf Raise Machine', 'Chest Press Machine', 'Fly Machine', 'Shoulder Press Machine',
     'Lateral Raise Machine', 'Row Machine', 'Preacher Curl Machine', 'Bicep Curl Machine',
-    'Triceps Extension Machine', 'Dip Machine', 'Assisted Pull-Up Machine', 'Ab Crunch Machine',
+    'Triceps Extension Machine', 'Dip Machine', 'Assisted Weight Machine', 'Ab Crunch Machine',
     'Adductor Machine', 'Abductor Machine', 'Glute Kickback Machine', 'Hammer Strength', 'T-Bar Row',
     'Treadmill', 'Exercise Bike', 'Rowing Machine', 'Elliptical', 'Stair Climber', 'Ski Erg', 'Assault Bike',
   ],
+  // Renamed in a later version — the counterweight machine assists dips AND pull-ups.
+  'Assisted Pull-Up Machine': ['Assisted Weight Machine'],
   Barbell: ['Barbell', 'EZ Bar', 'Trap Bar', 'Landmine', 'Weight Plate', 'Squat Rack', 'Flat Bench', 'Incline Bench', 'Decline Bench', 'Preacher Bench', 'T-Bar Row'],
   Bodyweight: ['Bodyweight', 'Pull-Up Bar', 'Dip Bars', 'Back Extension Bench', 'Ab Wheel', 'Jump Rope', 'Box'],
   Other: ['Battle Ropes', 'Sled', 'Tire'],
