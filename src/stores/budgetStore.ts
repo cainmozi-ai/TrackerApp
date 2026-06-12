@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Transaction, BudgetCategory, TransactionType } from '@/types';
 import { getDatabase } from '@/database/schema';
+import { localToday } from '@/utils/dates';
 
 interface BudgetState {
   transactions: Transaction[];
@@ -59,7 +60,7 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
     const db = await getDatabase();
     await db.runAsync(
       'INSERT INTO transactions (amount, type, category, note, transaction_date) VALUES (?, ?, ?, ?, ?)',
-      [amount, type, category, note || null, date || new Date().toISOString().split('T')[0]]
+      [amount, type, category, note || null, date || localToday()]
     );
     await get().loadTransactions();
   },

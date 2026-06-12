@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, Button, IconButton } from 'react-native-paper';
+import { Text, Button, IconButton, Portal, Dialog, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/ThemeContext';
@@ -22,6 +22,8 @@ export default function WaterScreen() {
   const { colors } = useAppTheme();
   const { todayLogs, todayTotal, loadTodayLogs, addWater, removeLog } = useWaterStore();
   const { profile, loadProfile, reward } = useUserStore();
+  const [customVisible, setCustomVisible] = useState(false);
+  const [customMl, setCustomMl] = useState('');
 
   useEffect(() => {
     loadTodayLogs();
@@ -67,6 +69,9 @@ export default function WaterScreen() {
               {item.label}
             </Button>
           ))}
+          <Button mode="outlined" icon="pencil-plus" onPress={() => setCustomVisible(true)} style={styles.quickBtn}>
+            Custom
+          </Button>
         </View>
 
         {todayLogs.length > 0 && (
@@ -83,6 +88,42 @@ export default function WaterScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Portal>
+        <Dialog visible={customVisible} onDismiss={() => setCustomVisible(false)}>
+          <Dialog.Title>Custom amount</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="Amount (ml)"
+              value={customMl}
+              onChangeText={setCustomMl}
+              mode="outlined"
+              keyboardType="numeric"
+              autoFocus
+              placeholder="e.g. 330"
+            />
+            <View style={styles.customQuick}>
+              {[150, 330, 750].map(ml => (
+                <Button key={ml} compact mode="text" onPress={() => setCustomMl(String(ml))}>{ml}ml</Button>
+              ))}
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setCustomVisible(false)}>Cancel</Button>
+            <Button
+              disabled={!(parseInt(customMl) > 0)}
+              onPress={async () => {
+                const ml = parseInt(customMl);
+                setCustomVisible(false);
+                setCustomMl('');
+                await handleAdd(ml);
+              }}
+            >
+              Add
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaView>
   );
 }
@@ -102,4 +143,5 @@ const styles = StyleSheet.create({
   logSection: { alignSelf: 'stretch' },
   logTitle: { fontWeight: '700', marginBottom: spacing.sm },
   logRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.xs, paddingLeft: spacing.md, borderRadius: shape.sm, marginBottom: spacing.xs, gap: spacing.sm },
+  customQuick: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xs },
 });

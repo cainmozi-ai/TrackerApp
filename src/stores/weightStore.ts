@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { WeightLog } from '@/types';
 import { getDatabase } from '@/database/schema';
+import { localToday } from '@/utils/dates';
 
 export interface TrendPoint {
   date: string;
@@ -17,7 +18,7 @@ interface WeightState {
 }
 
 function getToday(): string {
-  return new Date().toISOString().split('T')[0];
+  return localToday();
 }
 
 // EMA smoothing factor — lower = smoother (cuts daily noise, MacroFactor-style).

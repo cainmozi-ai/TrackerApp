@@ -13,7 +13,7 @@ import type { WorkoutLog, WorkoutSet } from '@/types';
 
 function formatDuration(startedAt: string, finishedAt: string | null): string {
   if (!finishedAt) return 'in progress';
-  const ms = new Date(finishedAt.replace(' ', 'T') + 'Z').getTime() - new Date(startedAt.replace(' ', 'T') + 'Z').getTime();
+  const ms = new Date(finishedAt.replace(' ', 'T')).getTime() - new Date(startedAt.replace(' ', 'T')).getTime();
   const mins = Math.max(1, Math.round(ms / 60000));
   return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins} min`;
 }

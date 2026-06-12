@@ -12,12 +12,13 @@ import { MotionCard } from '@/components/common/MotionCard';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
 import type { FoodLog, MealType } from '@/types';
+import { localDate } from '@/utils/dates';
 
 const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const WEEKDAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 function isoDate(d: Date): string {
-  return d.toISOString().split('T')[0];
+  return localDate(d);
 }
 
 /** The last 7 days, oldest first, ending today. */
@@ -245,8 +246,16 @@ export default function NutritionScreen() {
               buttons={MEAL_ORDER.map(m => ({ value: m, label: m.charAt(0).toUpperCase() + m.slice(1) }))}
             />
             <Text variant="titleSmall" style={{ marginTop: spacing.sm, color: moduleColors.nutrition }}>
-              = {Math.round((editLog?.food?.calories || 0) * (parseFloat(editServings) || 0))} cal
+              = {Math.round((editLog?.food?.calories || 0) * (parseFloat(editServings) || 0))} cal ·
+              P{Math.round((editLog?.food?.protein || 0) * (parseFloat(editServings) || 0))} C{Math.round((editLog?.food?.carbs || 0) * (parseFloat(editServings) || 0))} F{Math.round((editLog?.food?.fat || 0) * (parseFloat(editServings) || 0))}
             </Text>
+            {(editLog?.food?.fiber != null || editLog?.food?.sugar != null || editLog?.food?.sodium != null) && (
+              <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                {editLog?.food?.fiber != null ? `Fiber ${Math.round(editLog.food.fiber * (parseFloat(editServings) || 0) * 10) / 10}g · ` : ''}
+                {editLog?.food?.sugar != null ? `Sugar ${Math.round(editLog.food.sugar * (parseFloat(editServings) || 0) * 10) / 10}g · ` : ''}
+                {editLog?.food?.sodium != null ? `Sodium ${Math.round(editLog.food.sodium * (parseFloat(editServings) || 0))}mg` : ''}
+              </Text>
+            )}
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setEditLog(null)}>Cancel</Button>

@@ -62,7 +62,7 @@ export default function ActiveWorkoutScreen() {
     return () => clearInterval(iv);
   }, [startedAt]);
 
-  const parseDbTime = (s: string) => new Date(s.replace(' ', 'T') + 'Z').getTime();
+  const parseDbTime = (s: string) => new Date(s.replace(' ', 'T')).getTime();
 
   const applyTemplate = async (tplId: number) => {
     setTemplateId(tplId);

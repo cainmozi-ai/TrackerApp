@@ -8,15 +8,16 @@ import { theme, moduleColors, spacing } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useMealPlanStore, getWeekStart } from '@/stores/mealPlanStore';
 import { useNutritionStore } from '@/stores/nutritionStore';
+import { localDate } from '@/utils/dates';
 import type { Food, MealType } from '@/types';
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
+  const d = new Date(`${dateStr}T00:00:00`);
   d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
+  return localDate(d);
 }
 
 export default function MealPlannerScreen() {

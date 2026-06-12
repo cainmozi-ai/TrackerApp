@@ -29,6 +29,7 @@ export default function FoodSearchScreen() {
   // Portion dialog state
   const [pendingFood, setPendingFood] = useState<Food | null>(null);
   const [portionMode, setPortionMode] = useState<'servings' | 'amount'>('servings');
+  const [amountUnit, setAmountUnit] = useState('g');
   const [servingsText, setServingsText] = useState('1');
   const [amountText, setAmountText] = useState('100');
   const [logging, setLogging] = useState(false);
@@ -65,6 +66,7 @@ export default function FoodSearchScreen() {
   const openPortionDialog = (food: Food) => {
     setPendingFood(food);
     setPortionMode('servings');
+    setAmountUnit(food.servingUnit || 'g');
     setServingsText('1');
     setAmountText(String(food.servingSize || 100));
   };
@@ -127,7 +129,8 @@ export default function FoodSearchScreen() {
       </View>
 
       <View style={styles.methodRow}>
-        <Button mode="contained-tonal" icon="barcode-scan" compact style={styles.methodBtn} onPress={() => router.push('/health/nutrition/scan')}>
+        <Button mode="contained-tonal" icon="barcode-scan" compact style={styles.methodBtn}
+          onPress={() => router.push(`/health/nutrition/scan?meal=${selectedMeal}${date ? `&date=${date}` : ''}`)}>
           Scan
         </Button>
         <Button mode="contained-tonal" icon="camera-iris" compact style={styles.methodBtn} onPress={() => router.push('/health/nutrition/ai-photo')}>
@@ -204,11 +207,18 @@ export default function FoodSearchScreen() {
               1 serving = {pendingFood?.servingSize}{pendingFood?.servingUnit} · {Math.round(pendingFood?.calories || 0)} cal
             </Text>
             <SegmentedButtons
-              value={portionMode}
-              onValueChange={v => setPortionMode(v as typeof portionMode)}
+              value={portionMode === 'servings' ? 'servings' : amountUnit}
+              onValueChange={v => {
+                if (v === 'servings') setPortionMode('servings');
+                else { setPortionMode('amount'); setAmountUnit(v); }
+              }}
               buttons={[
                 { value: 'servings', label: 'Servings' },
-                { value: 'amount', label: pendingFood?.servingUnit || 'g' },
+                // Liquids and solids share the same per-100 basis, so g and ml
+                // are both offered when the food is weight-based.
+                ...(pendingFood?.servingUnit === 'g'
+                  ? [{ value: 'g', label: 'g' }, { value: 'ml', label: 'ml' }]
+                  : [{ value: pendingFood?.servingUnit || 'g', label: pendingFood?.servingUnit || 'g' }]),
               ]}
               style={{ marginBottom: spacing.sm }}
             />
@@ -226,13 +236,20 @@ export default function FoodSearchScreen() {
                 </View>
               </>
             ) : (
-              <TextInput label={`Amount (${pendingFood?.servingUnit})`} value={amountText} onChangeText={setAmountText}
+              <TextInput label={`Amount (${amountUnit})`} value={amountText} onChangeText={setAmountText}
                 mode="outlined" keyboardType="numeric" autoFocus />
             )}
             <Text variant="titleSmall" style={{ marginTop: spacing.sm, color: moduleColors.nutrition }}>
               = {Math.round((pendingFood?.calories || 0) * portionServings)} cal ·
               P{Math.round((pendingFood?.protein || 0) * portionServings)} C{Math.round((pendingFood?.carbs || 0) * portionServings)} F{Math.round((pendingFood?.fat || 0) * portionServings)}
             </Text>
+            {(pendingFood?.fiber != null || pendingFood?.sugar != null || pendingFood?.sodium != null) && (
+              <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                {pendingFood?.fiber != null ? `Fiber ${Math.round(pendingFood.fiber * portionServings * 10) / 10}g · ` : ''}
+                {pendingFood?.sugar != null ? `Sugar ${Math.round(pendingFood.sugar * portionServings * 10) / 10}g · ` : ''}
+                {pendingFood?.sodium != null ? `Sodium ${Math.round(pendingFood.sodium * portionServings)}mg` : ''}
+              </Text>
+            )}
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setPendingFood(null)}>Cancel</Button>

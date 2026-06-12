@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Food, FoodLog, MealType, SavedMeal } from '@/types';
 import { getDatabase } from '@/database/schema';
+import { localToday, localDaysAgo } from '@/utils/dates';
 
 interface NutritionState {
   /** The date currently shown on the nutrition screen (YYYY-MM-DD). */
@@ -35,13 +36,14 @@ interface NutritionState {
 }
 
 function getToday(): string {
-  return new Date().toISOString().split('T')[0];
+  return localToday();
 }
 
 function getYesterday(date?: string): string {
-  const d = date ? new Date(date) : new Date();
+  // Parse YYYY-MM-DD as local midnight (appending T00:00:00 avoids UTC parsing).
+  const d = date ? new Date(`${date}T00:00:00`) : new Date();
   d.setDate(d.getDate() - 1);
-  return d.toISOString().split('T')[0];
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export const useNutritionStore = create<NutritionState>((set, get) => ({
@@ -277,14 +279,12 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
 
   getDailyTotals: async (days) => {
     const db = await getDatabase();
-    const start = new Date();
-    start.setDate(start.getDate() - days);
     const rows = await db.getAllAsync<{ date: string; calories: number }>(
       `SELECT fl.log_date as date, COALESCE(SUM(f.calories * fl.servings), 0) as calories
        FROM food_logs fl JOIN foods f ON fl.food_id = f.id
        WHERE fl.log_date >= ?
        GROUP BY fl.log_date ORDER BY fl.log_date ASC`,
-      [start.toISOString().split('T')[0]]
+      [localDaysAgo(days)]
     );
     return rows.map(r => ({ date: r.date, calories: Math.round(r.calories) }));
   },

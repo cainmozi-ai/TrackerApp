@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { WaterLog } from '@/types';
 import { getDatabase } from '@/database/schema';
+import { localToday } from '@/utils/dates';
 
 interface WaterState {
   todayLogs: WaterLog[];
@@ -11,7 +12,7 @@ interface WaterState {
 }
 
 function getToday(): string {
-  return new Date().toISOString().split('T')[0];
+  return localToday();
 }
 
 export const useWaterStore = create<WaterState>((set, get) => ({

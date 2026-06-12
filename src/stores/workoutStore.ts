@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Exercise, WorkoutTemplate, WorkoutLog, WorkoutSet, TemplateExercise } from '@/types';
 import { getDatabase } from '@/database/schema';
+import { localNow, localDaysAgo } from '@/utils/dates';
 
 /** Every equipment type used by the exercise database — drives the gym equipment selector. */
 export const EQUIPMENT_OPTIONS = ['Barbell', 'Dumbbell', 'Kettlebell', 'Cable', 'Machine', 'Band', 'Bodyweight', 'Other'];
@@ -290,9 +291,11 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   startWorkout: async (templateId, name) => {
     const db = await getDatabase();
     const workoutName = name || 'Quick Workout';
+    // Explicit local timestamp — the column default is UTC, which puts late-night
+    // sessions on the wrong day.
     const result = await db.runAsync(
-      'INSERT INTO workout_logs (template_id, name) VALUES (?, ?)',
-      [templateId || null, workoutName]
+      'INSERT INTO workout_logs (template_id, name, started_at) VALUES (?, ?, ?)',
+      [templateId || null, workoutName, localNow()]
     );
     const workout = await db.getFirstAsync<Record<string, unknown>>(
       'SELECT * FROM workout_logs WHERE id = ?',
@@ -324,8 +327,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   finishWorkout: async (workoutId, notes) => {
     const db = await getDatabase();
     await db.runAsync(
-      "UPDATE workout_logs SET finished_at = datetime('now'), notes = ? WHERE id = ?",
-      [notes || null, workoutId]
+      'UPDATE workout_logs SET finished_at = ?, notes = ? WHERE id = ?',
+      [localNow(), notes || null, workoutId]
     );
     set({ activeWorkout: null, activeSets: [] });
     await get().loadRecentWorkouts();
@@ -472,11 +475,9 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
   getWeekWorkoutCount: async () => {
     const db = await getDatabase();
-    const start = new Date();
-    start.setDate(start.getDate() - 7);
     const row = await db.getFirstAsync<{ count: number }>(
       'SELECT COUNT(*) as count FROM workout_logs WHERE finished_at IS NOT NULL AND date(started_at) >= ?',
-      [start.toISOString().split('T')[0]]
+      [localDaysAgo(7)]
     );
     return row?.count ?? 0;
   },
@@ -557,8 +558,6 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
   getMuscleVolume: async (days = 7) => {
     const db = await getDatabase();
-    const start = new Date();
-    start.setDate(start.getDate() - days);
     const rows = await db.getAllAsync<{ muscleGroup: string; sets: number }>(
       `SELECT e.muscle_group as muscleGroup, COUNT(*) as sets
        FROM workout_sets ws
@@ -566,7 +565,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
        JOIN exercises e ON ws.exercise_id = e.id
        WHERE wl.finished_at IS NOT NULL AND date(wl.started_at) >= ?
        GROUP BY e.muscle_group ORDER BY sets DESC`,
-      [start.toISOString().split('T')[0]]
+      [localDaysAgo(days)]
     );
     return rows.filter(r => r.muscleGroup);
   },

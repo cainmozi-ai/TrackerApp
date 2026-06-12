@@ -7,6 +7,7 @@ import { router, useFocusEffect } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { moduleColors, spacing, shape, withAlpha } from '@/theme';
+import { localToday, localDate } from '@/utils/dates';
 import { StatTile } from '@/components/common/StatTile';
 import { QuickActionFab } from '@/components/common/QuickActionFab';
 import { useNutritionStore } from '@/stores/nutritionStore';
@@ -28,7 +29,7 @@ function greeting(): string {
 }
 
 function today(): string {
-  return new Date().toISOString().split('T')[0];
+  return localToday();
 }
 
 export default function HomeScreen() {
@@ -64,7 +65,7 @@ export default function HomeScreen() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const iso = d.toISOString().split('T')[0];
+      const iso = localDate(d);
       out.push({ iso, letter: letters[d.getDay()], dayNum: d.getDate(), isToday: i === 0 });
     }
     return out;

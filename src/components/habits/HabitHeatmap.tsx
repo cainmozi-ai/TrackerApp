@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { localDate } from '@/utils/dates';
 import { theme, spacing } from '@/theme';
 
 interface HabitHeatmapProps {
@@ -26,7 +27,7 @@ export function HabitHeatmap({ data, color, weeks = 13, maxLevel = 1 }: HabitHea
       const offsetFromEnd = (weeks - 1 - w) * 7 + (6 - d);
       const cellDate = new Date(endOfGrid);
       cellDate.setDate(endOfGrid.getDate() - offsetFromEnd);
-      const key = cellDate.toISOString().split('T')[0];
+      const key = localDate(cellDate);
       col.push({ date: key, count: data[key] || 0, future: cellDate > today });
     }
     columns.push(col);

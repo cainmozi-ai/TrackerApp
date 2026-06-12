@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, Button, IconButton, TextInput } from 'react-native-paper';
+import { Text, Button, IconButton, TextInput, Snackbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/ThemeContext';
@@ -20,6 +20,8 @@ export default function SleepScreen() {
   const [wakeTime, setWakeTime] = useState('07:00');
   const [quality, setQuality] = useState(3);
   const [notes, setNotes] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [snack, setSnack] = useState('');
 
   useEffect(() => {
     loadTodayLog();
@@ -27,8 +29,25 @@ export default function SleepScreen() {
   }, []);
 
   const handleSave = async () => {
-    await logSleep(bedtime, wakeTime, quality, notes);
+    try {
+      await logSleep(bedtime, wakeTime, quality, notes);
+    } catch (e) {
+      setSnack(e instanceof Error ? e.message : "Couldn't save — check the times");
+      return;
+    }
+    setEditing(false);
+    setSnack('Sleep logged');
     await reward(10, 'sleep', 'Logged sleep', 'first_sleep');
+  };
+
+  const startEdit = () => {
+    if (todayLog) {
+      setBedtime(todayLog.bedtime);
+      setWakeTime(todayLog.wakeTime);
+      setQuality(todayLog.quality);
+      setNotes(todayLog.notes || '');
+    }
+    setEditing(true);
   };
 
   const fmt = (m: number) => `${Math.floor(m / 60)}h ${m % 60}m`;
@@ -37,13 +56,13 @@ export default function SleepScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="Sleep Log" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {todayLog ? (
+        {todayLog && !editing ? (
           <MotionCard style={styles.todayCard} noEnter>
             <MaterialCommunityIcons name="moon-waning-crescent" size={36} color={moduleColors.sleep} />
             <Text variant="headlineMedium" style={[styles.duration, { color: moduleColors.sleep }]}>{fmt(todayLog.durationMinutes)}</Text>
             <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>{todayLog.bedtime} → {todayLog.wakeTime}</Text>
             <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>Quality: {QUALITY_LABELS[todayLog.quality]}</Text>
-            <Button mode="text" onPress={() => loadTodayLog()} compact>Re-log</Button>
+            <Button mode="text" onPress={startEdit} compact icon="pencil">Edit</Button>
           </MotionCard>
         ) : (
           <MotionCard style={styles.inputCard} noEnter>
@@ -70,6 +89,7 @@ export default function SleepScreen() {
             </View>
             <TextInput label="Notes (optional)" value={notes} onChangeText={setNotes} mode="outlined" multiline style={styles.notes} />
             <Button mode="contained" onPress={handleSave} style={styles.saveBtn} buttonColor={moduleColors.sleep}>Save Sleep</Button>
+            {editing && <Button mode="text" onPress={() => setEditing(false)} compact>Cancel</Button>}
           </MotionCard>
         )}
 
@@ -91,6 +111,8 @@ export default function SleepScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Snackbar visible={!!snack} onDismiss={() => setSnack('')} duration={2500}>{snack}</Snackbar>
     </SafeAreaView>
   );
 }

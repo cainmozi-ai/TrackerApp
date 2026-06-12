@@ -38,7 +38,7 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
     );
     if (achievement && !achievement.unlocked_at) {
       await db.runAsync(
-        "UPDATE achievements SET unlocked_at = datetime('now') WHERE id = ?",
+        "UPDATE achievements SET unlocked_at = datetime('now','localtime') WHERE id = ?",
         [achievement.id]
       );
       await get().loadAchievements();

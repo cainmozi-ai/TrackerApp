@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getDatabase } from '@/database/schema';
+import { localDate } from '@/utils/dates';
 
 export interface PlannedMeal {
   id: number;
@@ -31,9 +32,9 @@ interface MealPlanState {
 }
 
 function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
+  const d = new Date(`${dateStr}T00:00:00`);
   d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
+  return localDate(d);
 }
 
 export function getWeekStart(date = new Date()): string {
@@ -41,7 +42,7 @@ export function getWeekStart(date = new Date()): string {
   const day = d.getDay(); // 0 Sun..6 Sat
   const diff = day === 0 ? -6 : 1 - day; // Monday as week start
   d.setDate(d.getDate() + diff);
-  return d.toISOString().split('T')[0];
+  return localDate(d);
 }
 
 export const useMealPlanStore = create<MealPlanState>((set, get) => ({

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getDatabase } from '@/database/schema';
+import { localToday } from '@/utils/dates';
 
 export const MEASUREMENT_FIELDS = ['neck', 'shoulders', 'chest', 'waist', 'hips', 'bicep', 'thigh', 'calf'] as const;
 export type MeasurementField = typeof MEASUREMENT_FIELDS[number];
@@ -31,7 +32,7 @@ interface MeasurementState {
 }
 
 function getToday(): string {
-  return new Date().toISOString().split('T')[0];
+  return localToday();
 }
 
 export const useMeasurementStore = create<MeasurementState>((set, get) => ({

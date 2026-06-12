@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Habit, HabitLog } from '@/types';
 import { getDatabase } from '@/database/schema';
+import { localToday, localDate } from '@/utils/dates';
 
 interface HabitState {
   habits: Habit[];
@@ -15,7 +16,7 @@ interface HabitState {
 }
 
 function getToday(): string {
-  return new Date().toISOString().split('T')[0];
+  return localToday();
 }
 
 export const useHabitStore = create<HabitState>((set, get) => ({
@@ -92,7 +93,7 @@ export const useHabitStore = create<HabitState>((set, get) => ({
     for (let i = 0; i < rows.length; i++) {
       const expected = new Date(today);
       expected.setDate(expected.getDate() - i);
-      const expectedStr = expected.toISOString().split('T')[0];
+      const expectedStr = localDate(expected);
       if (rows[i].log_date === expectedStr) {
         streak++;
       } else {
@@ -108,7 +109,7 @@ export const useHabitStore = create<HabitState>((set, get) => ({
     startDate.setDate(startDate.getDate() - days);
     const rows = await db.getAllAsync<{ log_date: string; count: number }>(
       'SELECT log_date, COUNT(*) as count FROM habit_logs WHERE habit_id = ? AND log_date >= ? GROUP BY log_date',
-      [habitId, startDate.toISOString().split('T')[0]]
+      [habitId, localDate(startDate)]
     );
     const data: Record<string, number> = {};
     for (const row of rows) {

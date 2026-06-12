@@ -44,7 +44,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   toggleComplete: async (taskId) => {
     const db = await getDatabase();
     await db.runAsync(
-      "UPDATE tasks SET is_completed = CASE WHEN is_completed = 1 THEN 0 ELSE 1 END, completed_at = CASE WHEN is_completed = 0 THEN datetime('now') ELSE NULL END WHERE id = ?",
+      "UPDATE tasks SET is_completed = CASE WHEN is_completed = 1 THEN 0 ELSE 1 END, completed_at = CASE WHEN is_completed = 0 THEN datetime('now','localtime') ELSE NULL END WHERE id = ?",
       [taskId]
     );
     await get().loadTasks();

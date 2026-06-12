@@ -9,6 +9,7 @@ import { theme, moduleColors, spacing } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { getMarkedDates, getDaySummary, type MarkedDates, type DaySummary } from '@/services/calendarData';
+import { localToday } from '@/utils/dates';
 
 const LEGEND = [
   { label: 'Meals', color: moduleColors.nutrition },
@@ -20,7 +21,7 @@ const LEGEND = [
 ];
 
 function today(): string {
-  return new Date().toISOString().split('T')[0];
+  return localToday();
 }
 
 export default function CalendarScreen() {
