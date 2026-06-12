@@ -27,9 +27,11 @@ export default function HealthScreen() {
           subtitle="Track your sleep patterns" onPress={() => router.push('/health/sleep')} />
         <AppCard index={3} title="Weight" icon="scale-bathroom" color={accent}
           subtitle="Log weight & see your smoothed trend" onPress={() => router.push('/health/weight')} />
-        <AppCard index={4} title="Coach" icon="chart-bell-curve-cumulative" color={accent}
+        <AppCard index={4} title="Body Tracker" icon="tape-measure" color="#7E57C2"
+          subtitle="Measurements & progress photos" onPress={() => router.push('/health/measurements')} />
+        <AppCard index={5} title="Coach" icon="chart-bell-curve-cumulative" color={accent}
           subtitle="Adaptive expenditure & target recommendations" onPress={() => router.push('/health/coach')} />
-        <AppCard index={5} title="Meal Planner" icon="calendar-month" color={moduleColors.nutrition}
+        <AppCard index={6} title="Meal Planner" icon="calendar-month" color={moduleColors.nutrition}
           subtitle="Plan meals & generate shopping lists" onPress={() => router.push('/health/meal-planner')} />
       </ScrollView>
     </SafeAreaView>

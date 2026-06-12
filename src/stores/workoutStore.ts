@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import type { Exercise, WorkoutTemplate, WorkoutLog, WorkoutSet, TemplateExercise } from '@/types';
 import { getDatabase } from '@/database/schema';
 
+/** Every equipment type used by the exercise database — drives the gym equipment selector. */
+export const EQUIPMENT_OPTIONS = ['Barbell', 'Dumbbell', 'Kettlebell', 'Cable', 'Machine', 'Band', 'Bodyweight', 'Other'];
+
 export interface ProgramDay {
   templateId: number;
   label: string;
@@ -16,6 +19,31 @@ export interface Program {
   days: ProgramDay[];
 }
 
+export interface WorkoutPR {
+  exerciseName: string;
+  /** 'weight' = heaviest set ever; '1rm' = new estimated one-rep max. */
+  type: 'weight' | '1rm';
+  value: number;
+  previous: number;
+}
+
+/** Epley estimated one-rep max. */
+export function estimate1RM(weight: number, reps: number): number {
+  if (weight <= 0 || reps <= 0) return 0;
+  if (reps === 1) return weight;
+  return Math.round(weight * (1 + reps / 30) * 10) / 10;
+}
+
+export interface ProgressionEntry {
+  exercise: Exercise;
+  lastWeight: number;
+  lastBestReps: number;
+  suggestedWeight: number;
+  suggestedReps: number;
+  /** 'increase' = hit the top of the rep range, add weight; 'reps' = chase more reps first. */
+  status: 'increase' | 'reps';
+}
+
 interface WorkoutState {
   exercises: Exercise[];
   templates: WorkoutTemplate[];
@@ -23,7 +51,8 @@ interface WorkoutState {
   activeWorkout: WorkoutLog | null;
   activeSets: WorkoutSet[];
 
-  loadExercises: (muscleGroup?: string, search?: string) => Promise<void>;
+  loadExercises: (muscleGroup?: string, search?: string, equipmentIn?: string[]) => Promise<void>;
+  getExercise: (id: number) => Promise<Exercise | null>;
   addCustomExercise: (name: string, muscleGroup: string, equipment: string) => Promise<number>;
   loadTemplates: () => Promise<void>;
   loadPrograms: (level?: string) => Promise<Program[]>;
@@ -40,9 +69,16 @@ interface WorkoutState {
   loadActiveSets: (workoutId: number) => Promise<void>;
   finishWorkout: (workoutId: number, notes?: string) => Promise<void>;
   logSet: (workoutId: number, exerciseId: number, setNumber: number, reps: number, weight: number, rpe?: number, setType?: string) => Promise<void>;
+  updateSet: (setId: number, workoutId: number, reps: number, weight: number, rpe?: number, setType?: string) => Promise<void>;
   removeSet: (setId: number, workoutId: number) => Promise<void>;
+  getExerciseBest: (exerciseId: number, excludeWorkoutId?: number) => Promise<{ maxWeight: number; max1RM: number }>;
+  detectPRs: (workoutId: number) => Promise<WorkoutPR[]>;
+  getWorkoutDetail: (workoutId: number) => Promise<{ workout: WorkoutLog; sets: WorkoutSet[] } | null>;
+  deleteWorkout: (workoutId: number) => Promise<void>;
+  getWeekWorkoutCount: () => Promise<number>;
   getLastSets: (exerciseId: number) => Promise<WorkoutSet[]>;
   getProgressionSuggestion: (exerciseId: number, repMax: number) => Promise<{ weight: number; reps: number } | null>;
+  getProgressionReport: () => Promise<ProgressionEntry[]>;
   getExerciseHistory: (exerciseId: number) => Promise<{ date: string; maxWeight: number; volume: number }[]>;
   getMuscleVolume: (days?: number) => Promise<{ muscleGroup: string; sets: number }[]>;
   getWorkoutDates: () => Promise<string[]>;
@@ -55,7 +91,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   activeWorkout: null,
   activeSets: [],
 
-  loadExercises: async (muscleGroup, search) => {
+  loadExercises: async (muscleGroup, search, equipmentIn) => {
     const db = await getDatabase();
     let query = 'SELECT * FROM exercises WHERE 1=1';
     const params: (string | number)[] = [];
@@ -67,9 +103,23 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       query += ' AND name LIKE ?';
       params.push(`%${search}%`);
     }
+    if (equipmentIn && equipmentIn.length > 0) {
+      // Custom exercises always show — the user made them for their own gym.
+      query += ` AND (is_custom = 1 OR equipment IN (${equipmentIn.map(() => '?').join(',')}))`;
+      params.push(...equipmentIn);
+    }
     query += ' ORDER BY muscle_group, name';
     const rows = await db.getAllAsync<Record<string, unknown>>(query, params);
     set({ exercises: rows.map(mapExercise) });
+  },
+
+  getExercise: async (id) => {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<Record<string, unknown>>(
+      'SELECT * FROM exercises WHERE id = ?',
+      [id]
+    );
+    return row ? mapExercise(row) : null;
   },
 
   addCustomExercise: async (name, muscleGroup, equipment) => {
@@ -204,6 +254,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         muscleGroup: r.muscle_group as string,
         equipment: r.equipment as string,
         description: r.description as string,
+        tips: [],
         isCustom: (r.is_custom as number) === 1,
       },
     }));
@@ -279,10 +330,110 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     await refreshActiveSets(workoutId, set);
   },
 
+  updateSet: async (setId, workoutId, reps, weight, rpe, setType) => {
+    const db = await getDatabase();
+    await db.runAsync(
+      'UPDATE workout_sets SET reps = ?, weight = ?, rpe = ?, set_type = ? WHERE id = ?',
+      [reps, weight, rpe ?? null, setType || 'normal', setId]
+    );
+    await refreshActiveSets(workoutId, set);
+  },
+
   removeSet: async (setId, workoutId) => {
     const db = await getDatabase();
     await db.runAsync('DELETE FROM workout_sets WHERE id = ?', [setId]);
     await refreshActiveSets(workoutId, set);
+  },
+
+  getExerciseBest: async (exerciseId, excludeWorkoutId) => {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<{ weight: number; reps: number }>(
+      `SELECT ws.weight, ws.reps FROM workout_sets ws
+       JOIN workout_logs wl ON ws.workout_log_id = wl.id
+       WHERE ws.exercise_id = ? AND wl.finished_at IS NOT NULL AND ws.set_type != 'warmup'
+         AND (? IS NULL OR ws.workout_log_id != ?)`,
+      [exerciseId, excludeWorkoutId ?? null, excludeWorkoutId ?? null]
+    );
+    let maxWeight = 0, max1RM = 0;
+    for (const r of rows) {
+      if (r.weight > maxWeight) maxWeight = r.weight;
+      const e = estimate1RM(r.weight, r.reps);
+      if (e > max1RM) max1RM = e;
+    }
+    return { maxWeight, max1RM };
+  },
+
+  detectPRs: async (workoutId) => {
+    const db = await getDatabase();
+    const exIds = await db.getAllAsync<{ exercise_id: number; name: string }>(
+      `SELECT DISTINCT ws.exercise_id, e.name FROM workout_sets ws
+       JOIN exercises e ON ws.exercise_id = e.id
+       WHERE ws.workout_log_id = ? AND ws.set_type != 'warmup'`,
+      [workoutId]
+    );
+    const prs: WorkoutPR[] = [];
+    for (const ex of exIds) {
+      const before = await get().getExerciseBest(ex.exercise_id, workoutId);
+      const sets = await db.getAllAsync<{ weight: number; reps: number }>(
+        "SELECT weight, reps FROM workout_sets WHERE workout_log_id = ? AND exercise_id = ? AND set_type != 'warmup'",
+        [workoutId, ex.exercise_id]
+      );
+      const thisMaxWeight = Math.max(...sets.map(s => s.weight), 0);
+      const thisMax1RM = Math.max(...sets.map(s => estimate1RM(s.weight, s.reps)), 0);
+      // Only count PRs against real history — a first session is a baseline, not a PR.
+      if (before.maxWeight > 0 && thisMaxWeight > before.maxWeight) {
+        prs.push({ exerciseName: ex.name, type: 'weight', value: thisMaxWeight, previous: before.maxWeight });
+      } else if (before.max1RM > 0 && thisMax1RM > before.max1RM) {
+        prs.push({ exerciseName: ex.name, type: '1rm', value: thisMax1RM, previous: before.max1RM });
+      }
+    }
+    return prs;
+  },
+
+  getWorkoutDetail: async (workoutId) => {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<Record<string, unknown>>(
+      'SELECT * FROM workout_logs WHERE id = ?',
+      [workoutId]
+    );
+    if (!row) return null;
+    const setRows = await db.getAllAsync<Record<string, unknown>>(
+      `SELECT ws.*, e.name as exercise_name, e.muscle_group
+       FROM workout_sets ws JOIN exercises e ON ws.exercise_id = e.id
+       WHERE ws.workout_log_id = ? ORDER BY ws.exercise_id, ws.set_number`,
+      [workoutId]
+    );
+    const sets = setRows.map(r => ({
+      ...mapSet(r),
+      exercise: {
+        id: r.exercise_id as number,
+        name: r.exercise_name as string,
+        muscleGroup: r.muscle_group as string,
+        equipment: '',
+        description: '',
+        tips: [],
+        isCustom: false,
+      },
+    }));
+    return { workout: mapWorkoutLog(row), sets };
+  },
+
+  deleteWorkout: async (workoutId) => {
+    const db = await getDatabase();
+    await db.runAsync('DELETE FROM workout_sets WHERE workout_log_id = ?', [workoutId]);
+    await db.runAsync('DELETE FROM workout_logs WHERE id = ?', [workoutId]);
+    await get().loadRecentWorkouts();
+  },
+
+  getWeekWorkoutCount: async () => {
+    const db = await getDatabase();
+    const start = new Date();
+    start.setDate(start.getDate() - 7);
+    const row = await db.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM workout_logs WHERE finished_at IS NOT NULL AND date(started_at) >= ?',
+      [start.toISOString().split('T')[0]]
+    );
+    return row?.count ?? 0;
   },
 
   getLastSets: async (exerciseId) => {
@@ -317,6 +468,46 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     // Stay at weight, aim for one more rep than last time (capped at repMax).
     const lastReps = workingSets.length ? Math.max(...workingSets.map(s => s.reps)) : repMax;
     return { weight: topWeight, reps: Math.min(repMax, lastReps + 1) };
+  },
+
+  getProgressionReport: async () => {
+    const db = await getDatabase();
+    // Every exercise the user has trained in a finished workout, most recent first.
+    const trained = await db.getAllAsync<Record<string, unknown>>(
+      `SELECT e.*, MAX(wl.started_at) as last_trained
+       FROM workout_sets ws
+       JOIN workout_logs wl ON ws.workout_log_id = wl.id
+       JOIN exercises e ON ws.exercise_id = e.id
+       WHERE wl.finished_at IS NOT NULL AND ws.set_type != 'warmup'
+       GROUP BY e.id ORDER BY last_trained DESC LIMIT 12`
+    );
+    const report: ProgressionEntry[] = [];
+    for (const row of trained) {
+      const exercise = mapExercise(row);
+      // Use the exercise's template rep target when it has one, else 12.
+      const target = await db.getFirstAsync<{ rep_max: number | null }>(
+        'SELECT MAX(COALESCE(target_rep_max, target_reps)) as rep_max FROM template_exercises WHERE exercise_id = ?',
+        [exercise.id]
+      );
+      const repMax = target?.rep_max || 12;
+      const last = await get().getLastSets(exercise.id);
+      const working = last.filter(s => s.setType !== 'warmup');
+      if (working.length === 0) continue;
+      const lastWeight = Math.max(...working.map(s => s.weight));
+      const topSets = working.filter(s => s.weight === lastWeight);
+      const lastBestReps = Math.max(...topSets.map(s => s.reps));
+      const sug = await get().getProgressionSuggestion(exercise.id, repMax);
+      if (!sug) continue;
+      report.push({
+        exercise,
+        lastWeight,
+        lastBestReps,
+        suggestedWeight: sug.weight,
+        suggestedReps: sug.reps,
+        status: sug.weight > lastWeight ? 'increase' : 'reps',
+      });
+    }
+    return report;
   },
 
   getMuscleVolume: async (days = 7) => {
@@ -378,6 +569,7 @@ async function refreshActiveSets(
         muscleGroup: r.muscle_group as string,
         equipment: '',
         description: '',
+        tips: [],
         isCustom: false,
       },
     })),
@@ -399,12 +591,20 @@ function mapSet(r: Record<string, unknown>): WorkoutSet {
 }
 
 function mapExercise(r: Record<string, unknown>): Exercise {
+  let tips: string[] = [];
+  try {
+    const parsed = JSON.parse((r.tips as string | null) || '[]');
+    if (Array.isArray(parsed)) tips = parsed;
+  } catch {
+    // Malformed tips JSON — show none.
+  }
   return {
     id: r.id as number,
     name: r.name as string,
     muscleGroup: r.muscle_group as string,
     equipment: r.equipment as string,
     description: r.description as string,
+    tips,
     isCustom: (r.is_custom as number) === 1,
   };
 }

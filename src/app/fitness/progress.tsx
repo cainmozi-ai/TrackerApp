@@ -8,16 +8,17 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { theme, moduleColors, spacing, accent, withAlpha } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
-import { useWorkoutStore } from '@/stores/workoutStore';
+import { useWorkoutStore, type ProgressionEntry } from '@/stores/workoutStore';
 import type { Exercise } from '@/types';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function ProgressScreen() {
-  const { recentWorkouts, loadRecentWorkouts, exercises, loadExercises, getExerciseHistory, getMuscleVolume } = useWorkoutStore();
+  const { recentWorkouts, loadRecentWorkouts, exercises, loadExercises, getExerciseHistory, getMuscleVolume, getProgressionReport } = useWorkoutStore();
   const [selected, setSelected] = useState<Exercise | null>(null);
   const [history, setHistory] = useState<{ date: string; maxWeight: number; volume: number }[]>([]);
   const [muscleVol, setMuscleVol] = useState<{ muscleGroup: string; sets: number }[]>([]);
+  const [progression, setProgression] = useState<ProgressionEntry[]>([]);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -25,6 +26,7 @@ export default function ProgressScreen() {
     loadRecentWorkouts();
     loadExercises('All');
     getMuscleVolume(7).then(setMuscleVol);
+    getProgressionReport().then(setProgression);
   }, []);
 
   useEffect(() => {
@@ -77,6 +79,33 @@ export default function ProgressScreen() {
           </Surface>
         )}
 
+        {progression.length > 0 && (
+          <>
+            <Text variant="titleSmall" style={styles.sectionTitle}>Progressive Overload</Text>
+            {progression.map(p => (
+              <TouchableRipple key={p.exercise.id} borderless style={styles.progressionTouch}
+                onPress={() => router.push(`/fitness/exercise-detail?id=${p.exercise.id}`)}>
+                <Surface style={styles.progressionRow} elevation={0}>
+                  <MaterialCommunityIcons
+                    name={p.status === 'increase' ? 'arrow-up-bold-circle' : 'repeat'}
+                    size={22}
+                    color={p.status === 'increase' ? accent : '#4FC3F7'}
+                  />
+                  <View style={styles.workoutInfo}>
+                    <Text variant="bodyMedium">{p.exercise.name}</Text>
+                    <Text variant="labelSmall" style={styles.workoutDate}>
+                      {p.status === 'increase'
+                        ? `Ready to move up: ${p.lastWeight} kg → ${p.suggestedWeight} kg`
+                        : `Stay at ${p.lastWeight} kg · aim for ${p.suggestedReps} reps (last: ${p.lastBestReps})`}
+                    </Text>
+                  </View>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+                </Surface>
+              </TouchableRipple>
+            ))}
+          </>
+        )}
+
         <Text variant="titleSmall" style={styles.sectionTitle}>Exercise Progress</Text>
         <Button mode="contained-tonal" icon="chart-line" onPress={() => setPickerVisible(true)} style={styles.selectBtn}>
           {selected ? selected.name : 'Select an exercise'}
@@ -110,13 +139,17 @@ export default function ProgressScreen() {
           <Text variant="bodyMedium" style={styles.emptyText}>No completed workouts yet</Text>
         ) : (
           recentWorkouts.map(w => (
-            <Surface key={w.id} style={styles.workoutRow} elevation={0}>
-              <MaterialCommunityIcons name="dumbbell" size={20} color={moduleColors.workout} />
-              <View style={styles.workoutInfo}>
-                <Text variant="bodyMedium">{w.name}</Text>
-                <Text variant="labelSmall" style={styles.workoutDate}>{w.startedAt?.slice(0, 10)}</Text>
-              </View>
-            </Surface>
+            <TouchableRipple key={w.id} borderless style={styles.progressionTouch}
+              onPress={() => router.push(`/fitness/workout-detail?id=${w.id}`)}>
+              <Surface style={styles.workoutRow} elevation={0}>
+                <MaterialCommunityIcons name="dumbbell" size={20} color={moduleColors.workout} />
+                <View style={styles.workoutInfo}>
+                  <Text variant="bodyMedium">{w.name}</Text>
+                  <Text variant="labelSmall" style={styles.workoutDate}>{w.startedAt?.slice(0, 10)}</Text>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+              </Surface>
+            </TouchableRipple>
           ))
         )}
       </ScrollView>
@@ -163,6 +196,8 @@ const styles = StyleSheet.create({
   volCount: { width: 24, textAlign: 'right' },
   chart: { borderRadius: 12 },
   workoutRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: theme.colors.surface, borderRadius: 10, marginBottom: spacing.xs, gap: spacing.sm },
+  progressionTouch: { borderRadius: 10, marginBottom: spacing.xs },
+  progressionRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: theme.colors.surface, borderRadius: 10, gap: spacing.sm },
   workoutInfo: { flex: 1 },
   workoutDate: { color: theme.colors.onSurfaceVariant },
   pickerDialog: { maxHeight: '80%' },

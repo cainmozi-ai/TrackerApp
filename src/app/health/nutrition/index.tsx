@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, FAB, IconButton, Portal, Dialog, TextInput, Button, Snackbar } from 'react-native-paper';
+import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
+import { Text, FAB, IconButton, Portal, Dialog, TextInput, Button, Snackbar, SegmentedButtons, Chip } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ import { ProgressRing } from '@/components/common/ProgressRing';
 import { MotionCard } from '@/components/common/MotionCard';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
-import type { MealType } from '@/types';
+import type { FoodLog, MealType } from '@/types';
 
 const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_ICONS: Record<MealType, keyof typeof MaterialCommunityIcons.glyphMap> = {
@@ -23,11 +23,18 @@ const MEAL_ICONS: Record<MealType, keyof typeof MaterialCommunityIcons.glyphMap>
 
 export default function NutritionScreen() {
   const { colors } = useAppTheme();
-  const { todayLogs, todayCalories, todayProtein, todayCarbs, todayFat, loadTodayLogs, deleteLog, copyYesterday, saveMealFromDay } = useNutritionStore();
+  const {
+    todayLogs, todayCalories, todayProtein, todayCarbs, todayFat,
+    todayFiber, todaySugar, todaySodium,
+    loadTodayLogs, deleteLog, updateLog, copyYesterday, saveMealFromDay,
+  } = useNutritionStore();
   const { profile, loadProfile } = useUserStore();
   const [saveDialog, setSaveDialog] = useState(false);
   const [mealName, setMealName] = useState('');
   const [snack, setSnack] = useState('');
+  const [editLog, setEditLog] = useState<FoodLog | null>(null);
+  const [editServings, setEditServings] = useState('1');
+  const [editMeal, setEditMeal] = useState<MealType>('lunch');
 
   useFocusEffect(
     useCallback(() => {
@@ -40,6 +47,9 @@ export default function NutritionScreen() {
   const proteinTarget = profile?.proteinTarget || 150;
   const carbsTarget = profile?.carbsTarget || 250;
   const fatTarget = profile?.fatTarget || 65;
+  const fiberTarget = profile?.fiberTarget || 30;
+  const sugarTarget = profile?.sugarTarget || 50;
+  const sodiumTarget = profile?.sodiumTarget || 2300;
   const diff = calorieTarget - todayCalories;
   const over = diff < 0;
 
@@ -48,6 +58,21 @@ export default function NutritionScreen() {
   const handleCopyYesterday = async () => {
     const count = await copyYesterday();
     setSnack(count > 0 ? `Copied ${count} item${count > 1 ? 's' : ''} from yesterday` : 'Nothing logged yesterday');
+  };
+
+  const openEdit = (log: FoodLog) => {
+    setEditLog(log);
+    setEditServings(String(log.servings));
+    setEditMeal(log.mealType);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editLog) return;
+    const servings = parseFloat(editServings);
+    if (!servings || servings <= 0) return;
+    await updateLog(editLog.id, servings, editMeal);
+    setEditLog(null);
+    setSnack('Updated');
   };
 
   const handleSaveMeal = async () => {
@@ -81,6 +106,17 @@ export default function NutritionScreen() {
               <MacroBar label="Protein" current={todayProtein} target={proteinTarget} color="#FF6584" />
               <MacroBar label="Carbs" current={todayCarbs} target={carbsTarget} color="#4FC3F7" />
               <MacroBar label="Fat" current={todayFat} target={fatTarget} color="#FFB74D" />
+            </View>
+          </View>
+          <View style={styles.microRow}>
+            <View style={styles.microItem}>
+              <MacroBar label="Fiber" current={todayFiber} target={fiberTarget} color="#81C784" />
+            </View>
+            <View style={styles.microItem}>
+              <MacroBar label="Sugar" current={todaySugar} target={sugarTarget} color="#B388FF" />
+            </View>
+            <View style={styles.microItem}>
+              <MacroBar label="Sodium" current={todaySodium} target={sodiumTarget} color="#FF8A65" unit="mg" />
             </View>
           </View>
         </MotionCard>
@@ -120,15 +156,15 @@ export default function NutritionScreen() {
                 <Text variant="bodySmall" style={[styles.empty, { color: colors.onSurfaceVariant }]}>Nothing logged</Text>
               ) : (
                 logs.map(log => (
-                  <View key={log.id} style={styles.foodRow}>
+                  <Pressable key={log.id} style={styles.foodRow} onPress={() => openEdit(log)}>
                     <View style={styles.foodInfo}>
                       <Text variant="bodyMedium" style={{ color: colors.onSurface }}>{log.food?.name}</Text>
                       <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                        {Math.round((log.food?.calories || 0) * log.servings)} cal · {log.servings} serving
+                        {Math.round((log.food?.calories || 0) * log.servings)} cal · {log.servings} serving{log.servings !== 1 ? 's' : ''} · tap to edit
                       </Text>
                     </View>
                     <IconButton icon="close" size={16} onPress={() => deleteLog(log.id)} />
-                  </View>
+                  </Pressable>
                 ))
               )}
             </MotionCard>
@@ -140,6 +176,38 @@ export default function NutritionScreen() {
         onPress={() => router.push('/health/nutrition/search')} />
 
       <Portal>
+        <Dialog visible={!!editLog} onDismiss={() => setEditLog(null)}>
+          <Dialog.Title>{editLog?.food?.name}</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant, marginBottom: spacing.sm }}>
+              1 serving = {editLog?.food?.servingSize}{editLog?.food?.servingUnit} · {Math.round(editLog?.food?.calories || 0)} cal
+            </Text>
+            <TextInput label="Servings" value={editServings} onChangeText={setEditServings}
+              mode="outlined" keyboardType="numeric" style={{ marginBottom: spacing.sm }} />
+            <View style={styles.quickRow}>
+              {[0.5, 1, 1.5, 2, 3].map(q => (
+                <Chip key={q} compact onPress={() => setEditServings(String(q))}
+                  selected={parseFloat(editServings) === q} showSelectedOverlay>
+                  {q}
+                </Chip>
+              ))}
+            </View>
+            <Text variant="labelLarge" style={{ marginBottom: spacing.xs }}>Meal</Text>
+            <SegmentedButtons
+              value={editMeal}
+              onValueChange={v => setEditMeal(v as MealType)}
+              buttons={MEAL_ORDER.map(m => ({ value: m, label: m.charAt(0).toUpperCase() + m.slice(1) }))}
+            />
+            <Text variant="titleSmall" style={{ marginTop: spacing.sm, color: moduleColors.nutrition }}>
+              = {Math.round((editLog?.food?.calories || 0) * (parseFloat(editServings) || 0))} cal
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setEditLog(null)}>Cancel</Button>
+            <Button onPress={handleSaveEdit} disabled={!(parseFloat(editServings) > 0)}>Save</Button>
+          </Dialog.Actions>
+        </Dialog>
+
         <Dialog visible={saveDialog} onDismiss={() => setSaveDialog(false)}>
           <Dialog.Title>Save as Meal</Dialog.Title>
           <Dialog.Content>
@@ -160,14 +228,14 @@ export default function NutritionScreen() {
   );
 }
 
-function MacroBar({ label, current, target, color }: { label: string; current: number; target: number; color: string }) {
+function MacroBar({ label, current, target, color, unit = 'g' }: { label: string; current: number; target: number; color: string; unit?: string }) {
   const { colors } = useAppTheme();
   const pct = Math.min(current / target, 1);
   return (
     <View style={styles.macroBar}>
       <View style={styles.macroLabelRow}>
         <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-        <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{Math.round(current)}/{target}g</Text>
+        <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{Math.round(current)}/{target}{unit}</Text>
       </View>
       <View style={[styles.macroTrack, { backgroundColor: withAlpha(color, 0.18) }]}>
         <View style={[styles.macroFill, { width: `${pct * 100}%`, backgroundColor: color }]} />
@@ -181,6 +249,9 @@ const styles = StyleSheet.create({
   scrollContent: { padding: spacing.md, paddingBottom: 100 },
   hero: { marginBottom: spacing.sm },
   heroRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  microRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
+  microItem: { flex: 1 },
+  quickRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.md },
   macroColumn: { flex: 1, gap: spacing.xs },
   remainingRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 2 },
   remaining: { fontWeight: '800' },

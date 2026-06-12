@@ -11,12 +11,16 @@ interface NutritionState {
   todayProtein: number;
   todayCarbs: number;
   todayFat: number;
+  todayFiber: number;
+  todaySugar: number;
+  todaySodium: number;
 
   loadTodayLogs: (date?: string) => Promise<void>;
   loadFavorites: () => Promise<void>;
   loadRecents: () => Promise<void>;
   loadSavedMeals: () => Promise<void>;
   logFood: (foodId: number, mealType: MealType, servings: number, date?: string) => Promise<void>;
+  updateLog: (logId: number, servings: number, mealType: MealType) => Promise<void>;
   deleteLog: (logId: number) => Promise<void>;
   addCustomFood: (food: Omit<Food, 'id' | 'createdAt' | 'isCustom'>) => Promise<number>;
   toggleFavorite: (foodId: number) => Promise<void>;
@@ -47,12 +51,15 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   todayProtein: 0,
   todayCarbs: 0,
   todayFat: 0,
+  todayFiber: 0,
+  todaySugar: 0,
+  todaySodium: 0,
 
   loadTodayLogs: async (date?: string) => {
     const db = await getDatabase();
     const targetDate = date || getToday();
     const rows = await db.getAllAsync<Record<string, unknown>>(
-      `SELECT fl.*, f.name, f.calories, f.protein, f.carbs, f.fat, f.serving_size, f.serving_unit, f.brand
+      `SELECT fl.*, f.name, f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, f.serving_size, f.serving_unit, f.brand
        FROM food_logs fl JOIN foods f ON fl.food_id = f.id
        WHERE fl.log_date = ? ORDER BY fl.created_at`,
       [targetDate]
@@ -73,7 +80,9 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
         protein: r.protein as number,
         carbs: r.carbs as number,
         fat: r.fat as number,
-        fiber: null, sugar: null, sodium: null,
+        fiber: r.fiber as number | null,
+        sugar: r.sugar as number | null,
+        sodium: r.sodium as number | null,
         servingSize: r.serving_size as number,
         servingUnit: r.serving_unit as string,
         isCustom: false, isFavorite: false,
@@ -81,13 +90,16 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       },
     }));
 
-    let cal = 0, pro = 0, car = 0, fa = 0;
+    let cal = 0, pro = 0, car = 0, fa = 0, fib = 0, sug = 0, sod = 0;
     for (const log of logs) {
       if (log.food) {
         cal += log.food.calories * log.servings;
         pro += log.food.protein * log.servings;
         car += log.food.carbs * log.servings;
         fa += log.food.fat * log.servings;
+        fib += (log.food.fiber || 0) * log.servings;
+        sug += (log.food.sugar || 0) * log.servings;
+        sod += (log.food.sodium || 0) * log.servings;
       }
     }
 
@@ -97,6 +109,9 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       todayProtein: Math.round(pro),
       todayCarbs: Math.round(car),
       todayFat: Math.round(fa),
+      todayFiber: Math.round(fib),
+      todaySugar: Math.round(sug),
+      todaySodium: Math.round(sod),
     });
   },
 
@@ -115,6 +130,15 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       [foodId, mealType, servings, date || getToday()]
     );
     await get().loadTodayLogs(date);
+  },
+
+  updateLog: async (logId, servings, mealType) => {
+    const db = await getDatabase();
+    await db.runAsync(
+      'UPDATE food_logs SET servings = ?, meal_type = ? WHERE id = ?',
+      [servings, mealType, logId]
+    );
+    await get().loadTodayLogs();
   },
 
   deleteLog: async (logId) => {

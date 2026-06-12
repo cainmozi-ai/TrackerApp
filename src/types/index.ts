@@ -10,8 +10,12 @@ export interface UserProfile {
   proteinTarget: number;
   carbsTarget: number;
   fatTarget: number;
+  fiberTarget: number;
+  sugarTarget: number;
+  sodiumTarget: number;
   waterTarget: number;
   monthlyBudget: number | null;
+  equipment: string[];
   weightUnit: 'kg' | 'lbs';
   themePref: 'light' | 'dark';
   onboarded: boolean;
@@ -100,6 +104,7 @@ export interface Exercise {
   muscleGroup: string;
   equipment: string;
   description: string;
+  tips: string[];
   isCustom: boolean;
 }
 

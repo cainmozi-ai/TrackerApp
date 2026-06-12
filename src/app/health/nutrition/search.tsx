@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
-import { Searchbar, Text, Chip, Button, SegmentedButtons, ActivityIndicator } from 'react-native-paper';
+import { Searchbar, Text, Chip, Button, SegmentedButtons, ActivityIndicator, Portal, Dialog, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, moduleColors, withAlpha } from '@/theme';
@@ -14,6 +14,7 @@ import { searchOpenFoodFacts } from '@/services/openFoodFacts';
 import type { Food, MealType, SavedMeal } from '@/types';
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+const QUICK_SERVINGS = [0.5, 1, 1.5, 2, 3];
 
 export default function FoodSearchScreen() {
   const { colors } = useAppTheme();
@@ -25,6 +26,12 @@ export default function FoodSearchScreen() {
     MEALS.includes(meal as MealType) ? (meal as MealType) : 'lunch'
   );
   const [tab, setTab] = useState<'recent' | 'favorites' | 'saved'>('recent');
+  // Portion dialog state
+  const [pendingFood, setPendingFood] = useState<Food | null>(null);
+  const [portionMode, setPortionMode] = useState<'servings' | 'amount'>('servings');
+  const [servingsText, setServingsText] = useState('1');
+  const [amountText, setAmountText] = useState('100');
+  const [logging, setLogging] = useState(false);
   const {
     recents, favorites, savedMeals,
     loadRecents, loadFavorites, loadSavedMeals,
@@ -32,11 +39,14 @@ export default function FoodSearchScreen() {
   } = useNutritionStore();
   const { reward } = useUserStore();
 
-  useEffect(() => {
-    loadRecents();
-    loadFavorites();
-    loadSavedMeals();
-  }, []);
+  // Refresh on focus so foods added on the custom-food screen show up on return.
+  useFocusEffect(
+    useCallback(() => {
+      loadRecents();
+      loadFavorites();
+      loadSavedMeals();
+    }, [])
+  );
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -52,12 +62,32 @@ export default function FoodSearchScreen() {
     }
   };
 
-  const handleLog = async (food: Food) => {
-    let foodId = food.id;
-    if (!foodId || foodId === 0) foodId = await addCustomFood(food);
-    await logFood(foodId, selectedMeal, 1);
-    await reward(10, 'meal', 'Logged a meal', 'first_meal');
-    router.back();
+  const openPortionDialog = (food: Food) => {
+    setPendingFood(food);
+    setPortionMode('servings');
+    setServingsText('1');
+    setAmountText(String(food.servingSize || 100));
+  };
+
+  const portionServings = pendingFood
+    ? portionMode === 'servings'
+      ? parseFloat(servingsText) || 0
+      : (parseFloat(amountText) || 0) / (pendingFood.servingSize || 100)
+    : 0;
+
+  const handleConfirmLog = async () => {
+    if (!pendingFood || portionServings <= 0 || logging) return;
+    setLogging(true);
+    try {
+      let foodId = pendingFood.id;
+      if (!foodId || foodId === 0) foodId = await addCustomFood(pendingFood);
+      await logFood(foodId, selectedMeal, Math.round(portionServings * 100) / 100);
+      await reward(10, 'meal', 'Logged a meal', 'first_meal');
+      setPendingFood(null);
+      router.back();
+    } finally {
+      setLogging(false);
+    }
   };
 
   const handleLogSaved = async (meal: SavedMeal) => {
@@ -103,7 +133,7 @@ export default function FoodSearchScreen() {
         <Button mode="contained-tonal" icon="camera-iris" compact style={styles.methodBtn} onPress={() => router.push('/health/nutrition/ai-photo')}>
           AI Photo
         </Button>
-        <Button mode="contained-tonal" icon="plus" compact style={styles.methodBtn} onPress={() => router.push('/health/nutrition/add-custom')}>
+        <Button mode="contained-tonal" icon="plus" compact style={styles.methodBtn} onPress={() => router.push(`/health/nutrition/add-custom?meal=${selectedMeal}`)}>
           Custom
         </Button>
       </View>
@@ -130,7 +160,7 @@ export default function FoodSearchScreen() {
               body="Try another search, or add it as a custom food." />
           ) : (
             results.map((food, i) => (
-              <FoodRow key={`${food.barcode || food.name}-${i}`} food={food} onAdd={() => handleLog(food)} />
+              <FoodRow key={`${food.barcode || food.name}-${i}`} food={food} onAdd={() => openPortionDialog(food)} />
             ))
           )
         ) : tab === 'recent' ? (
@@ -138,14 +168,14 @@ export default function FoodSearchScreen() {
             <EmptyState icon="history" color={moduleColors.nutrition} title="No recent foods yet"
               body="Foods you log will show up here for one-tap re-logging." />
           ) : (
-            recents.map(food => <FoodRow key={food.id} food={food} onAdd={() => handleLog(food)} />)
+            recents.map(food => <FoodRow key={food.id} food={food} onAdd={() => openPortionDialog(food)} />)
           )
         ) : tab === 'favorites' ? (
           favorites.length === 0 ? (
             <EmptyState icon="star-outline" color={moduleColors.nutrition} title="No favorites yet"
               body="Star foods you eat often to log them in a tap." />
           ) : (
-            favorites.map(food => <FoodRow key={food.id} food={food} onAdd={() => handleLog(food)} />)
+            favorites.map(food => <FoodRow key={food.id} food={food} onAdd={() => openPortionDialog(food)} />)
           )
         ) : savedMeals.length === 0 ? (
           <EmptyState icon="silverware-fork-knife" color={moduleColors.nutrition} title="No saved meals"
@@ -165,6 +195,53 @@ export default function FoodSearchScreen() {
           ))
         )}
       </ScrollView>
+
+      <Portal>
+        <Dialog visible={!!pendingFood} onDismiss={() => setPendingFood(null)}>
+          <Dialog.Title>{pendingFood?.name}</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant, marginBottom: spacing.sm }}>
+              1 serving = {pendingFood?.servingSize}{pendingFood?.servingUnit} · {Math.round(pendingFood?.calories || 0)} cal
+            </Text>
+            <SegmentedButtons
+              value={portionMode}
+              onValueChange={v => setPortionMode(v as typeof portionMode)}
+              buttons={[
+                { value: 'servings', label: 'Servings' },
+                { value: 'amount', label: pendingFood?.servingUnit || 'g' },
+              ]}
+              style={{ marginBottom: spacing.sm }}
+            />
+            {portionMode === 'servings' ? (
+              <>
+                <TextInput label="Number of servings" value={servingsText} onChangeText={setServingsText}
+                  mode="outlined" keyboardType="numeric" autoFocus />
+                <View style={styles.quickRow}>
+                  {QUICK_SERVINGS.map(q => (
+                    <Chip key={q} compact onPress={() => setServingsText(String(q))}
+                      selected={parseFloat(servingsText) === q} showSelectedOverlay>
+                      {q}
+                    </Chip>
+                  ))}
+                </View>
+              </>
+            ) : (
+              <TextInput label={`Amount (${pendingFood?.servingUnit})`} value={amountText} onChangeText={setAmountText}
+                mode="outlined" keyboardType="numeric" autoFocus />
+            )}
+            <Text variant="titleSmall" style={{ marginTop: spacing.sm, color: moduleColors.nutrition }}>
+              = {Math.round((pendingFood?.calories || 0) * portionServings)} cal ·
+              P{Math.round((pendingFood?.protein || 0) * portionServings)} C{Math.round((pendingFood?.carbs || 0) * portionServings)} F{Math.round((pendingFood?.fat || 0) * portionServings)}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setPendingFood(null)}>Cancel</Button>
+            <Button onPress={handleConfirmLog} disabled={portionServings <= 0 || logging} loading={logging}>
+              Log to {selectedMeal}
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaView>
   );
 }
@@ -205,4 +282,5 @@ const styles = StyleSheet.create({
   },
   iconChip: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   rowInfo: { flex: 1 },
+  quickRow: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm },
 });

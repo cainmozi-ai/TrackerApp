@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import { Text, IconButton, Button } from 'react-native-paper';
+import { useAudioPlayer } from 'expo-audio';
+import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { moduleColors, spacing, shape, withAlpha } from '@/theme';
 
@@ -10,18 +12,62 @@ interface RestTimerProps {
   autoStartSignal?: number;
 }
 
+const beepSource = require('../../../assets/beep.wav');
+
+/** Two short beeps via WebAudio — expo-audio asset playback is unreliable on web. */
+function webBeep() {
+  try {
+    const Ctx = (window as unknown as { AudioContext: typeof AudioContext }).AudioContext;
+    const ctx = new Ctx();
+    [0, 0.25].forEach(start => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + 0.18);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + 0.2);
+    });
+  } catch {
+    // No audio available — vibration/visual cue still fires.
+  }
+}
+
 export function RestTimer({ defaultSeconds = 90, autoStartSignal = 0 }: RestTimerProps) {
   const { colors } = useAppTheme();
   const [remaining, setRemaining] = useState(defaultSeconds);
   const [running, setRunning] = useState(false);
+  const [muted, setMuted] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const firstSignal = useRef(true);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+  const player = useAudioPlayer(beepSource);
+
+  const announceDone = () => {
+    if (mutedRef.current) return;
+    if (Platform.OS === 'web') {
+      webBeep();
+      try { navigator.vibrate?.([300, 150, 300]); } catch { /* not supported */ }
+    } else {
+      try {
+        player.seekTo(0);
+        player.play();
+      } catch { /* audio unavailable */ }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    }
+  };
 
   useEffect(() => {
     if (running) {
       intervalRef.current = setInterval(() => {
         setRemaining(prev => {
-          if (prev <= 1) { setRunning(false); return 0; }
+          if (prev <= 1) {
+            setRunning(false);
+            announceDone();
+            return 0;
+          }
           return prev - 1;
         });
       }, 1000);
@@ -63,6 +109,14 @@ export function RestTimer({ defaultSeconds = 90, autoStartSignal = 0 }: RestTime
         <Button mode="outlined" icon="restart" onPress={() => reset(defaultSeconds)} compact style={styles.controlBtn}>
           Reset
         </Button>
+        <IconButton
+          icon={muted ? 'volume-off' : 'volume-high'}
+          size={20}
+          mode="outlined"
+          iconColor={muted ? colors.onSurfaceVariant : moduleColors.workout}
+          onPress={() => setMuted(m => !m)}
+          accessibilityLabel={muted ? 'Unmute timer sound' : 'Mute timer sound'}
+        />
       </View>
       <View style={styles.presets}>
         {[60, 90, 120, 180].map(s => (

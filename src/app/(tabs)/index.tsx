@@ -39,15 +39,17 @@ export default function HomeScreen() {
   const { todayLog: sleep, loadTodayLog: loadSleep } = useSleepStore();
   const { tasks, loadTasks } = useTaskStore();
   const { transactions, loadTransactions } = useBudgetStore();
-  const { getActiveWorkout } = useWorkoutStore();
+  const { getActiveWorkout, getWeekWorkoutCount } = useWorkoutStore();
   const { profile, loadProfile } = useUserStore();
   const [activeWorkout, setActiveWorkout] = useState<WorkoutLog | null>(null);
+  const [weekWorkouts, setWeekWorkouts] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
       loadFood(); loadWater(); loadHabits(); loadHabitLogs();
       loadSleep(); loadTasks(); loadTransactions(); loadProfile();
       getActiveWorkout().then(setActiveWorkout);
+      getWeekWorkoutCount().then(setWeekWorkouts);
     }, [])
   );
 
@@ -125,9 +127,12 @@ export default function HomeScreen() {
             progress={habits.length ? habitsDone / habits.length : 0} onPress={() => router.push('/life/habits')} />
           <StatTile index={3} icon="moon-waning-crescent" color={moduleColors.sleep}
             value={sleepHrs} label="slept" onPress={() => router.push('/health/sleep')} />
-          <StatTile index={4} icon="checkbox-marked-outline" color={moduleColors.tasks}
+          <StatTile index={4} icon="dumbbell" color={moduleColors.workout}
+            value={String(weekWorkouts)} label={`workout${weekWorkouts === 1 ? '' : 's'} this week`}
+            onPress={() => router.push('/fitness/progress')} />
+          <StatTile index={5} icon="checkbox-marked-outline" color={moduleColors.tasks}
             value={String(pendingTasks)} label="tasks left" onPress={() => router.push('/life/tasks')} />
-          <StatTile index={5} icon="wallet" color={moduleColors.budget}
+          <StatTile index={6} icon="wallet" color={moduleColors.budget}
             value={`$${todaySpend.toFixed(0)}`} label="spent today" onPress={() => router.push('/life/budget')} />
         </View>
       </ScrollView>

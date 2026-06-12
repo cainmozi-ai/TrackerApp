@@ -8,6 +8,7 @@ import { theme, moduleColors, spacing } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useUserStore } from '@/stores/userStore';
 
 const MUSCLE_GROUPS = ['All', 'Chest', 'Back', 'Shoulders', 'Legs', 'Glutes', 'Arms', 'Core', 'Cardio'];
 
@@ -15,20 +16,31 @@ export default function ExerciseLibraryScreen() {
   const { selectFor } = useLocalSearchParams<{ selectFor?: string }>();
   const isSelectMode = !!selectFor;
   const { exercises, loadExercises, addExerciseToTemplate, addCustomExercise } = useWorkoutStore();
+  const { profile, loadProfile } = useUserStore();
   const [group, setGroup] = useState('All');
   const [search, setSearch] = useState('');
+  const [myGymOnly, setMyGymOnly] = useState(true);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customGroup, setCustomGroup] = useState('Chest');
 
+  const gymEquipment = profile?.equipment ?? [];
+  const equipmentFilter = myGymOnly && gymEquipment.length > 0 ? gymEquipment : undefined;
+
   useEffect(() => {
-    loadExercises(group, search);
-  }, [group, search]);
+    loadProfile();
+  }, []);
+
+  useEffect(() => {
+    loadExercises(group, search, equipmentFilter);
+  }, [group, search, myGymOnly, profile?.equipment?.join(',')]);
 
   const handleSelect = async (exerciseId: number) => {
     if (isSelectMode) {
       await addExerciseToTemplate(Number(selectFor), exerciseId, 3, 10, 0);
       router.back();
+    } else {
+      router.push(`/fitness/exercise-detail?id=${exerciseId}`);
     }
   };
 
@@ -55,6 +67,18 @@ export default function ExerciseLibraryScreen() {
       />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chipRow}>
+        {gymEquipment.length > 0 && (
+          <Chip
+            icon={myGymOnly ? 'dumbbell' : 'earth'}
+            selected={myGymOnly}
+            onPress={() => setMyGymOnly(v => !v)}
+            style={styles.chip}
+            selectedColor={moduleColors.workout}
+            showSelectedOverlay
+          >
+            My Gym
+          </Chip>
+        )}
         {MUSCLE_GROUPS.map(g => (
           <Chip
             key={g}
@@ -78,7 +102,6 @@ export default function ExerciseLibraryScreen() {
               onPress={() => handleSelect(ex.id)}
               style={styles.touchable}
               borderless
-              disabled={!isSelectMode}
             >
               <Surface style={styles.exCard} elevation={1}>
                 <View style={styles.exInfo}>
@@ -88,8 +111,14 @@ export default function ExerciseLibraryScreen() {
                     {ex.isCustom ? ' · Custom' : ''}
                   </Text>
                 </View>
-                {isSelectMode && (
-                  <MaterialCommunityIcons name="plus-circle" size={24} color={moduleColors.workout} />
+                {isSelectMode ? (
+                  <>
+                    <IconButton icon="information-outline" size={20}
+                      onPress={() => router.push(`/fitness/exercise-detail?id=${ex.id}`)} />
+                    <MaterialCommunityIcons name="plus-circle" size={24} color={moduleColors.workout} />
+                  </>
+                ) : (
+                  <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
                 )}
               </Surface>
             </TouchableRipple>

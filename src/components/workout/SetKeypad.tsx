@@ -17,10 +17,15 @@ export interface SetEntry {
 interface SetKeypadProps {
   visible: boolean;
   exerciseName: string;
-  initial: { weight: string; reps: string };
+  initial: { weight: string; reps: string; rpe?: number | null; setType?: SetType };
+  weightUnit?: string;
+  confirmLabel?: string;
   onConfirm: (entry: SetEntry) => void;
   onDismiss: () => void;
 }
+
+const MAX_REPS = 100;
+const MAX_WEIGHT = 999;
 
 const SET_TYPES: { key: SetType; label: string }[] = [
   { key: 'normal', label: 'Normal' },
@@ -33,11 +38,14 @@ const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'];
 
 /** MacroFactor-style fast set entry: an in-app keypad with Weight/Reps fields,
  * set-type chips, optional RIR, and a confirm — no fiddly OS keyboard mid-set. */
-export function SetKeypad({ visible, exerciseName, initial, onConfirm, onDismiss }: SetKeypadProps) {
+export function SetKeypad({ visible, exerciseName, initial, weightUnit = 'kg', confirmLabel = 'Log set', onConfirm, onDismiss }: SetKeypadProps) {
   const { colors } = useAppTheme();
   const [weight, setWeight] = useState(initial.weight);
   const [reps, setReps] = useState(initial.reps);
   const [field, setField] = useState<'weight' | 'reps'>('weight');
+  // Prefilled values are suggestions: the first digit typed into an untouched
+  // field replaces it instead of appending (so "12" + tap 8 gives "8", not "128").
+  const [touched, setTouched] = useState<{ weight: boolean; reps: boolean }>({ weight: false, reps: false });
   const [rpe, setRpe] = useState<number | null>(null);
   const [setType, setSetType] = useState<SetType>('normal');
 
@@ -46,43 +54,34 @@ export function SetKeypad({ visible, exerciseName, initial, onConfirm, onDismiss
       setWeight(initial.weight);
       setReps(initial.reps);
       setField('weight');
-      setRpe(null);
-      setSetType('normal');
+      setTouched({ weight: false, reps: false });
+      setRpe(initial.rpe ?? null);
+      setSetType(initial.setType ?? 'normal');
     }
-  }, [visible]);
+  }, [visible, initial.weight, initial.reps]);
 
   if (!visible) return null;
 
   const press = (k: string) => {
-    const cur = field === 'weight' ? weight : reps;
+    const fresh = !touched[field];
+    const cur = fresh && k !== 'del' ? '' : (field === 'weight' ? weight : reps);
     let next = cur;
-    if (k === 'del') next = cur.slice(0, -1);
-    else if (k === '.') next = cur.includes('.') ? cur : cur + '.';
+    if (k === 'del') next = (field === 'weight' ? weight : reps).slice(0, -1);
+    else if (k === '.') next = cur.includes('.') ? cur : (cur || '0') + '.';
     else next = cur === '0' ? k : cur + k;
+    if (!touched[field]) setTouched(t => ({ ...t, [field]: true }));
     field === 'weight' ? setWeight(next) : setReps(next);
   };
 
-  const confirm = () => {
-    onConfirm({
-      weight: parseFloat(weight) || 0,
-      reps: parseInt(reps) || 0,
-      rpe,
-      setType,
-    });
-  };
+  const parsedWeight = parseFloat(weight) || 0;
+  const parsedReps = parseInt(reps) || 0;
+  // Weight 0 is legitimate (bodyweight); reps must be a sane positive count.
+  const valid = parsedReps >= 1 && parsedReps <= MAX_REPS && parsedWeight >= 0 && parsedWeight <= MAX_WEIGHT;
 
-  const FieldBox = ({ label, value, which }: { label: string; value: string; which: 'weight' | 'reps' }) => (
-    <Pressable
-      onPress={() => setField(which)}
-      style={[
-        styles.fieldBox,
-        { backgroundColor: colors.surfaceVariant, borderColor: field === which ? accent : 'transparent' },
-      ]}
-    >
-      <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-      <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '800' }}>{value || '0'}</Text>
-    </Pressable>
-  );
+  const confirm = () => {
+    if (!valid) return;
+    onConfirm({ weight: parsedWeight, reps: parsedReps, rpe, setType });
+  };
 
   return (
     <Portal>
@@ -91,9 +90,15 @@ export function SetKeypad({ visible, exerciseName, initial, onConfirm, onDismiss
         <Text variant="titleSmall" style={[styles.title, { color: colors.onSurface }]} numberOfLines={1}>{exerciseName}</Text>
 
         <View style={styles.fields}>
-          <FieldBox label="Weight (kg)" value={weight} which="weight" />
-          <FieldBox label="Reps" value={reps} which="reps" />
+          <FieldBox label={`Weight (${weightUnit})`} value={weight} active={field === 'weight'} onPress={() => setField('weight')} />
+          <FieldBox label="Reps" value={reps} active={field === 'reps'} onPress={() => setField('reps')} />
         </View>
+
+        {!valid && (parsedReps > MAX_REPS || parsedWeight > MAX_WEIGHT) && (
+          <Text variant="labelSmall" style={{ color: colors.error, textAlign: 'center' }}>
+            {parsedReps > MAX_REPS ? `Reps capped at ${MAX_REPS} — double-check that number` : `Weight capped at ${MAX_WEIGHT} ${weightUnit}`}
+          </Text>
+        )}
 
         <View style={styles.chipRow}>
           {SET_TYPES.map(t => (
@@ -126,12 +131,31 @@ export function SetKeypad({ visible, exerciseName, initial, onConfirm, onDismiss
           ))}
         </View>
 
-        <Pressable onPress={confirm} style={[styles.confirm, { backgroundColor: accent }]}>
+        <Pressable onPress={confirm} disabled={!valid}
+          style={[styles.confirm, { backgroundColor: accent, opacity: valid ? 1 : 0.4 }]}>
           <MaterialCommunityIcons name="check" size={24} color="#06220F" />
-          <Text variant="titleMedium" style={styles.confirmText}>Log set</Text>
+          <Text variant="titleMedium" style={styles.confirmText}>{confirmLabel}</Text>
         </Pressable>
       </View>
     </Portal>
+  );
+}
+
+// Defined at module level (not inside SetKeypad) so the Pressable isn't
+// remounted on every keystroke — remounting drops in-flight taps.
+function FieldBox({ label, value, active, onPress }: { label: string; value: string; active: boolean; onPress: () => void }) {
+  const { colors } = useAppTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.fieldBox,
+        { backgroundColor: colors.surfaceVariant, borderColor: active ? accent : 'transparent' },
+      ]}
+    >
+      <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
+      <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '800' }}>{value || '0'}</Text>
+    </Pressable>
   );
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, Surface, TextInput, Button, SegmentedButtons, Snackbar, TouchableRipple, Switch } from 'react-native-paper';
+import { Text, Surface, TextInput, Button, SegmentedButtons, Snackbar, TouchableRipple, Switch, Chip, Portal, Dialog } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,6 +8,8 @@ import { theme, moduleColors, spacing } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useUserStore, getLevelName, getXpForCurrentLevel, getXpForNextLevel } from '@/stores/userStore';
+import { EQUIPMENT_OPTIONS } from '@/stores/workoutStore';
+import { exportBackup, pickBackupFile, importBackup } from '@/services/backup';
 
 export default function ProfileScreen() {
   const { profile, loadProfile, updateProfile } = useUserStore();
@@ -19,10 +21,58 @@ export default function ProfileScreen() {
   const [proteinTarget, setProteinTarget] = useState('');
   const [carbsTarget, setCarbsTarget] = useState('');
   const [fatTarget, setFatTarget] = useState('');
+  const [fiberTarget, setFiberTarget] = useState('');
+  const [sugarTarget, setSugarTarget] = useState('');
+  const [sodiumTarget, setSodiumTarget] = useState('');
   const [waterTarget, setWaterTarget] = useState('');
   const [monthlyBudget, setMonthlyBudget] = useState('');
   const [weightUnit, setWeightUnit] = useState('kg');
+  const [equipment, setEquipment] = useState<string[]>([]);
   const [snackbar, setSnackbar] = useState(false);
+  const [backupSnack, setBackupSnack] = useState('');
+  const [pendingImport, setPendingImport] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const handleExport = async () => {
+    setBusy(true);
+    try {
+      await exportBackup();
+      setBackupSnack('Backup exported — keep that file somewhere safe');
+    } catch (e) {
+      setBackupSnack(e instanceof Error ? e.message : 'Export failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handlePickImport = async () => {
+    try {
+      const json = await pickBackupFile();
+      if (json) setPendingImport(json);
+    } catch {
+      setBackupSnack("Couldn't read that file");
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!pendingImport) return;
+    setBusy(true);
+    try {
+      const result = await importBackup(pendingImport);
+      setPendingImport(null);
+      await loadProfile();
+      setBackupSnack(`Restored ${result.rows} records across ${result.tables} tables`);
+    } catch (e) {
+      setPendingImport(null);
+      setBackupSnack(e instanceof Error ? e.message : 'Import failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleEquipment = (item: string) => {
+    setEquipment(prev => prev.includes(item) ? prev.filter(e => e !== item) : [...prev, item]);
+  };
 
   useEffect(() => {
     loadProfile();
@@ -38,9 +88,13 @@ export default function ProfileScreen() {
       setProteinTarget(String(profile.proteinTarget));
       setCarbsTarget(String(profile.carbsTarget));
       setFatTarget(String(profile.fatTarget));
+      setFiberTarget(String(profile.fiberTarget));
+      setSugarTarget(String(profile.sugarTarget));
+      setSodiumTarget(String(profile.sodiumTarget));
       setWaterTarget(String(profile.waterTarget));
       setMonthlyBudget(profile.monthlyBudget ? String(profile.monthlyBudget) : '');
       setWeightUnit(profile.weightUnit);
+      setEquipment(profile.equipment);
     }
   }, [profile]);
 
@@ -54,9 +108,13 @@ export default function ProfileScreen() {
       proteinTarget: parseInt(proteinTarget) || 150,
       carbsTarget: parseInt(carbsTarget) || 250,
       fatTarget: parseInt(fatTarget) || 65,
+      fiberTarget: parseInt(fiberTarget) || 30,
+      sugarTarget: parseInt(sugarTarget) || 50,
+      sodiumTarget: parseInt(sodiumTarget) || 2300,
       waterTarget: parseInt(waterTarget) || 8,
       monthlyBudget: monthlyBudget ? parseFloat(monthlyBudget) : null,
       weightUnit: weightUnit as 'kg' | 'lbs',
+      equipment,
     });
     setSnackbar(true);
   };
@@ -119,12 +177,35 @@ export default function ProfileScreen() {
           style={styles.segmented}
         />
 
+        <Text variant="titleSmall" style={styles.sectionTitle}>My Gym Equipment</Text>
+        <Text variant="bodySmall" style={styles.equipmentHint}>
+          Pick what your gym has — exercise lists can then filter to moves you can actually do. Leave empty to always show everything.
+        </Text>
+        <View style={styles.equipmentWrap}>
+          {EQUIPMENT_OPTIONS.map(item => (
+            <Chip
+              key={item}
+              selected={equipment.includes(item)}
+              onPress={() => toggleEquipment(item)}
+              showSelectedOverlay
+              style={styles.equipmentChip}
+            >
+              {item}
+            </Chip>
+          ))}
+        </View>
+
         <Text variant="titleSmall" style={styles.sectionTitle}>Daily Targets</Text>
         <TextInput label="Calorie target" value={calorieTarget} onChangeText={setCalorieTarget} mode="outlined" keyboardType="numeric" style={styles.input} />
         <View style={styles.row}>
           <TextInput label="Protein (g)" value={proteinTarget} onChangeText={setProteinTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
           <TextInput label="Carbs (g)" value={carbsTarget} onChangeText={setCarbsTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
           <TextInput label="Fat (g)" value={fatTarget} onChangeText={setFatTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
+        </View>
+        <View style={styles.row}>
+          <TextInput label="Fiber (g)" value={fiberTarget} onChangeText={setFiberTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
+          <TextInput label="Sugar (g)" value={sugarTarget} onChangeText={setSugarTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
+          <TextInput label="Sodium (mg)" value={sodiumTarget} onChangeText={setSodiumTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
         </View>
         <View style={styles.row}>
           <TextInput label="Water (glasses)" value={waterTarget} onChangeText={setWaterTarget} mode="outlined" keyboardType="numeric" style={styles.halfInput} />
@@ -135,11 +216,42 @@ export default function ProfileScreen() {
           Save Changes
         </Button>
 
+        <Text variant="titleSmall" style={styles.sectionTitle}>Data & Backup</Text>
+        <Text variant="bodySmall" style={styles.equipmentHint}>
+          Your data lives on this device and survives app updates. Export a backup before switching phones or uninstalling — progress photos aren't included, only their dates.
+        </Text>
+        <View style={styles.row}>
+          <Button mode="contained-tonal" icon="export" style={styles.halfInput} onPress={handleExport} disabled={busy} loading={busy}>
+            Export Data
+          </Button>
+          <Button mode="outlined" icon="import" style={styles.halfInput} onPress={handlePickImport} disabled={busy}>
+            Import Data
+          </Button>
+        </View>
+
         <Text variant="labelSmall" style={styles.version}>Life Tracker v1.0.0</Text>
       </ScrollView>
 
+      <Portal>
+        <Dialog visible={!!pendingImport} onDismiss={() => setPendingImport(null)}>
+          <Dialog.Title>Restore backup?</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              This replaces everything currently in the app — meals, workouts, habits, settings — with the contents of the backup file. This can't be undone.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setPendingImport(null)}>Cancel</Button>
+            <Button onPress={handleConfirmImport} loading={busy}>Restore</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
       <Snackbar visible={snackbar} onDismiss={() => setSnackbar(false)} duration={2000}>
         Profile saved!
+      </Snackbar>
+      <Snackbar visible={!!backupSnack} onDismiss={() => setBackupSnack('')} duration={3500}>
+        {backupSnack}
       </Snackbar>
     </SafeAreaView>
   );
@@ -169,6 +281,9 @@ const styles = StyleSheet.create({
   thirdInput: { flex: 1, backgroundColor: theme.colors.surface },
   halfInput: { flex: 1, backgroundColor: theme.colors.surface },
   label: { marginBottom: spacing.sm, fontWeight: '600' },
+  equipmentHint: { color: theme.colors.onSurfaceVariant, marginBottom: spacing.sm },
+  equipmentWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
+  equipmentChip: { backgroundColor: theme.colors.surface },
   segmented: { marginBottom: spacing.sm },
   saveBtn: { marginTop: spacing.lg },
   version: { textAlign: 'center', color: theme.colors.onSurfaceVariant, marginTop: spacing.lg },

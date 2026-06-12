@@ -1,0 +1,324 @@
+================================================================================
+LIFE TRACKER — COMPLETE FEATURE DOCUMENTATION
+================================================================================
+App name:        Life Tracker
+Platform:        Android-first (React Native + Expo SDK 56), with web build
+Package id:      com.lifetracker.app
+Repository:      https://github.com/cainmozi-ai/TrackerApp
+Web demo:        https://lambent-queijadas-e203df.netlify.app
+Design:          MacroFactor-inspired — dark-by-default charcoal UI with a
+                 single green accent (#34D27A), minimal, data-dense
+Storage:         Local SQLite database on-device (no account, no cloud, private)
+--------------------------------------------------------------------------------
+
+================================================================================
+1. ONBOARDING (first launch)
+================================================================================
+- Runs once on first launch (skippable with "Skip for now").
+- Collects: name, goal (Lose weight / Maintain / Gain muscle), sex, age,
+  weight (kg), height (cm), activity level (5 levels from Sedentary to
+  Very Active).
+- Live preview card: as soon as age/weight/height are filled, the app
+  calculates and shows a personalized daily plan before you commit.
+- Target calculation uses the Mifflin–St Jeor equation:
+  * BMR from sex/weight/height/age
+  * TDEE = BMR x activity multiplier (1.2 – 1.9)
+  * Goal adjustment: -500 kcal (lose), +0 (maintain), +400 (gain),
+    floored at 1,200 kcal
+  * Protein: 2.0 g/kg bodyweight (2.2 g/kg for muscle gain)
+  * Fat: 25% of calories; Carbs: remainder
+  * Water: ~35 ml/kg, converted to 250 ml glasses (clamped 6–14)
+- Saves calorie / protein / carbs / fat / water targets to the profile.
+- "Start Tracking" applies the plan; targets are editable later in Profile.
+
+================================================================================
+2. HOME DASHBOARD
+================================================================================
+- Time-aware greeting (Good Morning / Afternoon / Evening) + your name.
+- Profile avatar button (top right) -> Profile/settings.
+- XP / LEVEL CARD: current level number, level name (Beginner -> Apprentice ->
+  Dedicated -> Committed -> Advanced -> Elite -> Master -> Champion ->
+  Legend -> Mythic), total XP, and an animated progress bar to next level.
+- "WORKOUT IN PROGRESS" RESUME BANNER: if an unfinished workout exists,
+  a green-bordered banner appears — tap to jump straight back into it.
+- BENTO STAT GRID — six live, tappable tiles (each deep-links to its module):
+  * Calories eaten today vs target (with progress bar)
+  * Water glasses today vs target (with progress bar)
+  * Habits completed today vs total (with progress bar)
+  * Sleep duration last night (e.g. "7h 30m")
+  * Tasks remaining today
+  * Money spent today
+- QUICK-ACTION FLOATING BUTTON (+): expands to 4 shortcuts —
+  Log Meal, Start Workout, Add Task, Log Water.
+- All tiles animate in with a staggered entrance; cards have press feedback.
+
+================================================================================
+3. NUTRITION MODULE
+================================================================================
+DAILY FOOD LOG (main screen)
+- Hero card: calorie ring (eaten vs target) + signed remaining display.
+  Adherence-neutral philosophy: going over shows a calm "X kcal over"
+  (never red, never shaming); under shows "X kcal left".
+- Three macro progress bars: Protein, Carbs, Fat (current g / target g).
+- Four meal cards: Breakfast, Lunch, Dinner, Snack — each shows its foods,
+  per-item calories and servings, a per-meal calorie subtotal, a one-tap
+  "+" that opens the food picker pre-set to that meal, and per-item delete.
+- COPY YESTERDAY: one tap re-logs everything you ate yesterday into today.
+- SAVE AS MEAL: saves the entire current day's foods as a named, reusable
+  combo meal (e.g. "My usual breakfast").
+
+ADD FOOD (picker screen) — 4 logging methods
+1) SEARCH: queries your local food database PLUS the Open Food Facts online
+   database (1M+ products) — results show calories, protein/carbs/fat and
+   serving size; one tap to log.
+2) BARCODE SCANNER: live camera scan (EAN-13/EAN-8/UPC-A/UPC-E) -> instant
+   lookup on Open Food Facts -> nutrition card -> pick meal -> log.
+   Graceful "product not found" fallback with manual-entry option.
+3) AI PHOTO RECOGNITION: photograph your meal; Google Gemini vision
+   estimates each food with calories + macros; review the detected list,
+   pick a meal slot, and log all items at once. (Requires a free
+   EXPO_PUBLIC_GEMINI_API_KEY in .env; without one the screen shows
+   friendly setup instructions and offers Search/Scan instead.)
+4) CUSTOM FOOD: full manual entry — name, brand, serving size/unit,
+   calories, protein, carbs, fat, fiber, sugar.
+
+FAST LOGGING (default view before you type anything)
+- RECENT tab: your 20 most-recently-logged foods, one tap to re-log.
+- FAVORITES tab: starred foods for instant logging.
+- MEALS tab: your saved combo meals with total calories — one tap logs the
+  whole combo (multiple foods at once).
+- Meal-slot chips (Breakfast/Lunch/Dinner/Snack) selectable at the top.
+
+================================================================================
+4. WATER TRACKING
+================================================================================
+- Large circular progress ring: glasses today vs daily target, plus
+  ml total (e.g. "1250ml / 2000ml").
+- Quick-add buttons: +1 Glass, +250ml, +500ml, +1L.
+- Today's log list with timestamps; individual entries deletable.
+- XP for logging; bonus XP + achievement the moment you hit your daily goal.
+
+================================================================================
+5. SLEEP TRACKING
+================================================================================
+- Log bedtime + wake time (handles overnight crossing midnight); duration
+  auto-calculated (e.g. "7h 45m").
+- Quality rating 1–5 stars (Terrible -> Great) + optional notes.
+- One entry per day (re-logging the same day updates it).
+- Today card showing last night's sleep at a glance.
+- Recent history list with date, duration, and star ratings.
+
+================================================================================
+6. WEIGHT TRACKING + TREND
+================================================================================
+- Quick daily weigh-in entry (one entry per day; same-day re-log updates).
+- SMOOTHED TREND LINE: an exponentially-weighted moving average cuts
+  through daily water/food weight noise (MacroFactor-style).
+- Chart overlays raw scale dots (faded) with the smoothed trend curve
+  (green) over the last 60 days.
+- Stat row: current trend weight, total change over the window, log count.
+- Recent log list with delete.
+
+================================================================================
+7. ADAPTIVE COACH (the standout feature)
+================================================================================
+- Estimates your REAL maintenance calories (expenditure/TDEE) from your own
+  data using energy balance:
+  TDEE ~= average daily intake − (change in weight trend x 7700 kcal/kg ÷ days)
+- Requires ~1 week of food logs + at least 2 weight entries spanning 6+ days;
+  until then it shows a friendly "keep logging to unlock your coach" state.
+- Expenditure card: estimated kcal/day maintenance, your weekly weight-trend
+  rate (e.g. "-0.4 kg/week"), and how many days of data it's based on.
+- RECOMMENDED TARGET card: recalculates calories + full macro split from
+  your measured expenditure and goal; shows your current target alongside.
+- One-tap "Apply recommended target" updates all profile targets.
+- Always a suggestion, never forced — recalibrates continuously as you log.
+
+================================================================================
+8. MEAL PLANNER + SHOPPING LIST
+================================================================================
+- Weekly grid: 7 days x 4 meal slots; navigate between weeks.
+- Tap any slot to add foods from your database (search picker).
+- Planned items shown as removable chips per slot.
+- GENERATE SHOPPING LIST: aggregates every planned food for the week into a
+  checklist with total servings per item.
+- Shopping list screen: tap-to-check items (strikethrough), progress count
+  ("4 of 11 items"), clear-all.
+
+================================================================================
+9. WORKOUTS MODULE
+================================================================================
+EXERCISE LIBRARY
+- 90+ pre-loaded exercises across Chest, Back, Shoulders, Legs, Glutes,
+  Arms, Core, Cardio — each with equipment type and description.
+- Search + muscle-group filter chips.
+- Add your own custom exercises (name + muscle group).
+
+PROGRAMS (leveled program library)
+- Browsable library of complete multi-day training programs, filterable by
+  experience level: Beginner / Intermediate / Advanced.
+- Included programs (original, principle-based):
+  * Foundations — Beginner, 3 days/week, Full Body (A/B/C days)
+  * Minimalist — Beginner, 2 days/week, Full Body
+  * Upper/Lower Builder — Intermediate, 4 days/week (Upper A/B, Lower A/B)
+  * Push/Pull/Legs — Advanced, 6 days/week (Push/Pull/Legs A+B)
+- Each program card shows level, days/week, split, its workout days, and
+  the muscle groups it covers.
+- "Add to My Routines" clones every day of the program into your own
+  editable routines.
+
+MY ROUTINES (custom templates)
+- Create named routines; add exercises from the library with target sets
+  and a REP RANGE (min–max); reorder/remove; delete routines.
+- Start a workout directly from any routine.
+- "Start Empty Workout" for freestyle sessions.
+
+ACTIVE WORKOUT (live session)
+- Live stats bar: exercise count, total sets, total volume (kg).
+- REST TIMER: auto-starts the moment you log a set; +/- 15s adjust,
+  pause/reset, quick presets (60s / 90s / 2m / 3m), "Rest complete!" state.
+- Per-exercise cards show:
+  * Muscle group + target rep range (e.g. "8–12 reps")
+  * "Last: 60x8, 60x8, 60x7" — your previous session inline
+  * PROGRESSION SUGGESTION chip (rule-based, MacroFactor-style):
+    if you hit the top of your rep range on all sets last time, it suggests
+    +2.5 kg (+1.25 kg for lighter lifts) at the bottom of the range;
+    otherwise same weight, +1 rep. Tap the chip to prefill.
+  * Logged sets with a color dot per set type
+- CUSTOM SET KEYPAD (no fiddly OS keyboard): big weight/reps fields, digit
+  pad, backspace, decimal; SET TYPE chips (Normal / Warm-up / Failure /
+  Drop); optional RIR (reps-in-reserve 0–4); large green confirm logs the
+  set and auto-starts the rest timer.
+- PLATE CALCULATOR: enter total bar weight, choose bar (20/15/10 kg), get
+  the exact plates per side (25/20/15/10/5/2.5/1.25), with a note for any
+  remainder that can't be plated.
+- Add extra exercises mid-workout from a searchable picker.
+- Finish Workout -> +50 XP and the session is saved to history.
+
+WORKOUT CONTINUITY (never lose a session)
+- Backing out or even killing the app does NOT lose your workout — it stays
+  "in progress" in the database.
+- Resume banners on the Fitness tab and Home dashboard reconnect you with
+  every set intact.
+- The workout row is only created when you log your FIRST set (no empty
+  orphan workouts).
+- Starting a new workout while one is unfinished prompts:
+  Resume / Discard & start new.
+- Explicit Discard action (trash icon, with confirmation) inside the session.
+
+PROGRESS
+- Total workouts completed counter.
+- SET LEVELS: weekly sets-per-muscle-group volume bars (training-volume
+  distribution at a glance).
+- Per-exercise strength chart: pick any exercise -> max-weight trend line
+  across your last sessions.
+- Recent workout history list with dates.
+
+================================================================================
+10. TASKS / TODO LIST
+================================================================================
+- Tasks with: title, optional description, due date, priority
+  (Low / Medium / High with color dots), category (general / health /
+  work / personal / shopping), optional recurrence flag.
+- Filters: All / Active / Completed.
+- Smart sorting: incomplete first, then by priority, then due date.
+- Checkbox complete (+15 XP per completed task), swipe-row delete.
+
+================================================================================
+11. HABITS
+================================================================================
+- Streaks-style GRID OF CIRCULAR TILES: tap a circle to complete the habit
+  (it pops with a spring animation and fills green with a checkmark);
+  long-press opens detail/stats.
+- Per-habit fire-icon STREAK counter (consecutive days).
+- Daily summary card: "3/5 completed today" -> "All done — amazing!" when
+  finished.
+- Completing all habits in a day grants bonus XP; 7-day and 30-day streaks
+  unlock achievements (+100 / +500 XP).
+- HABIT DETAIL: current streak, total completions, 90-day completion rate,
+  and a GitHub-style 90-day HEATMAP calendar.
+- Habits support daily or x-times-per-week frequency.
+
+================================================================================
+12. BUDGET / MONEY TRACKING
+================================================================================
+- Income vs Expense summary cards for the current month.
+- Monthly budget ring: spent vs budget, remaining (or amount over, shown
+  neutrally).
+- SPENDING-BY-CATEGORY PIE CHART.
+- Add transaction with a large COLORFUL CATEGORY ICON PICKER (Mobills-style):
+  Food, Transport, Entertainment, Bills, Health, Shopping, Other.
+- Transaction list with income/expense color dots, notes, and delete.
+- +5 XP per logged transaction.
+
+================================================================================
+13. UNIFIED CALENDAR (the "everything" view)
+================================================================================
+- Month calendar where every day shows COLOR-CODED DOTS for what you did:
+  meals logged, workout completed, tasks due, habits completed, money
+  logged, sleep logged (legend included).
+- Tap any day -> unified day summary: meals + calories, workout names,
+  tasks done/due, habits completed, income/spending, sleep duration.
+
+================================================================================
+14. GAMIFICATION
+================================================================================
+- XP awarded automatically for every action:
+  meal +10, workout +50, task +15, water +2 (goal-hit +15), sleep +10,
+  habit creation +5, all-habits-day +25, transaction +5, streak bonuses
+  +100 (7-day) / +500 (30-day), plus achievement rewards.
+- 10 named levels with rising XP thresholds (100 -> 30,000+).
+- 17 ACHIEVEMENTS with badge collection screen (locked badges shown
+  greyed with a padlock): First Bite, Getting Started, Task Master,
+  Creature of Habit, First Sip, Sweet Dreams, Money Minder, Hydrated,
+  Week Warrior, Monthly Master, Meal Planner, Nutrition Pro, Gym Regular,
+  Iron Will, Productive, Rising Star (level 5), Life Master (level 10).
+
+================================================================================
+15. PROFILE & SETTINGS
+================================================================================
+- Level card with XP progress + link to Achievements.
+- APPEARANCE: Dark / Light mode toggle (dark is default; choice persists).
+- About You: name, age, weight, height; weight unit kg/lbs.
+- Daily targets: calories, protein, carbs, fat, water glasses, monthly
+  budget — all editable (and updatable in one tap from the Coach).
+
+================================================================================
+16. DESIGN SYSTEM
+================================================================================
+- MacroFactor-inspired aesthetic: charcoal surfaces (#121212/#1C1C1E),
+  near-white text, muted grayscale module tones, ONE green accent
+  (#34D27A) carrying all interactive/data emphasis.
+- Refined light theme available via the toggle.
+- Consistent component kit: screen headers, motion cards (press-scale +
+  staggered fade-in entrances), warm empty states with calls-to-action,
+  bento stat tiles, progress rings, category icon picker, speed-dial FAB.
+- Restrained spring motion; denser shape scale; data-first hierarchy.
+- Friendly, non-judgmental microcopy throughout (reward, never punish).
+
+================================================================================
+17. DATA & PRIVACY
+================================================================================
+- Everything stored locally in SQLite on your device — no account, no
+  sign-up, no data leaves the phone (except food searches to Open Food
+  Facts and optional AI photo calls to Gemini).
+- 20+ tables: profile, foods, food logs, saved meals, meal plans, shopping
+  list, water, sleep, weight, exercises, templates/programs, workout logs
+  & sets, tasks, habits + logs, transactions, categories, achievements,
+  XP log, events.
+- Idempotent migrations keep existing installs upgrading safely.
+- NOTE: the web demo uses an in-memory database (resets on page refresh);
+  the installed Android app persists everything.
+
+================================================================================
+18. PLATFORMS & DEPLOYMENT
+================================================================================
+- ANDROID: EAS cloud build configured (eas.json) — "preview" profile
+  produces an installable APK; "production" profile builds an AAB for the
+  Play Store. Build with: eas build -p android --profile preview
+- WEB: single-page Expo web export, deployed on Netlify with the COOP/COEP
+  headers required for SQLite WebAssembly and SPA routing fallback.
+- SOURCE: full project on GitHub (cainmozi-ai/TrackerApp, branch main).
+================================================================================
+END OF DOCUMENT
+================================================================================

@@ -40,3 +40,6 @@ yarn-error.*
 /ios
 /android
 TrackerApp/
+
+# Local reference material — never ship or commit
+Inspiration*/

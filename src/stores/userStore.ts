@@ -34,6 +34,16 @@ export function getXpForCurrentLevel(level: number): number {
   return XP_PER_LEVEL[Math.min(level - 1, XP_PER_LEVEL.length - 1)] || 0;
 }
 
+function parseEquipment(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export const useUserStore = create<UserState>((set, get) => ({
   profile: null,
 
@@ -54,8 +64,12 @@ export const useUserStore = create<UserState>((set, get) => ({
           proteinTarget: row.protein_target as number,
           carbsTarget: row.carbs_target as number,
           fatTarget: row.fat_target as number,
+          fiberTarget: (row.fiber_target as number | null) ?? 30,
+          sugarTarget: (row.sugar_target as number | null) ?? 50,
+          sodiumTarget: (row.sodium_target as number | null) ?? 2300,
           waterTarget: row.water_target as number,
           monthlyBudget: row.monthly_budget as number | null,
+          equipment: parseEquipment(row.equipment as string | null),
           weightUnit: row.weight_unit as 'kg' | 'lbs',
           themePref: ((row.theme_pref as string | null) ?? 'light') as 'light' | 'dark',
           onboarded: ((row.onboarded as number | null) ?? 0) === 1,
@@ -78,7 +92,10 @@ export const useUserStore = create<UserState>((set, get) => ({
       calorieTarget: 'calorie_target',
       proteinTarget: 'protein_target', carbsTarget: 'carbs_target',
       fatTarget: 'fat_target', waterTarget: 'water_target',
+      fiberTarget: 'fiber_target', sugarTarget: 'sugar_target',
+      sodiumTarget: 'sodium_target',
       monthlyBudget: 'monthly_budget', weightUnit: 'weight_unit',
+      equipment: 'equipment',
       themePref: 'theme_pref',
       onboarded: 'onboarded',
     };
@@ -86,7 +103,11 @@ export const useUserStore = create<UserState>((set, get) => ({
       const dbKey = keyMap[key];
       if (dbKey && val !== undefined) {
         fields.push(`${dbKey} = ?`);
-        values.push(typeof val === 'boolean' ? (val ? 1 : 0) : (val as SQLiteBindValue));
+        values.push(
+          Array.isArray(val) ? JSON.stringify(val)
+            : typeof val === 'boolean' ? (val ? 1 : 0)
+            : (val as SQLiteBindValue)
+        );
       }
     }
     if (fields.length > 0) {

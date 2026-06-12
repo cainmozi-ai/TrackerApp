@@ -8,17 +8,20 @@ import { spacing, shape, accent, withAlpha } from '@/theme';
 interface PlateCalculatorProps {
   visible: boolean;
   totalWeight: number;
+  unit?: 'kg' | 'lbs';
   onDismiss: () => void;
 }
 
-const PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
-const BARS = [20, 15, 10];
+const PLATE_SETS = {
+  kg: { plates: [25, 20, 15, 10, 5, 2.5, 1.25], bars: [20, 15, 10] },
+  lbs: { plates: [45, 35, 25, 10, 5, 2.5], bars: [45, 35, 15] },
+};
 
-function breakdown(total: number, bar: number) {
+function breakdown(total: number, bar: number, plates: number[]) {
   let perSide = (total - bar) / 2;
   if (perSide < 0) return null;
   const out: { plate: number; count: number }[] = [];
-  for (const p of PLATES) {
+  for (const p of plates) {
     const count = Math.floor(perSide / p + 1e-9);
     if (count > 0) {
       out.push({ plate: p, count });
@@ -29,25 +32,26 @@ function breakdown(total: number, bar: number) {
 }
 
 /** Barbell plate calculator: enter total weight → plates per side. */
-export function PlateCalculator({ visible, totalWeight, onDismiss }: PlateCalculatorProps) {
+export function PlateCalculator({ visible, totalWeight, unit = 'kg', onDismiss }: PlateCalculatorProps) {
   const { colors } = useAppTheme();
-  const [bar, setBar] = useState(20);
+  const { plates, bars } = PLATE_SETS[unit];
+  const [bar, setBar] = useState(PLATE_SETS[unit].bars[0]);
   if (!visible) return null;
-  const result = breakdown(totalWeight, bar);
+  const result = breakdown(totalWeight, bars.includes(bar) ? bar : bars[0], plates);
 
   return (
     <Portal>
       <Pressable style={styles.backdrop} onPress={onDismiss} />
       <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
         <Text variant="titleMedium" style={[styles.title, { color: colors.onSurface }]}>Plate Calculator</Text>
-        <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>Total: {totalWeight} kg</Text>
+        <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>Total: {totalWeight} {unit}</Text>
 
         <View style={styles.barRow}>
           <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant }}>Bar:</Text>
-          {BARS.map(b => (
+          {bars.map(b => (
             <Pressable key={b} onPress={() => setBar(b)}
               style={[styles.barChip, { backgroundColor: bar === b ? accent : colors.surfaceVariant }]}>
-              <Text variant="labelMedium" style={{ color: bar === b ? '#06220F' : colors.onSurfaceVariant, fontWeight: '700' }}>{b}kg</Text>
+              <Text variant="labelMedium" style={{ color: bar === b ? '#06220F' : colors.onSurfaceVariant, fontWeight: '700' }}>{b}{unit}</Text>
             </Pressable>
           ))}
         </View>
@@ -66,14 +70,14 @@ export function PlateCalculator({ visible, totalWeight, onDismiss }: PlateCalcul
                 {result.out.map(p => (
                   <View key={p.plate} style={[styles.plateChip, { backgroundColor: withAlpha(accent, 0.18), borderColor: accent }]}>
                     <Text variant="titleMedium" style={{ color: colors.onSurface, fontWeight: '800' }}>{p.count}×</Text>
-                    <Text variant="bodyMedium" style={{ color: colors.onSurface }}>{p.plate}kg</Text>
+                    <Text variant="bodyMedium" style={{ color: colors.onSurface }}>{p.plate}{unit}</Text>
                   </View>
                 ))}
               </View>
             )}
             {result.leftover > 0 && (
               <Text variant="bodySmall" style={[styles.warn, { color: colors.onSurfaceVariant }]}>
-                {result.leftover}kg/side can't be made with standard plates.
+                {result.leftover}{unit}/side can't be made with standard plates.
               </Text>
             )}
           </>

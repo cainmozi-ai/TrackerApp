@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.lifetracker.app",
-      "versionCode": 1,
+      "allowBackup": true,
       "adaptiveIcon": {
         "backgroundColor": "#121212",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -36,7 +36,10 @@
           "cameraPermission": "Allow Life Tracker to access your camera for barcode scanning."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-sharing",
+      "expo-audio",
+      "expo-asset"
     ],
     "extra": {
       "router": {},

@@ -19,6 +19,7 @@ interface ExerciseSeed {
   muscleGroup: string;
   equipment: string;
   description: string;
+  tips?: string[];
 }
 
 const ACHIEVEMENT_SEEDS = [
@@ -122,6 +123,9 @@ export async function initializeDatabase(): Promise<void> {
       protein_target INTEGER DEFAULT 150,
       carbs_target INTEGER DEFAULT 250,
       fat_target INTEGER DEFAULT 65,
+      fiber_target INTEGER DEFAULT 30,
+      sugar_target INTEGER DEFAULT 50,
+      sodium_target INTEGER DEFAULT 2300,
       water_target INTEGER DEFAULT 8,
       monthly_budget REAL,
       weight_unit TEXT DEFAULT 'kg',
@@ -224,6 +228,7 @@ export async function initializeDatabase(): Promise<void> {
       muscle_group TEXT,
       equipment TEXT,
       description TEXT,
+      tips TEXT,
       is_custom INTEGER DEFAULT 0
     );
 
@@ -340,6 +345,28 @@ export async function initializeDatabase(): Promise<void> {
       earned_at TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS body_measurements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      log_date TEXT NOT NULL,
+      neck REAL,
+      shoulders REAL,
+      chest REAL,
+      waist REAL,
+      hips REAL,
+      bicep REAL,
+      thigh REAL,
+      calf REAL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS progress_photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uri TEXT NOT NULL,
+      log_date TEXT NOT NULL,
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
@@ -372,12 +399,26 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     'ALTER TABLE workout_templates ADD COLUMN days_per_week INTEGER',
     'ALTER TABLE workout_templates ADD COLUMN program_name TEXT',
     'ALTER TABLE workout_templates ADD COLUMN day_label TEXT',
+    // Phase 12 — full nutrient targets
+    'ALTER TABLE user_profile ADD COLUMN fiber_target INTEGER DEFAULT 30',
+    'ALTER TABLE user_profile ADD COLUMN sugar_target INTEGER DEFAULT 50',
+    'ALTER TABLE user_profile ADD COLUMN sodium_target INTEGER DEFAULT 2300',
+    // Phase 13 — exercise tips + gym equipment selector
+    'ALTER TABLE exercises ADD COLUMN tips TEXT',
+    'ALTER TABLE user_profile ADD COLUMN equipment TEXT',
   ];
   for (const sql of alters) {
     try {
       await db.execAsync(sql);
-    } catch {
-      // Column already exists — ignore.
+    } catch (e) {
+      // "duplicate column" just means this migration already ran — expected.
+      // Anything else is a real failure that must not be silently swallowed,
+      // or an app update could leave a user's database half-migrated.
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!/duplicate column/i.test(msg)) {
+        console.error(`Migration failed: ${sql}`, e);
+        throw e;
+      }
     }
   }
 }
@@ -444,18 +485,32 @@ async function seedPrograms(db: SQLite.SQLiteDatabase): Promise<void> {
 }
 
 async function seedExercises(db: SQLite.SQLiteDatabase): Promise<void> {
-  const exist = await db.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM exercises'
-  );
-  if (exist && exist.count > 0) return;
-
   const exercises = exercisesData as ExerciseSeed[];
+  // Sync with the seed file: insert exercises that are new since the last app
+  // version, and backfill tips/descriptions on ones that already exist.
+  const seeded = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM exercises WHERE is_custom = 0 AND tips IS NOT NULL'
+  );
+  if (seeded && seeded.count >= exercises.length) return;
+
   await db.withTransactionAsync(async () => {
     for (const ex of exercises) {
-      await db.runAsync(
-        'INSERT INTO exercises (name, muscle_group, equipment, description, is_custom) VALUES (?, ?, ?, ?, 0)',
-        [ex.name, ex.muscleGroup, ex.equipment, ex.description]
+      const tips = ex.tips ? JSON.stringify(ex.tips) : null;
+      const found = await db.getFirstAsync<{ id: number }>(
+        'SELECT id FROM exercises WHERE name = ? AND is_custom = 0',
+        [ex.name]
       );
+      if (found) {
+        await db.runAsync(
+          'UPDATE exercises SET muscle_group = ?, equipment = ?, description = ?, tips = ? WHERE id = ?',
+          [ex.muscleGroup, ex.equipment, ex.description, tips, found.id]
+        );
+      } else {
+        await db.runAsync(
+          'INSERT INTO exercises (name, muscle_group, equipment, description, tips, is_custom) VALUES (?, ?, ?, ?, ?, 0)',
+          [ex.name, ex.muscleGroup, ex.equipment, ex.description, tips]
+        );
+      }
     }
   });
 }
