@@ -14,6 +14,28 @@ import { useUserStore } from '@/stores/userStore';
 import type { FoodLog, MealType } from '@/types';
 
 const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+const WEEKDAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+function isoDate(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
+
+/** The last 7 days, oldest first, ending today. */
+function lastSevenDays(): { iso: string; dayNum: number; letter: string }[] {
+  const out = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    out.push({ iso: isoDate(d), dayNum: d.getDate(), letter: WEEKDAY_LETTERS[d.getDay()] });
+  }
+  return out;
+}
+
+function dateLabel(iso: string): string {
+  if (iso === isoDate(new Date())) return 'TODAY';
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
+}
 const MEAL_ICONS: Record<MealType, keyof typeof MaterialCommunityIcons.glyphMap> = {
   breakfast: 'weather-sunny',
   lunch: 'white-balance-sunny',
@@ -24,7 +46,7 @@ const MEAL_ICONS: Record<MealType, keyof typeof MaterialCommunityIcons.glyphMap>
 export default function NutritionScreen() {
   const { colors } = useAppTheme();
   const {
-    todayLogs, todayCalories, todayProtein, todayCarbs, todayFat,
+    currentDate, todayLogs, todayCalories, todayProtein, todayCarbs, todayFat,
     todayFiber, todaySugar, todaySodium,
     loadTodayLogs, deleteLog, updateLog, copyYesterday, saveMealFromDay,
   } = useNutritionStore();
@@ -87,7 +109,31 @@ export default function NutritionScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="Nutrition" />
 
+      <View style={styles.dayStrip}>
+        {lastSevenDays().map(day => {
+          const selected = day.iso === currentDate;
+          return (
+            <Pressable
+              key={day.iso}
+              onPress={() => loadTodayLogs(day.iso)}
+              style={[styles.dayPill, {
+                backgroundColor: selected ? withAlpha(moduleColors.nutrition, 0.2) : 'transparent',
+                borderColor: selected ? moduleColors.nutrition : colors.outline,
+              }]}
+            >
+              <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{day.letter}</Text>
+              <Text variant="titleSmall" style={{ color: selected ? moduleColors.nutrition : colors.onSurface, fontWeight: '700' }}>
+                {day.dayNum}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Text variant="labelSmall" style={[styles.dateKicker, { color: colors.onSurfaceVariant }]}>
+          {dateLabel(currentDate)}
+        </Text>
         <MotionCard style={styles.hero} noEnter>
           <View style={styles.heroRow}>
             <ProgressRing
@@ -149,7 +195,7 @@ export default function NutritionScreen() {
                   containerColor={withAlpha(moduleColors.nutrition, 0.16)}
                   iconColor={moduleColors.nutrition}
                   style={styles.addBtn}
-                  onPress={() => router.push(`/health/nutrition/search?meal=${meal}`)}
+                  onPress={() => router.push(`/health/nutrition/search?meal=${meal}&date=${currentDate}`)}
                 />
               </View>
               {logs.length === 0 ? (
@@ -173,7 +219,7 @@ export default function NutritionScreen() {
       </ScrollView>
 
       <FAB icon="plus" style={[styles.fab, { backgroundColor: moduleColors.nutrition }]} color="#fff"
-        onPress={() => router.push('/health/nutrition/search')} />
+        onPress={() => router.push(`/health/nutrition/search?date=${currentDate}`)} />
 
       <Portal>
         <Dialog visible={!!editLog} onDismiss={() => setEditLog(null)}>
@@ -247,6 +293,9 @@ function MacroBar({ label, current, target, color, unit = 'g' }: { label: string
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: 100 },
+  dayStrip: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.md, marginBottom: spacing.xs, gap: spacing.xs },
+  dayPill: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: shape.pill, borderWidth: 1.5 },
+  dateKicker: { letterSpacing: 1.5, fontWeight: '700', marginBottom: spacing.xs },
   hero: { marginBottom: spacing.sm },
   heroRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   microRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },

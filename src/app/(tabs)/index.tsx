@@ -39,10 +39,13 @@ export default function HomeScreen() {
   const { todayLog: sleep, loadTodayLog: loadSleep } = useSleepStore();
   const { tasks, loadTasks } = useTaskStore();
   const { transactions, loadTransactions } = useBudgetStore();
-  const { getActiveWorkout, getWeekWorkoutCount } = useWorkoutStore();
+  const { getActiveWorkout, getWeekWorkoutCount, getWorkoutDates } = useWorkoutStore();
+  const { getDailyTotals } = useNutritionStore();
   const { profile, loadProfile } = useUserStore();
   const [activeWorkout, setActiveWorkout] = useState<WorkoutLog | null>(null);
   const [weekWorkouts, setWeekWorkouts] = useState(0);
+  const [foodDays, setFoodDays] = useState<Set<string>>(new Set());
+  const [workoutDays, setWorkoutDays] = useState<Set<string>>(new Set());
 
   useFocusEffect(
     useCallback(() => {
@@ -50,8 +53,22 @@ export default function HomeScreen() {
       loadSleep(); loadTasks(); loadTransactions(); loadProfile();
       getActiveWorkout().then(setActiveWorkout);
       getWeekWorkoutCount().then(setWeekWorkouts);
+      getDailyTotals(7).then(rows => setFoodDays(new Set(rows.filter(r => r.calories > 0).map(r => r.date))));
+      getWorkoutDates().then(dates => setWorkoutDays(new Set(dates)));
     }, [])
   );
+
+  const weekDays = (() => {
+    const letters = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const out = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const iso = d.toISOString().split('T')[0];
+      out.push({ iso, letter: letters[d.getDay()], dayNum: d.getDate(), isToday: i === 0 });
+    }
+    return out;
+  })();
 
   const calorieTarget = profile?.calorieTarget || 2000;
   const waterTarget = (profile?.waterTarget || 8) * 250;
@@ -75,6 +92,9 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
+            <Text variant="labelSmall" style={[styles.dateKicker, { color: colors.onSurfaceVariant }]}>
+              {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
+            </Text>
             <Text variant="headlineMedium" style={[styles.greeting, { color: colors.onBackground }]}>{greeting()}</Text>
             <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
               {profile?.name || "Let's make today count"}
@@ -82,6 +102,29 @@ export default function HomeScreen() {
           </View>
           <IconButton icon="account-circle" size={34} iconColor={colors.primary} onPress={() => router.push('/profile')} />
         </View>
+
+        {/* Weekly consistency: ring = food logged, dot = workout done */}
+        <Animated.View entering={FadeInUp} style={[styles.weekStrip, { backgroundColor: colors.surface }]}>
+          {weekDays.map(day => {
+            const ate = foodDays.has(day.iso);
+            const trained = workoutDays.has(day.iso);
+            return (
+              <View key={day.iso} style={styles.weekDay}>
+                <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{day.letter}</Text>
+                <View style={[styles.weekCircle, {
+                  borderColor: ate ? moduleColors.nutrition : withAlpha(colors.onSurfaceVariant, 0.3),
+                  backgroundColor: day.isToday ? withAlpha(colors.primary, 0.12) : 'transparent',
+                }]}>
+                  <Text variant="labelMedium" style={{ color: colors.onSurface, fontWeight: day.isToday ? '800' : '500' }}>
+                    {day.dayNum}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons name="dumbbell" size={10}
+                  color={trained ? moduleColors.workout : 'transparent'} />
+              </View>
+            );
+          })}
+        </Animated.View>
 
         {/* XP / level */}
         <Animated.View entering={FadeInUp} style={[styles.xpCard, { backgroundColor: colors.surface }]}>
@@ -155,6 +198,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   headerLeft: { flex: 1 },
   greeting: { fontWeight: '800' },
+  dateKicker: { letterSpacing: 1.5, fontWeight: '700', marginBottom: 2 },
+  weekStrip: { flexDirection: 'row', justifyContent: 'space-between', padding: spacing.sm, borderRadius: shape.lg, marginBottom: spacing.md },
+  weekDay: { alignItems: 'center', gap: 3, flex: 1 },
+  weekCircle: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
   xpCard: {
     padding: spacing.md,
     borderRadius: shape.lg,

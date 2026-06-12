@@ -18,7 +18,7 @@ const QUICK_SERVINGS = [0.5, 1, 1.5, 2, 3];
 
 export default function FoodSearchScreen() {
   const { colors } = useAppTheme();
-  const { meal } = useLocalSearchParams<{ meal?: string }>();
+  const { meal, date } = useLocalSearchParams<{ meal?: string; date?: string }>();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Food[]>([]);
   const [loading, setLoading] = useState(false);
@@ -81,7 +81,7 @@ export default function FoodSearchScreen() {
     try {
       let foodId = pendingFood.id;
       if (!foodId || foodId === 0) foodId = await addCustomFood(pendingFood);
-      await logFood(foodId, selectedMeal, Math.round(portionServings * 100) / 100);
+      await logFood(foodId, selectedMeal, Math.round(portionServings * 100) / 100, date);
       await reward(10, 'meal', 'Logged a meal', 'first_meal');
       setPendingFood(null);
       router.back();
@@ -91,7 +91,7 @@ export default function FoodSearchScreen() {
   };
 
   const handleLogSaved = async (meal: SavedMeal) => {
-    await logSavedMeal(meal.id, selectedMeal);
+    await logSavedMeal(meal.id, selectedMeal, date);
     await reward(10, 'meal', 'Logged a saved meal', 'first_meal');
     router.back();
   };
@@ -133,7 +133,7 @@ export default function FoodSearchScreen() {
         <Button mode="contained-tonal" icon="camera-iris" compact style={styles.methodBtn} onPress={() => router.push('/health/nutrition/ai-photo')}>
           AI Photo
         </Button>
-        <Button mode="contained-tonal" icon="plus" compact style={styles.methodBtn} onPress={() => router.push(`/health/nutrition/add-custom?meal=${selectedMeal}`)}>
+        <Button mode="contained-tonal" icon="plus" compact style={styles.methodBtn} onPress={() => router.push(`/health/nutrition/add-custom?meal=${selectedMeal}${date ? `&date=${date}` : ''}`)}>
           Custom
         </Button>
       </View>

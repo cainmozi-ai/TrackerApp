@@ -19,6 +19,15 @@ export interface Program {
   days: ProgramDay[];
 }
 
+export interface WorkoutSummary {
+  workout: WorkoutLog;
+  exerciseCount: number;
+  setCount: number;
+  volume: number;
+  durationMin: number;
+  muscles: string[];
+}
+
 export interface WorkoutPR {
   exerciseName: string;
   /** 'weight' = heaviest set ever; '1rm' = new estimated one-rep max. */
@@ -76,6 +85,7 @@ interface WorkoutState {
   getWorkoutDetail: (workoutId: number) => Promise<{ workout: WorkoutLog; sets: WorkoutSet[] } | null>;
   deleteWorkout: (workoutId: number) => Promise<void>;
   getWeekWorkoutCount: () => Promise<number>;
+  getWorkoutSummaries: (limit?: number) => Promise<WorkoutSummary[]>;
   getLastSets: (exerciseId: number) => Promise<WorkoutSet[]>;
   getProgressionSuggestion: (exerciseId: number, repMax: number) => Promise<{ weight: number; reps: number } | null>;
   getProgressionReport: () => Promise<ProgressionEntry[]>;
@@ -423,6 +433,41 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     await db.runAsync('DELETE FROM workout_sets WHERE workout_log_id = ?', [workoutId]);
     await db.runAsync('DELETE FROM workout_logs WHERE id = ?', [workoutId]);
     await get().loadRecentWorkouts();
+  },
+
+  getWorkoutSummaries: async (limit = 15) => {
+    const db = await getDatabase();
+    const workouts = await db.getAllAsync<Record<string, unknown>>(
+      'SELECT * FROM workout_logs WHERE finished_at IS NOT NULL ORDER BY started_at DESC LIMIT ?',
+      [limit]
+    );
+    const out: WorkoutSummary[] = [];
+    for (const w of workouts) {
+      const id = w.id as number;
+      const agg = await db.getFirstAsync<{ exs: number; sets: number; vol: number }>(
+        `SELECT COUNT(DISTINCT exercise_id) as exs, COUNT(*) as sets, COALESCE(SUM(weight * reps), 0) as vol
+         FROM workout_sets WHERE workout_log_id = ?`,
+        [id]
+      );
+      const muscleRows = await db.getAllAsync<{ m: string }>(
+        `SELECT DISTINCT e.muscle_group as m FROM workout_sets ws
+         JOIN exercises e ON ws.exercise_id = e.id WHERE ws.workout_log_id = ?`,
+        [id]
+      );
+      const workout = mapWorkoutLog(w);
+      const ms = workout.finishedAt
+        ? new Date(workout.finishedAt.replace(' ', 'T') + 'Z').getTime() - new Date(workout.startedAt.replace(' ', 'T') + 'Z').getTime()
+        : 0;
+      out.push({
+        workout,
+        exerciseCount: agg?.exs ?? 0,
+        setCount: agg?.sets ?? 0,
+        volume: Math.round(agg?.vol ?? 0),
+        durationMin: Math.max(1, Math.round(ms / 60000)),
+        muscles: muscleRows.map(r => r.m).filter(Boolean),
+      });
+    }
+    return out;
   },
 
   getWeekWorkoutCount: async () => {

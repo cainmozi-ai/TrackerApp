@@ -3,6 +3,8 @@ import type { Food, FoodLog, MealType, SavedMeal } from '@/types';
 import { getDatabase } from '@/database/schema';
 
 interface NutritionState {
+  /** The date currently shown on the nutrition screen (YYYY-MM-DD). */
+  currentDate: string;
   todayLogs: FoodLog[];
   favorites: Food[];
   recents: Food[];
@@ -43,6 +45,7 @@ function getYesterday(date?: string): string {
 }
 
 export const useNutritionStore = create<NutritionState>((set, get) => ({
+  currentDate: getToday(),
   todayLogs: [],
   favorites: [],
   recents: [],
@@ -57,7 +60,8 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
 
   loadTodayLogs: async (date?: string) => {
     const db = await getDatabase();
-    const targetDate = date || getToday();
+    const targetDate = date || get().currentDate;
+    set({ currentDate: targetDate });
     const rows = await db.getAllAsync<Record<string, unknown>>(
       `SELECT fl.*, f.name, f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, f.serving_size, f.serving_unit, f.brand
        FROM food_logs fl JOIN foods f ON fl.food_id = f.id
@@ -127,7 +131,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     const db = await getDatabase();
     await db.runAsync(
       'INSERT INTO food_logs (food_id, meal_type, servings, log_date) VALUES (?, ?, ?, ?)',
-      [foodId, mealType, servings, date || getToday()]
+      [foodId, mealType, servings, date || get().currentDate]
     );
     await get().loadTodayLogs(date);
   },
@@ -213,7 +217,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
 
   saveMealFromDay: async (name, date) => {
     const db = await getDatabase();
-    const targetDate = date || getToday();
+    const targetDate = date || get().currentDate;
     const logs = await db.getAllAsync<{ food_id: number; servings: number }>(
       'SELECT food_id, servings FROM food_logs WHERE log_date = ?',
       [targetDate]
@@ -232,7 +236,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
 
   logSavedMeal: async (savedMealId, mealType, date) => {
     const db = await getDatabase();
-    const targetDate = date || getToday();
+    const targetDate = date || get().currentDate;
     const items = await db.getAllAsync<{ food_id: number; servings: number }>(
       'SELECT food_id, servings FROM saved_meal_items WHERE saved_meal_id = ?',
       [savedMealId]
@@ -255,8 +259,8 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
 
   copyYesterday: async (date) => {
     const db = await getDatabase();
-    const targetDate = date || getToday();
-    const yesterday = getYesterday(date);
+    const targetDate = date || get().currentDate;
+    const yesterday = getYesterday(targetDate);
     const logs = await db.getAllAsync<{ food_id: number; meal_type: string; servings: number }>(
       'SELECT food_id, meal_type, servings FROM food_logs WHERE log_date = ?',
       [yesterday]

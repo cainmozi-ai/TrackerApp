@@ -8,13 +8,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { theme, moduleColors, spacing, accent, withAlpha } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
-import { useWorkoutStore, type ProgressionEntry } from '@/stores/workoutStore';
+import { useWorkoutStore, type ProgressionEntry, type WorkoutSummary } from '@/stores/workoutStore';
 import type { Exercise } from '@/types';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function ProgressScreen() {
-  const { recentWorkouts, loadRecentWorkouts, exercises, loadExercises, getExerciseHistory, getMuscleVolume, getProgressionReport } = useWorkoutStore();
+  const { recentWorkouts, loadRecentWorkouts, exercises, loadExercises, getExerciseHistory, getMuscleVolume, getProgressionReport, getWorkoutSummaries } = useWorkoutStore();
+  const [summaries, setSummaries] = useState<WorkoutSummary[]>([]);
   const [selected, setSelected] = useState<Exercise | null>(null);
   const [history, setHistory] = useState<{ date: string; maxWeight: number; volume: number }[]>([]);
   const [muscleVol, setMuscleVol] = useState<{ muscleGroup: string; sets: number }[]>([]);
@@ -27,6 +28,7 @@ export default function ProgressScreen() {
     loadExercises('All');
     getMuscleVolume(7).then(setMuscleVol);
     getProgressionReport().then(setProgression);
+    getWorkoutSummaries().then(setSummaries);
   }, []);
 
   useEffect(() => {
@@ -135,19 +137,44 @@ export default function ProgressScreen() {
         )}
 
         <Text variant="titleSmall" style={styles.sectionTitle}>Recent Workouts</Text>
-        {recentWorkouts.length === 0 ? (
+        {summaries.length === 0 ? (
           <Text variant="bodyMedium" style={styles.emptyText}>No completed workouts yet</Text>
         ) : (
-          recentWorkouts.map(w => (
-            <TouchableRipple key={w.id} borderless style={styles.progressionTouch}
-              onPress={() => router.push(`/fitness/workout-detail?id=${w.id}`)}>
-              <Surface style={styles.workoutRow} elevation={0}>
-                <MaterialCommunityIcons name="dumbbell" size={20} color={moduleColors.workout} />
-                <View style={styles.workoutInfo}>
-                  <Text variant="bodyMedium">{w.name}</Text>
-                  <Text variant="labelSmall" style={styles.workoutDate}>{w.startedAt?.slice(0, 10)}</Text>
+          summaries.map(s => (
+            <TouchableRipple key={s.workout.id} borderless style={styles.progressionTouch}
+              onPress={() => router.push(`/fitness/workout-detail?id=${s.workout.id}`)}>
+              <Surface style={styles.workoutCard} elevation={0}>
+                <View style={styles.workoutCardHead}>
+                  <View style={[styles.workoutIcon, { backgroundColor: withAlpha(moduleColors.workout, 0.15) }]}>
+                    <MaterialCommunityIcons name="dumbbell" size={20} color={moduleColors.workout} />
+                  </View>
+                  <View style={styles.workoutInfo}>
+                    <Text variant="titleSmall" style={{ fontWeight: '700' }}>{s.workout.name}</Text>
+                    <Text variant="labelSmall" style={styles.workoutDate}>
+                      {s.workout.startedAt?.slice(0, 10)} · {s.durationMin >= 60 ? `${Math.floor(s.durationMin / 60)}h ${s.durationMin % 60}m` : `${s.durationMin} min`}
+                    </Text>
+                  </View>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
                 </View>
-                <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+                <View style={styles.workoutStats}>
+                  <View style={styles.workoutStat}>
+                    <Text variant="labelSmall" style={styles.workoutStatLabel}>EXERCISES</Text>
+                    <Text variant="titleSmall" style={{ fontWeight: '800', color: accent }}>{s.exerciseCount}</Text>
+                  </View>
+                  <View style={styles.workoutStat}>
+                    <Text variant="labelSmall" style={styles.workoutStatLabel}>SETS</Text>
+                    <Text variant="titleSmall" style={{ fontWeight: '800', color: accent }}>{s.setCount}</Text>
+                  </View>
+                  <View style={styles.workoutStat}>
+                    <Text variant="labelSmall" style={styles.workoutStatLabel}>VOLUME</Text>
+                    <Text variant="titleSmall" style={{ fontWeight: '800', color: accent }}>{s.volume}</Text>
+                  </View>
+                </View>
+                {s.muscles.length > 0 && (
+                  <Text variant="labelSmall" style={[styles.workoutDate, { marginTop: 4 }]} numberOfLines={1}>
+                    {s.muscles.join(' · ')}
+                  </Text>
+                )}
               </Surface>
             </TouchableRipple>
           ))
@@ -197,6 +224,12 @@ const styles = StyleSheet.create({
   chart: { borderRadius: 12 },
   workoutRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: theme.colors.surface, borderRadius: 10, marginBottom: spacing.xs, gap: spacing.sm },
   progressionTouch: { borderRadius: 10, marginBottom: spacing.xs },
+  workoutCard: { padding: spacing.md, backgroundColor: theme.colors.surface, borderRadius: 12 },
+  workoutCardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  workoutIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  workoutStats: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm },
+  workoutStat: {},
+  workoutStatLabel: { color: theme.colors.onSurfaceVariant, letterSpacing: 0.8, fontSize: 10 },
   progressionRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: theme.colors.surface, borderRadius: 10, gap: spacing.sm },
   workoutInfo: { flex: 1 },
   workoutDate: { color: theme.colors.onSurfaceVariant },

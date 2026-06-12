@@ -20,7 +20,7 @@ export const SERVING_UNITS = [
 ];
 
 export default function AddCustomFoodScreen() {
-  const { meal } = useLocalSearchParams<{ meal?: string }>();
+  const { meal, date } = useLocalSearchParams<{ meal?: string; date?: string }>();
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
   const [calories, setCalories] = useState('');
@@ -63,7 +63,7 @@ export default function AddCustomFoodScreen() {
     setSaving(true);
     try {
       const foodId = await saveFood();
-      await logFood(foodId, selectedMeal, 1);
+      await logFood(foodId, selectedMeal, 1, date);
       await reward(10, 'meal', 'Logged a meal', 'first_meal');
       // Pop add-custom AND the search screen so the user lands back on the
       // nutrition log where the new food is now visible.
