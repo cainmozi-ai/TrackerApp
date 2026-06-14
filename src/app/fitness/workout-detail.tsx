@@ -9,6 +9,7 @@ import { spacing, shape, accent, moduleColors } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
+import { type LogType, formatSet } from '@/utils/workout';
 import type { WorkoutLog, WorkoutSet } from '@/types';
 
 function formatDuration(startedAt: string, finishedAt: string | null): string {
@@ -86,6 +87,7 @@ export default function WorkoutDetailScreen() {
         {exerciseIds.map(exId => {
           const exSets = sets.filter(s => s.exerciseId === exId);
           const name = exSets[0]?.exercise?.name || 'Exercise';
+          const logType = (exSets[0]?.exercise?.logType || 'weight_reps') as LogType;
           return (
             <View key={exId} style={[styles.exCard, { backgroundColor: colors.surface }]}>
               <View style={styles.exHead}>
@@ -96,7 +98,7 @@ export default function WorkoutDetailScreen() {
               </View>
               {exSets.map((s, i) => (
                 <Text key={s.id} variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                  Set {i + 1}: {s.weight} {weightUnit} × {s.reps}
+                  Set {i + 1}: {formatSet(s, logType, weightUnit)}
                   {s.rpe != null ? ` · ${s.rpe} RIR` : ''}{s.setType !== 'normal' ? ` · ${s.setType}` : ''}
                 </Text>
               ))}

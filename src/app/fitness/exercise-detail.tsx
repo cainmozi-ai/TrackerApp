@@ -10,6 +10,7 @@ import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { MotionCard } from '@/components/common/MotionCard';
 import { useWorkoutStore, estimate1RM } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
+import { type LogType, formatSet } from '@/utils/workout';
 import type { Exercise, WorkoutSet } from '@/types';
 
 export default function ExerciseDetailScreen() {
@@ -51,10 +52,12 @@ export default function ExerciseDetailScreen() {
     );
   }
 
+  const logType = (exercise.logType || 'weight_reps') as LogType;
+  const isWeight = logType === 'weight_reps';
   const working = lastSets.filter(s => s.setType !== 'warmup');
   const best1RM = working.reduce((best, s) => Math.max(best, estimate1RM(s.weight, s.reps)), 0);
   const lastWeight = working.length ? Math.max(...working.map(s => s.weight)) : 0;
-  const readyToProgress = !!suggestion && suggestion.weight > lastWeight && lastWeight > 0;
+  const readyToProgress = isWeight && !!suggestion && suggestion.weight > lastWeight && lastWeight > 0;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -96,64 +99,70 @@ export default function ExerciseDetailScreen() {
 
         <MotionCard index={1} style={styles.card}>
           <View style={styles.cardHead}>
-            <MaterialCommunityIcons name="trending-up" size={20} color={accent} />
-            <Text variant="titleSmall" style={[styles.cardTitle, { color: colors.onSurface }]}>Progressive Overload</Text>
+            <MaterialCommunityIcons name={isWeight ? 'trending-up' : 'history'} size={20} color={accent} />
+            <Text variant="titleSmall" style={[styles.cardTitle, { color: colors.onSurface }]}>
+              {isWeight ? 'Progressive Overload' : 'Recent Sets'}
+            </Text>
           </View>
 
           {working.length === 0 ? (
             <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
-              No sets logged yet. Once you train this exercise, your suggested next step shows up here.
+              No sets logged yet. Once you train this exercise, it shows up here.
             </Text>
           ) : (
             <>
-              <View style={[styles.verdict, { backgroundColor: withAlpha(readyToProgress ? accent : '#4FC3F7', 0.14) }]}>
-                <MaterialCommunityIcons
-                  name={readyToProgress ? 'arrow-up-bold-circle' : 'repeat'}
-                  size={22}
-                  color={readyToProgress ? accent : '#4FC3F7'}
-                />
-                <View style={styles.verdictText}>
-                  <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>
-                    {readyToProgress
-                      ? `Move up — try ${suggestion!.weight} ${unit} × ${suggestion!.reps}`
-                      : suggestion
-                        ? `Stay at ${suggestion.weight} ${unit} — aim for ${suggestion.reps} reps`
-                        : 'Keep logging to unlock suggestions'}
-                  </Text>
-                  <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                    {readyToProgress
-                      ? 'You hit the top of your rep range last session. Time to add weight.'
-                      : 'Add a rep each session; when you hit the top of the range, the weight goes up.'}
-                  </Text>
-                </View>
-              </View>
+              {isWeight && (
+                <>
+                  <View style={[styles.verdict, { backgroundColor: withAlpha(readyToProgress ? accent : '#4FC3F7', 0.14) }]}>
+                    <MaterialCommunityIcons
+                      name={readyToProgress ? 'arrow-up-bold-circle' : 'repeat'}
+                      size={22}
+                      color={readyToProgress ? accent : '#4FC3F7'}
+                    />
+                    <View style={styles.verdictText}>
+                      <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>
+                        {readyToProgress
+                          ? `Move up — try ${suggestion!.weight} ${unit} × ${suggestion!.reps}`
+                          : suggestion
+                            ? `Stay at ${suggestion.weight} ${unit} — aim for ${suggestion.reps} reps`
+                            : 'Keep logging to unlock suggestions'}
+                      </Text>
+                      <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                        {readyToProgress
+                          ? 'You hit the top of your rep range last session. Time to add weight.'
+                          : 'Add a rep each session; when you hit the top of the range, the weight goes up.'}
+                      </Text>
+                    </View>
+                  </View>
 
-              <View style={styles.statRow}>
-                <View style={styles.stat}>
-                  <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{lastWeight} {unit}</Text>
-                  <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Last top weight</Text>
-                </View>
-                <View style={styles.stat}>
-                  <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{best1RM} {unit}</Text>
-                  <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Est. 1RM</Text>
-                </View>
-                <View style={styles.stat}>
-                  <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{history.length}</Text>
-                  <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Sessions</Text>
-                </View>
-              </View>
+                  <View style={styles.statRow}>
+                    <View style={styles.stat}>
+                      <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{lastWeight} {unit}</Text>
+                      <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Last top weight</Text>
+                    </View>
+                    <View style={styles.stat}>
+                      <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{best1RM} {unit}</Text>
+                      <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Est. 1RM</Text>
+                    </View>
+                    <View style={styles.stat}>
+                      <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{history.length}</Text>
+                      <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Sessions</Text>
+                    </View>
+                  </View>
+                </>
+              )}
 
               <Text variant="labelMedium" style={[styles.lastLabel, { color: colors.onSurfaceVariant }]}>Last session</Text>
               {lastSets.map((s, i) => (
                 <Text key={s.id} variant="bodySmall" style={{ color: colors.onSurface }}>
-                  Set {i + 1}: {s.weight} {unit} × {s.reps}{s.rpe != null ? ` · ${s.rpe} RIR` : ''}{s.setType !== 'normal' ? ` · ${s.setType}` : ''}
+                  Set {i + 1}: {formatSet(s, logType, unit)}{s.rpe != null ? ` · ${s.rpe} RIR` : ''}{s.setType !== 'normal' ? ` · ${s.setType}` : ''}
                 </Text>
               ))}
             </>
           )}
         </MotionCard>
 
-        {history.length > 1 && (
+        {isWeight && history.length > 1 && (
           <MotionCard index={2} style={styles.card}>
             <View style={styles.cardHead}>
               <MaterialCommunityIcons name="chart-line" size={20} color={moduleColors.workout} />

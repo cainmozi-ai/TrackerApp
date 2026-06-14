@@ -104,6 +104,8 @@ export interface Exercise {
   muscleGroup: string;
   /** Specific head/region the exercise emphasizes, e.g. "Biceps — long head". */
   target: string;
+  /** How it's measured: 'weight_reps' | 'bodyweight' | 'duration' | 'cardio'. */
+  logType: string;
   equipment: string;
   description: string;
   tips: string[];
@@ -148,6 +150,10 @@ export interface WorkoutSet {
   setNumber: number;
   reps: number;
   weight: number;
+  /** Seconds, for duration/cardio exercises (0 otherwise). */
+  durationSeconds: number;
+  /** Kilometres, for cardio exercises (0 otherwise). */
+  distance: number;
   rpe: number | null;
   setType: string;
   isCompleted: boolean;

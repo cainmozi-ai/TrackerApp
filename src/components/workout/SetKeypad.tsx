@@ -4,12 +4,15 @@ import { Text, Portal } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, accent, withAlpha } from '@/theme';
+import { type LogType, digitsToTime, digitsToSeconds, digitsSecondsOverflow, secondsToDigits } from '@/utils/workout';
 
 export type SetType = 'normal' | 'warmup' | 'failure' | 'drop';
 
 export interface SetEntry {
   weight: number;
   reps: number;
+  durationSeconds: number;
+  distance: number;
   rpe: number | null;
   setType: SetType;
 }
@@ -17,7 +20,8 @@ export interface SetEntry {
 interface SetKeypadProps {
   visible: boolean;
   exerciseName: string;
-  initial: { weight: string; reps: string; rpe?: number | null; setType?: SetType };
+  logType?: LogType;
+  initial: { weight?: string; reps?: string; durationSeconds?: number; distance?: string; rpe?: number | null; setType?: SetType };
   weightUnit?: string;
   confirmLabel?: string;
   onConfirm: (entry: SetEntry) => void;
@@ -26,6 +30,16 @@ interface SetKeypadProps {
 
 const MAX_REPS = 100;
 const MAX_WEIGHT = 999;
+const MAX_DISTANCE = 999;
+
+type FieldKey = 'weight' | 'reps' | 'added' | 'distance' | 'time';
+
+const FIELDS_FOR: Record<LogType, FieldKey[]> = {
+  weight_reps: ['weight', 'reps'],
+  bodyweight: ['reps', 'added'],
+  duration: ['time'],
+  cardio: ['distance', 'time'],
+};
 
 const SET_TYPES: { key: SetType; label: string }[] = [
   { key: 'normal', label: 'Normal' },
@@ -36,52 +50,103 @@ const SET_TYPES: { key: SetType; label: string }[] = [
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'];
 
-/** MacroFactor-style fast set entry: an in-app keypad with Weight/Reps fields,
- * set-type chips, optional RIR, and a confirm — no fiddly OS keyboard mid-set. */
-export function SetKeypad({ visible, exerciseName, initial, weightUnit = 'kg', confirmLabel = 'Log set', onConfirm, onDismiss }: SetKeypadProps) {
+/** Fast in-app set entry. Fields adapt to the exercise's log type:
+ * weight×reps, bodyweight reps, a duration (mm:ss), or cardio distance+time. */
+export function SetKeypad({ visible, exerciseName, logType = 'weight_reps', initial, weightUnit = 'kg', confirmLabel = 'Log set', onConfirm, onDismiss }: SetKeypadProps) {
   const { colors } = useAppTheme();
-  const [weight, setWeight] = useState(initial.weight);
-  const [reps, setReps] = useState(initial.reps);
-  const [field, setField] = useState<'weight' | 'reps'>('weight');
+  const fields = FIELDS_FOR[logType];
+  const [weight, setWeight] = useState(initial.weight ?? '');
+  const [reps, setReps] = useState(initial.reps ?? '');
+  const [distance, setDistance] = useState(initial.distance ?? '');
+  const [timeDigits, setTimeDigits] = useState(secondsToDigits(initial.durationSeconds ?? 0));
+  const [field, setField] = useState<FieldKey>(fields[0]);
   // Prefilled values are suggestions: the first digit typed into an untouched
   // field replaces it instead of appending (so "12" + tap 8 gives "8", not "128").
-  const [touched, setTouched] = useState<{ weight: boolean; reps: boolean }>({ weight: false, reps: false });
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [rpe, setRpe] = useState<number | null>(null);
   const [setType, setSetType] = useState<SetType>('normal');
 
+  const showSetTypes = logType === 'weight_reps' || logType === 'bodyweight';
+  const showRir = showSetTypes;
+
   useEffect(() => {
     if (visible) {
-      setWeight(initial.weight);
-      setReps(initial.reps);
-      setField('weight');
-      setTouched({ weight: false, reps: false });
+      setWeight(initial.weight ?? '');
+      setReps(initial.reps ?? '');
+      setDistance(initial.distance ?? '');
+      setTimeDigits(secondsToDigits(initial.durationSeconds ?? 0));
+      setField(FIELDS_FOR[logType][0]);
+      setTouched({});
       setRpe(initial.rpe ?? null);
       setSetType(initial.setType ?? 'normal');
     }
-  }, [visible, initial.weight, initial.reps]);
+  }, [visible, initial.weight, initial.reps, initial.distance, initial.durationSeconds, logType]);
 
   if (!visible) return null;
 
+  const stateKey = (f: FieldKey) => (f === 'added' ? 'weight' : f);
+  const valueFor = (f: FieldKey): string => {
+    if (f === 'time') return digitsToTime(timeDigits);
+    if (f === 'distance') return distance;
+    if (f === 'reps') return reps;
+    return weight; // weight + added
+  };
+  const labelFor = (f: FieldKey): string => {
+    switch (f) {
+      case 'weight': return `Weight (${weightUnit})`;
+      case 'added': return `+ Added (${weightUnit})`;
+      case 'reps': return 'Reps';
+      case 'distance': return 'Distance (km)';
+      case 'time': return 'Time';
+    }
+  };
+
   const press = (k: string) => {
-    const fresh = !touched[field];
-    const cur = fresh && k !== 'del' ? '' : (field === 'weight' ? weight : reps);
-    let next = cur;
-    if (k === 'del') next = (field === 'weight' ? weight : reps).slice(0, -1);
-    else if (k === '.') next = cur.includes('.') ? cur : (cur || '0') + '.';
-    else next = cur === '0' ? k : cur + k;
-    if (!touched[field]) setTouched(t => ({ ...t, [field]: true }));
-    field === 'weight' ? setWeight(next) : setReps(next);
+    if (field === 'time') {
+      if (k === 'del') setTimeDigits(t => t.slice(0, -1));
+      else if (k !== '.') setTimeDigits(t => (t + k).replace(/^0+/, '').slice(-4));
+      return;
+    }
+    const key = stateKey(field);
+    const isReps = field === 'reps';
+    const cur = field === 'distance' ? distance : isReps ? reps : weight;
+    const setVal = field === 'distance' ? setDistance : isReps ? setReps : setWeight;
+    const fresh = !touched[key];
+    const base = fresh && k !== 'del' ? '' : cur;
+    let next = base;
+    if (k === 'del') next = cur.slice(0, -1);
+    else if (k === '.') { if (isReps) return; next = base.includes('.') ? base : (base || '0') + '.'; }
+    else next = base === '0' ? k : base + k;
+    if (!touched[key]) setTouched(t => ({ ...t, [key]: true }));
+    setVal(next);
   };
 
   const parsedWeight = parseFloat(weight) || 0;
-  const parsedReps = parseInt(reps) || 0;
-  // Weight 0 is legitimate (bodyweight); reps must be a sane positive count.
-  const valid = parsedReps >= 1 && parsedReps <= MAX_REPS && parsedWeight >= 0 && parsedWeight <= MAX_WEIGHT;
+  const parsedReps = parseInt(reps, 10) || 0;
+  const parsedDistance = parseFloat(distance) || 0;
+  const durationSeconds = digitsToSeconds(timeDigits);
+  const secOverflow = digitsSecondsOverflow(timeDigits);
+
+  let valid = true;
+  let errorMsg = '';
+  if (logType === 'duration') {
+    if (secOverflow) { valid = false; errorMsg = 'Seconds must be under 60'; }
+    else if (durationSeconds < 1) valid = false;
+  } else if (logType === 'cardio') {
+    if (secOverflow) { valid = false; errorMsg = 'Seconds must be under 60'; }
+    else if (durationSeconds < 1 && parsedDistance <= 0) valid = false;
+    else if (parsedDistance > MAX_DISTANCE) { valid = false; errorMsg = `Distance capped at ${MAX_DISTANCE} km`; }
+  } else {
+    if (parsedReps < 1 || parsedReps > MAX_REPS) { valid = false; if (parsedReps > MAX_REPS) errorMsg = `Reps capped at ${MAX_REPS}`; }
+    if (parsedWeight > MAX_WEIGHT) { valid = false; errorMsg = `Weight capped at ${MAX_WEIGHT} ${weightUnit}`; }
+  }
 
   const confirm = () => {
     if (!valid) return;
-    onConfirm({ weight: parsedWeight, reps: parsedReps, rpe, setType });
+    onConfirm({ weight: parsedWeight, reps: parsedReps, durationSeconds, distance: parsedDistance, rpe, setType });
   };
+
+  const decimalDisabled = field === 'time' || field === 'reps';
 
   return (
     <Portal>
@@ -90,45 +155,52 @@ export function SetKeypad({ visible, exerciseName, initial, weightUnit = 'kg', c
         <Text variant="titleSmall" style={[styles.title, { color: colors.onSurface }]} numberOfLines={1}>{exerciseName}</Text>
 
         <View style={styles.fields}>
-          <FieldBox label={`Weight (${weightUnit})`} value={weight} active={field === 'weight'} onPress={() => setField('weight')} />
-          <FieldBox label="Reps" value={reps} active={field === 'reps'} onPress={() => setField('reps')} />
+          {fields.map(f => (
+            <FieldBox key={f} label={labelFor(f)} value={valueFor(f)} active={field === f} onPress={() => setField(f)} />
+          ))}
         </View>
 
-        {!valid && (parsedReps > MAX_REPS || parsedWeight > MAX_WEIGHT) && (
-          <Text variant="labelSmall" style={{ color: colors.error, textAlign: 'center' }}>
-            {parsedReps > MAX_REPS ? `Reps capped at ${MAX_REPS} — double-check that number` : `Weight capped at ${MAX_WEIGHT} ${weightUnit}`}
-          </Text>
+        {!!errorMsg && (
+          <Text variant="labelSmall" style={{ color: colors.error, textAlign: 'center' }}>{errorMsg}</Text>
         )}
 
-        <View style={styles.chipRow}>
-          {SET_TYPES.map(t => (
-            <Pressable key={t.key} onPress={() => setSetType(t.key)}
-              style={[styles.chip, { backgroundColor: setType === t.key ? accent : colors.surfaceVariant }]}>
-              <Text variant="labelSmall" style={{ color: setType === t.key ? '#06220F' : colors.onSurfaceVariant, fontWeight: '700' }}>
-                {t.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        {showSetTypes && (
+          <View style={styles.chipRow}>
+            {SET_TYPES.map(t => (
+              <Pressable key={t.key} onPress={() => setSetType(t.key)}
+                style={[styles.chip, { backgroundColor: setType === t.key ? accent : colors.surfaceVariant }]}>
+                <Text variant="labelSmall" style={{ color: setType === t.key ? '#06220F' : colors.onSurfaceVariant, fontWeight: '700' }}>
+                  {t.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
-        <View style={styles.chipRow}>
-          <Text variant="labelSmall" style={[styles.rpeLabel, { color: colors.onSurfaceVariant }]}>RIR</Text>
-          {[0, 1, 2, 3, 4].map(v => (
-            <Pressable key={v} onPress={() => setRpe(rpe === v ? null : v)}
-              style={[styles.rpeChip, { backgroundColor: rpe === v ? withAlpha(accent, 0.25) : colors.surfaceVariant, borderColor: rpe === v ? accent : 'transparent' }]}>
-              <Text variant="labelMedium" style={{ color: colors.onSurface }}>{v}</Text>
-            </Pressable>
-          ))}
-        </View>
+        {showRir && (
+          <View style={styles.chipRow}>
+            <Text variant="labelSmall" style={[styles.rpeLabel, { color: colors.onSurfaceVariant }]}>RIR</Text>
+            {[0, 1, 2, 3, 4].map(v => (
+              <Pressable key={v} onPress={() => setRpe(rpe === v ? null : v)}
+                style={[styles.rpeChip, { backgroundColor: rpe === v ? withAlpha(accent, 0.25) : colors.surfaceVariant, borderColor: rpe === v ? accent : 'transparent' }]}>
+                <Text variant="labelMedium" style={{ color: colors.onSurface }}>{v}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         <View style={styles.keypad}>
-          {KEYS.map(k => (
-            <Pressable key={k} onPress={() => press(k)} style={[styles.key, { backgroundColor: colors.surfaceVariant }]}>
-              {k === 'del'
-                ? <MaterialCommunityIcons name="backspace-outline" size={22} color={colors.onSurface} />
-                : <Text variant="titleLarge" style={{ color: colors.onSurface }}>{k}</Text>}
-            </Pressable>
-          ))}
+          {KEYS.map(k => {
+            const dim = k === '.' && decimalDisabled;
+            return (
+              <Pressable key={k} onPress={() => press(k)} disabled={dim}
+                style={[styles.key, { backgroundColor: colors.surfaceVariant, opacity: dim ? 0.3 : 1 }]}>
+                {k === 'del'
+                  ? <MaterialCommunityIcons name="backspace-outline" size={22} color={colors.onSurface} />
+                  : <Text variant="titleLarge" style={{ color: colors.onSurface }}>{k}</Text>}
+              </Pressable>
+            );
+          })}
         </View>
 
         <Pressable onPress={confirm} disabled={!valid}

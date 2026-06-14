@@ -42,12 +42,22 @@ export interface WorkoutSummary {
   muscles: string[];
 }
 
+/** The measured values of one set, independent of how it's displayed. */
+export interface SetValues {
+  reps: number;
+  weight: number;
+  durationSeconds: number;
+  distance: number;
+  rpe?: number;
+}
+
 export interface WorkoutPR {
   exerciseName: string;
-  /** 'weight' = heaviest set ever; '1rm' = new estimated one-rep max. */
-  type: 'weight' | '1rm';
+  /** What kind of best was beaten. */
+  type: 'weight' | '1rm' | 'reps' | 'time' | 'distance';
   value: number;
   previous: number;
+  unit?: string;
 }
 
 /** Epley estimated one-rep max. */
@@ -91,8 +101,8 @@ interface WorkoutState {
   discardWorkout: (workoutId: number) => Promise<void>;
   loadActiveSets: (workoutId: number) => Promise<void>;
   finishWorkout: (workoutId: number, notes?: string) => Promise<void>;
-  logSet: (workoutId: number, exerciseId: number, setNumber: number, reps: number, weight: number, rpe?: number, setType?: string) => Promise<void>;
-  updateSet: (setId: number, workoutId: number, reps: number, weight: number, rpe?: number, setType?: string) => Promise<void>;
+  logSet: (workoutId: number, exerciseId: number, setNumber: number, entry: SetValues, setType?: string) => Promise<void>;
+  updateSet: (setId: number, workoutId: number, entry: SetValues, setType?: string) => Promise<void>;
   removeSet: (setId: number, workoutId: number) => Promise<void>;
   getExerciseBest: (exerciseId: number, excludeWorkoutId?: number) => Promise<{ maxWeight: number; max1RM: number }>;
   detectPRs: (workoutId: number) => Promise<WorkoutPR[]>;
@@ -259,7 +269,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   getTemplateExercises: async (templateId) => {
     const db = await getDatabase();
     const rows = await db.getAllAsync<Record<string, unknown>>(
-      `SELECT te.*, e.name, e.muscle_group, e.equipment, e.description, e.is_custom
+      `SELECT te.*, e.name, e.muscle_group, e.target, e.log_type, e.equipment, e.description, e.is_custom
        FROM template_exercises te JOIN exercises e ON te.exercise_id = e.id
        WHERE te.template_id = ? ORDER BY te.sort_order`,
       [templateId]
@@ -281,6 +291,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         equipment: r.equipment as string,
         description: r.description as string,
         target: (r.target as string | null) ?? '',
+        logType: (r.log_type as string | null) ?? 'weight_reps',
         tips: [],
         isCustom: (r.is_custom as number) === 1,
       },
@@ -350,20 +361,20 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     await get().loadRecentWorkouts();
   },
 
-  logSet: async (workoutId, exerciseId, setNumber, reps, weight, rpe, setType) => {
+  logSet: async (workoutId, exerciseId, setNumber, entry, setType) => {
     const db = await getDatabase();
     await db.runAsync(
-      'INSERT INTO workout_sets (workout_log_id, exercise_id, set_number, reps, weight, rpe, set_type, is_completed) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
-      [workoutId, exerciseId, setNumber, reps, weight, rpe ?? null, setType || 'normal']
+      'INSERT INTO workout_sets (workout_log_id, exercise_id, set_number, reps, weight, duration_seconds, distance, rpe, set_type, is_completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
+      [workoutId, exerciseId, setNumber, entry.reps, entry.weight, entry.durationSeconds, entry.distance, entry.rpe ?? null, setType || 'normal']
     );
     await refreshActiveSets(workoutId, set);
   },
 
-  updateSet: async (setId, workoutId, reps, weight, rpe, setType) => {
+  updateSet: async (setId, workoutId, entry, setType) => {
     const db = await getDatabase();
     await db.runAsync(
-      'UPDATE workout_sets SET reps = ?, weight = ?, rpe = ?, set_type = ? WHERE id = ?',
-      [reps, weight, rpe ?? null, setType || 'normal', setId]
+      'UPDATE workout_sets SET reps = ?, weight = ?, duration_seconds = ?, distance = ?, rpe = ?, set_type = ? WHERE id = ?',
+      [entry.reps, entry.weight, entry.durationSeconds, entry.distance, entry.rpe ?? null, setType || 'normal', setId]
     );
     await refreshActiveSets(workoutId, set);
   },
@@ -394,26 +405,66 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
   detectPRs: async (workoutId) => {
     const db = await getDatabase();
-    const exIds = await db.getAllAsync<{ exercise_id: number; name: string }>(
-      `SELECT DISTINCT ws.exercise_id, e.name FROM workout_sets ws
+    const exIds = await db.getAllAsync<{ exercise_id: number; name: string; log_type: string | null }>(
+      `SELECT DISTINCT ws.exercise_id, e.name, e.log_type FROM workout_sets ws
        JOIN exercises e ON ws.exercise_id = e.id
        WHERE ws.workout_log_id = ? AND ws.set_type != 'warmup'`,
       [workoutId]
     );
     const prs: WorkoutPR[] = [];
     for (const ex of exIds) {
-      const before = await get().getExerciseBest(ex.exercise_id, workoutId);
-      const sets = await db.getAllAsync<{ weight: number; reps: number }>(
-        "SELECT weight, reps FROM workout_sets WHERE workout_log_id = ? AND exercise_id = ? AND set_type != 'warmup'",
+      const logType = ex.log_type ?? 'weight_reps';
+      const sets = await db.getAllAsync<{ weight: number; reps: number; duration_seconds: number; distance: number }>(
+        "SELECT weight, reps, duration_seconds, distance FROM workout_sets WHERE workout_log_id = ? AND exercise_id = ? AND set_type != 'warmup'",
         [workoutId, ex.exercise_id]
       );
-      const thisMaxWeight = Math.max(...sets.map(s => s.weight), 0);
-      const thisMax1RM = Math.max(...sets.map(s => estimate1RM(s.weight, s.reps)), 0);
-      // Only count PRs against real history — a first session is a baseline, not a PR.
-      if (before.maxWeight > 0 && thisMaxWeight > before.maxWeight) {
-        prs.push({ exerciseName: ex.name, type: 'weight', value: thisMaxWeight, previous: before.maxWeight });
-      } else if (before.max1RM > 0 && thisMax1RM > before.max1RM) {
-        prs.push({ exerciseName: ex.name, type: '1rm', value: thisMax1RM, previous: before.max1RM });
+      // The best from every OTHER finished workout — a first session is a baseline, not a PR.
+      const prev = await db.getFirstAsync<{ w: number; r: number; d: number; dist: number }>(
+        `SELECT COALESCE(MAX(ws.weight),0) as w, COALESCE(MAX(ws.reps),0) as r,
+                COALESCE(MAX(ws.duration_seconds),0) as d, COALESCE(MAX(ws.distance),0) as dist
+         FROM workout_sets ws JOIN workout_logs wl ON ws.workout_log_id = wl.id
+         WHERE ws.exercise_id = ? AND wl.finished_at IS NOT NULL
+           AND ws.set_type != 'warmup' AND ws.workout_log_id != ?`,
+        [ex.exercise_id, workoutId]
+      );
+
+      if (logType === 'cardio') {
+        const thisDist = Math.max(...sets.map(s => s.distance), 0);
+        const thisDur = Math.max(...sets.map(s => s.duration_seconds), 0);
+        if ((prev?.dist ?? 0) > 0 && thisDist > prev!.dist) {
+          prs.push({ exerciseName: ex.name, type: 'distance', value: thisDist, previous: prev!.dist, unit: 'km' });
+        } else if ((prev?.d ?? 0) > 0 && thisDur > prev!.d) {
+          prs.push({ exerciseName: ex.name, type: 'time', value: thisDur, previous: prev!.d });
+        }
+      } else if (logType === 'duration') {
+        const thisDur = Math.max(...sets.map(s => s.duration_seconds), 0);
+        if ((prev?.d ?? 0) > 0 && thisDur > prev!.d) {
+          prs.push({ exerciseName: ex.name, type: 'time', value: thisDur, previous: prev!.d });
+        }
+      } else if (logType === 'bodyweight') {
+        // Beating heaviest added load is the strongest signal; else most reps.
+        const thisWeight = Math.max(...sets.map(s => s.weight), 0);
+        const thisReps = Math.max(...sets.map(s => s.reps), 0);
+        if ((prev?.w ?? 0) > 0 && thisWeight > prev!.w) {
+          prs.push({ exerciseName: ex.name, type: 'weight', value: thisWeight, previous: prev!.w });
+        } else if ((prev?.r ?? 0) > 0 && thisReps > prev!.r) {
+          prs.push({ exerciseName: ex.name, type: 'reps', value: thisReps, previous: prev!.r });
+        }
+      } else {
+        const thisMaxWeight = Math.max(...sets.map(s => s.weight), 0);
+        const thisMax1RM = Math.max(...sets.map(s => estimate1RM(s.weight, s.reps)), 0);
+        const prev1RM = await db.getFirstAsync<{ m: number }>(
+          `SELECT COALESCE(MAX(ws.weight * (1 + ws.reps / 30.0)), 0) as m
+           FROM workout_sets ws JOIN workout_logs wl ON ws.workout_log_id = wl.id
+           WHERE ws.exercise_id = ? AND wl.finished_at IS NOT NULL
+             AND ws.set_type != 'warmup' AND ws.workout_log_id != ?`,
+          [ex.exercise_id, workoutId]
+        );
+        if ((prev?.w ?? 0) > 0 && thisMaxWeight > prev!.w) {
+          prs.push({ exerciseName: ex.name, type: 'weight', value: thisMaxWeight, previous: prev!.w });
+        } else if ((prev1RM?.m ?? 0) > 0 && thisMax1RM > Math.round((prev1RM!.m) * 10) / 10) {
+          prs.push({ exerciseName: ex.name, type: '1rm', value: thisMax1RM, previous: Math.round(prev1RM!.m * 10) / 10 });
+        }
       }
     }
     return prs;
@@ -427,7 +478,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     );
     if (!row) return null;
     const setRows = await db.getAllAsync<Record<string, unknown>>(
-      `SELECT ws.*, e.name as exercise_name, e.muscle_group
+      `SELECT ws.*, e.name as exercise_name, e.muscle_group, e.log_type
        FROM workout_sets ws JOIN exercises e ON ws.exercise_id = e.id
        WHERE ws.workout_log_id = ? ORDER BY ws.exercise_id, ws.set_number`,
       [workoutId]
@@ -438,6 +489,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         id: r.exercise_id as number,
         name: r.exercise_name as string,
         muscleGroup: r.muscle_group as string,
+        logType: (r.log_type as string | null) ?? 'weight_reps',
         equipment: '',
         description: '',
         target: '',
@@ -547,6 +599,9 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const report: ProgressionEntry[] = [];
     for (const row of trained) {
       const exercise = mapExercise(row);
+      // Weight-based progression only — cardio/duration/bodyweight don't fit the
+      // "add 2.5 kg when you hit the top of the rep range" model.
+      if (exercise.logType !== 'weight_reps') continue;
       // Use the exercise's template rep target when it has one, else 12.
       const target = await db.getFirstAsync<{ rep_max: number | null }>(
         'SELECT MAX(COALESCE(target_rep_max, target_reps)) as rep_max FROM template_exercises WHERE exercise_id = ?',
@@ -616,7 +671,7 @@ async function refreshActiveSets(
 ): Promise<void> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<Record<string, unknown>>(
-    `SELECT ws.*, e.name as exercise_name, e.muscle_group
+    `SELECT ws.*, e.name as exercise_name, e.muscle_group, e.log_type
      FROM workout_sets ws JOIN exercises e ON ws.exercise_id = e.id
      WHERE ws.workout_log_id = ? ORDER BY ws.exercise_id, ws.set_number`,
     [workoutId]
@@ -628,6 +683,7 @@ async function refreshActiveSets(
         id: r.exercise_id as number,
         name: r.exercise_name as string,
         muscleGroup: r.muscle_group as string,
+        logType: (r.log_type as string | null) ?? 'weight_reps',
         equipment: '',
         description: '',
         target: '',
@@ -646,6 +702,8 @@ function mapSet(r: Record<string, unknown>): WorkoutSet {
     setNumber: r.set_number as number,
     reps: r.reps as number,
     weight: r.weight as number,
+    durationSeconds: (r.duration_seconds as number | null) ?? 0,
+    distance: (r.distance as number | null) ?? 0,
     rpe: r.rpe as number | null,
     setType: (r.set_type as string | null) ?? 'normal',
     isCompleted: (r.is_completed as number) === 1,
@@ -665,6 +723,7 @@ function mapExercise(r: Record<string, unknown>): Exercise {
     name: r.name as string,
     muscleGroup: r.muscle_group as string,
     target: (r.target as string | null) ?? '',
+    logType: (r.log_type as string | null) ?? 'weight_reps',
     equipment: r.equipment as string,
     description: r.description as string,
     tips,

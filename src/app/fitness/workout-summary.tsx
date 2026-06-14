@@ -11,6 +11,7 @@ import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, accent, moduleColors, withAlpha } from '@/theme';
 import { useWorkoutStore, type WorkoutPR } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
+import { type LogType, formatSetCompact, formatDuration as formatSecs } from '@/utils/workout';
 import type { WorkoutLog, WorkoutSet } from '@/types';
 
 function formatDuration(startedAt: string, finishedAt: string | null): string {
@@ -18,6 +19,17 @@ function formatDuration(startedAt: string, finishedAt: string | null): string {
   const ms = new Date(finishedAt.replace(' ', 'T')).getTime() - new Date(startedAt.replace(' ', 'T')).getTime();
   const mins = Math.max(1, Math.round(ms / 60000));
   return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins} min`;
+}
+
+/** Human-readable before→after for any PR type. */
+function prText(pr: WorkoutPR, unit: string): string {
+  switch (pr.type) {
+    case 'weight': return `${pr.previous} → ${pr.value} ${unit}`;
+    case '1rm': return `est. 1RM ${pr.previous} → ${pr.value} ${unit}`;
+    case 'reps': return `${pr.previous} → ${pr.value} reps`;
+    case 'time': return `${formatSecs(pr.previous)} → ${formatSecs(pr.value)}`;
+    case 'distance': return `${pr.previous} → ${pr.value} km`;
+  }
 }
 
 export default function WorkoutSummaryScreen() {
@@ -56,7 +68,7 @@ export default function WorkoutSummaryScreen() {
       `${exerciseCount} exercises · ${sets.length} sets · ${totalVolume} ${weightUnit} volume`,
     ];
     for (const pr of prs) {
-      lines.push(`🏆 PR — ${pr.exerciseName}: ${pr.previous} → ${pr.value} ${weightUnit}${pr.type === '1rm' ? ' (est. 1RM)' : ''}`);
+      lines.push(`🏆 PR — ${pr.exerciseName}: ${prText(pr, weightUnit)}`);
     }
     lines.push('Tracked with Life Tracker');
     return lines.join('\n');
@@ -141,9 +153,7 @@ export default function WorkoutSummaryScreen() {
               <View key={i} style={styles.prRow}>
                 <MaterialCommunityIcons name="medal" size={18} color={moduleColors.gamification} />
                 <Text variant="bodyMedium" style={{ color: colors.onSurface, flex: 1 }}>
-                  {pr.exerciseName}: {pr.type === 'weight'
-                    ? `${pr.previous} → ${pr.value} ${weightUnit}`
-                    : `est. 1RM ${pr.previous} → ${pr.value} ${weightUnit}`}
+                  {pr.exerciseName}: {prText(pr, weightUnit)}
                 </Text>
               </View>
             ))}
@@ -169,7 +179,7 @@ export default function WorkoutSummaryScreen() {
               <View key={exId} style={[styles.exRow, { backgroundColor: colors.surface }]}>
                 <Text variant="bodyMedium" style={{ color: colors.onSurface, fontWeight: '600' }}>{name}</Text>
                 <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                  {exSets.map(s => `${s.weight}×${s.reps}`).join(', ')}
+                  {exSets.map(s => formatSetCompact(s, (exSets[0]?.exercise?.logType || 'weight_reps') as LogType)).join(', ')}
                 </Text>
               </View>
             );

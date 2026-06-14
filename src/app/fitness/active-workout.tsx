@@ -13,9 +13,18 @@ import { SetKeypad, type SetEntry, type SetType } from '@/components/workout/Set
 import { PlateCalculator } from '@/components/workout/PlateCalculator';
 import { useWorkoutStore, estimate1RM } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
+import { type LogType, formatSet, formatSetCompact } from '@/utils/workout';
 import type { Exercise, WorkoutSet } from '@/types';
 
 interface Target { repMin: number; repMax: number }
+
+/** Sub-label under an exercise name, appropriate to how it's measured. */
+function repTarget(ex: Exercise, tgt?: Target): string {
+  const lt = ex.logType || 'weight_reps';
+  if (lt === 'duration') return ' · timed';
+  if (lt === 'cardio') return ' · distance & time';
+  return tgt ? ` · ${tgt.repMin}–${tgt.repMax} reps` : '';
+}
 
 export default function ActiveWorkoutScreen() {
   const { colors } = useAppTheme();
@@ -33,7 +42,7 @@ export default function ActiveWorkoutScreen() {
   const [targets, setTargets] = useState<Record<number, Target>>({});
   const [previous, setPrevious] = useState<Record<number, WorkoutSet[]>>({});
   const [suggestion, setSuggestion] = useState<Record<number, { weight: number; reps: number } | null>>({});
-  const [keypadFor, setKeypadFor] = useState<{ exId: number; name: string; initial: { weight: string; reps: string; rpe?: number | null; setType?: SetType }; editSetId?: number } | null>(null);
+  const [keypadFor, setKeypadFor] = useState<{ exId: number; name: string; logType: LogType; initial: { weight?: string; reps?: string; durationSeconds?: number; distance?: string; rpe?: number | null; setType?: SetType }; editSetId?: number } | null>(null);
   const [plateFor, setPlateFor] = useState<number | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
@@ -157,25 +166,38 @@ export default function ActiveWorkoutScreen() {
   }, [pickerSearch, pickerVisible, myGymOnly, gymEquipment.join(',')]);
 
   const openKeypad = (ex: Exercise) => {
-    const sug = suggestion[ex.id];
-    const lastForEx = activeSets.filter(s => s.exerciseId === ex.id).slice(-1)[0];
+    const logType = (ex.logType || 'weight_reps') as LogType;
+    const sug = logType === 'weight_reps' ? suggestion[ex.id] : null;
+    const last = activeSets.filter(s => s.exerciseId === ex.id).slice(-1)[0]
+      ?? (previous[ex.id] || []).slice(-1)[0];
     const repMax = targets[ex.id]?.repMax;
     setKeypadFor({
       exId: ex.id,
       name: ex.name,
+      logType,
       initial: {
-        weight: sug ? String(sug.weight) : (lastForEx ? String(lastForEx.weight) : ''),
-        reps: sug ? String(sug.reps) : (lastForEx ? String(lastForEx.reps) : (repMax ? String(repMax) : '')),
+        weight: sug ? String(sug.weight) : last ? String(last.weight) : '',
+        reps: sug ? String(sug.reps) : last ? String(last.reps) : (logType === 'weight_reps' && repMax ? String(repMax) : ''),
+        durationSeconds: last?.durationSeconds ?? 0,
+        distance: last?.distance ? String(last.distance) : '',
       },
     });
   };
 
-  const openEditSet = (s: WorkoutSet, name: string) => {
+  const openEditSet = (s: WorkoutSet, ex: Exercise) => {
     setKeypadFor({
       exId: s.exerciseId,
-      name,
+      name: ex.name,
+      logType: (ex.logType || 'weight_reps') as LogType,
       editSetId: s.id,
-      initial: { weight: String(s.weight), reps: String(s.reps), rpe: s.rpe, setType: s.setType as SetType },
+      initial: {
+        weight: String(s.weight),
+        reps: String(s.reps),
+        durationSeconds: s.durationSeconds,
+        distance: s.distance ? String(s.distance) : '',
+        rpe: s.rpe,
+        setType: s.setType as SetType,
+      },
     });
   };
 
@@ -183,8 +205,16 @@ export default function ActiveWorkoutScreen() {
     if (!keypadFor) return;
     const exId = keypadFor.exId;
 
+    const values = {
+      reps: entry.reps,
+      weight: entry.weight,
+      durationSeconds: entry.durationSeconds,
+      distance: entry.distance,
+      rpe: entry.rpe ?? undefined,
+    };
+
     if (keypadFor.editSetId && wid) {
-      await updateSet(keypadFor.editSetId, wid, entry.reps, entry.weight, entry.rpe ?? undefined, entry.setType);
+      await updateSet(keypadFor.editSetId, wid, values, entry.setType);
       setKeypadFor(null);
       return;
     }
@@ -199,7 +229,7 @@ export default function ActiveWorkoutScreen() {
     // All-time bests BEFORE this set lands, so we can celebrate PRs.
     const best = await getExerciseBest(exId, id);
     const existing = activeSets.filter(s => s.exerciseId === exId).length;
-    await logSet(id, exId, existing + 1, entry.reps, entry.weight, entry.rpe ?? undefined, entry.setType);
+    await logSet(id, exId, existing + 1, values, entry.setType);
 
     let announced = false;
     if (entry.setType !== 'warmup') {
@@ -293,34 +323,36 @@ export default function ActiveWorkoutScreen() {
                     )}
                   </View>
                   <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
-                    {ex.muscleGroup}{tgt ? ` · ${tgt.repMin}–${tgt.repMax} reps` : ''}
+                    {ex.muscleGroup}{repTarget(ex, tgt)}
                   </Text>
                 </Pressable>
-                <IconButton icon="calculator-variant" size={20} iconColor={colors.onSurfaceVariant}
-                  onPress={() => setPlateFor(sug?.weight ?? prev[0]?.weight ?? 60)} />
+                {ex.logType === 'weight_reps' && (
+                  <IconButton icon="calculator-variant" size={20} iconColor={colors.onSurfaceVariant}
+                    onPress={() => setPlateFor(sug?.weight ?? prev[0]?.weight ?? 60)} />
+                )}
               </View>
 
               <Text variant="labelSmall" style={[styles.prevLine, { color: colors.onSurfaceVariant }]}>
-                {prev.length ? `Last: ${prev.map(p => `${p.weight}×${p.reps}`).join(', ')}` : 'No history yet'}
+                {prev.length ? `Last: ${prev.map(p => formatSetCompact(p, (ex.logType || 'weight_reps') as LogType)).join(', ')}` : 'No history yet'}
               </Text>
 
               {sets.map((s, i) => (
-                <Pressable key={s.id} style={styles.setRow} onPress={() => openEditSet(s, ex.name)}>
+                <Pressable key={s.id} style={styles.setRow} onPress={() => openEditSet(s, ex)}>
                   <View style={[styles.typeDot, { backgroundColor: typeColor(s.setType) }]} />
                   <Text variant="bodyMedium" style={[styles.setNum, { color: colors.onSurfaceVariant }]}>Set {i + 1}</Text>
                   <Text variant="bodyMedium" style={[styles.setData, { color: colors.onSurface }]}>
-                    {s.weight} {weightUnit} × {s.reps}{s.rpe != null ? ` · ${s.rpe} RIR` : ''}
+                    {formatSet(s, (ex.logType || 'weight_reps') as LogType, weightUnit)}{s.rpe != null ? ` · ${s.rpe} RIR` : ''}
                   </Text>
                   <MaterialCommunityIcons name="pencil-outline" size={14} color={colors.onSurfaceVariant} />
                   <IconButton icon="close" size={16} onPress={() => wid && removeSet(s.id, wid)} />
                 </Pressable>
               ))}
 
-              {!!sug && (
+              {ex.logType === 'weight_reps' && !!sug && (
                 <Pressable onPress={() => openKeypad(ex)} style={[styles.suggestChip, { backgroundColor: withAlpha(accent, 0.16) }]}>
                   <MaterialCommunityIcons name="trending-up" size={15} color={accent} />
                   <Text variant="labelMedium" style={{ color: accent, fontWeight: '700' }}>
-                    Suggested: {sug.weight}kg × {sug.reps}
+                    Suggested: {sug.weight}{weightUnit} × {sug.reps}
                   </Text>
                 </Pressable>
               )}
@@ -380,6 +412,7 @@ export default function ActiveWorkoutScreen() {
         <SetKeypad
           visible
           exerciseName={keypadFor.name}
+          logType={keypadFor.logType}
           initial={keypadFor.initial}
           weightUnit={weightUnit}
           confirmLabel={keypadFor.editSetId ? 'Save changes' : 'Log set'}
