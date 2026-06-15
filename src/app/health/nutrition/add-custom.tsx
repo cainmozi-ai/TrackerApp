@@ -8,6 +8,7 @@ import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
+import { VITAMINS, MINERALS } from '@/utils/micronutrients';
 import type { MealType } from '@/types';
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -37,8 +38,22 @@ export default function AddCustomFoodScreen() {
   );
   const [saving, setSaving] = useState(false);
   const [snack, setSnack] = useState('');
+  const [showMicros, setShowMicros] = useState(false);
+  const [micros, setMicros] = useState<Record<string, string>>({});
   const { addCustomFood, logFood } = useNutritionStore();
   const { reward } = useUserStore();
+
+  // Sodium is captured as a macro field above, so exclude it from the micro grid.
+  const microMinerals = MINERALS.filter(m => m.key !== 'sodium');
+
+  const buildMicros = () => {
+    const out: Record<string, number> = {};
+    for (const m of [...VITAMINS, ...microMinerals]) {
+      const v = parseFloat(micros[m.key] || '');
+      if (v > 0) out[m.key] = v;
+    }
+    return out;
+  };
 
   const saveFood = async () => {
     return await addCustomFood({
@@ -54,6 +69,7 @@ export default function AddCustomFoodScreen() {
       sodium: parseFloat(sodium) || 0,
       servingSize: parseFloat(servingSize) || 100,
       servingUnit: servingUnit || 'g',
+      micros: buildMicros(),
       isFavorite: false,
     });
   };
@@ -133,6 +149,31 @@ export default function AddCustomFoodScreen() {
           <TextInput label="Sodium (mg)" value={sodium} onChangeText={setSodium} style={styles.thirdInput} mode="outlined" keyboardType="numeric" />
         </View>
 
+        <Button mode="text" compact icon={showMicros ? 'chevron-up' : 'chevron-down'}
+          onPress={() => setShowMicros(s => !s)} style={styles.microToggle}>
+          {showMicros ? 'Hide vitamins & minerals' : 'Add vitamins & minerals (optional)'}
+        </Button>
+        {showMicros && (
+          <>
+            <Text variant="titleSmall" style={styles.sectionTitle}>Vitamins (per serving)</Text>
+            <View style={styles.microWrap}>
+              {VITAMINS.map(m => (
+                <TextInput key={m.key} label={`${m.label} (${m.unit})`} value={micros[m.key] || ''}
+                  onChangeText={t => setMicros(p => ({ ...p, [m.key]: t }))}
+                  style={styles.microInput} mode="outlined" keyboardType="numeric" dense />
+              ))}
+            </View>
+            <Text variant="titleSmall" style={styles.sectionTitle}>Minerals (per serving)</Text>
+            <View style={styles.microWrap}>
+              {microMinerals.map(m => (
+                <TextInput key={m.key} label={`${m.label} (${m.unit})`} value={micros[m.key] || ''}
+                  onChangeText={t => setMicros(p => ({ ...p, [m.key]: t }))}
+                  style={styles.microInput} mode="outlined" keyboardType="numeric" dense />
+              ))}
+            </View>
+          </>
+        )}
+
         <Text variant="titleSmall" style={styles.sectionTitle}>Log To</Text>
         <View style={styles.mealChips}>
           {MEALS.map(m => (
@@ -171,6 +212,9 @@ const styles = StyleSheet.create({
   sectionTitle: { fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.sm },
   unitWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
   unitChip: {},
+  microToggle: { alignSelf: 'flex-start', marginTop: spacing.xs },
+  microWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  microInput: { width: '47.5%' },
   mealChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
   saveBtn: { marginTop: spacing.lg },
   saveOnlyBtn: { marginTop: spacing.sm },

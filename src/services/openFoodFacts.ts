@@ -1,4 +1,5 @@
 import type { Food } from '@/types';
+import { MICRO_BY_KEY } from '@/utils/micronutrients';
 
 const BASE_URL = 'https://world.openfoodfacts.org';
 
@@ -6,17 +7,36 @@ interface OFFProduct {
   product_name?: string;
   brands?: string;
   code?: string;
-  nutriments?: {
-    'energy-kcal_100g'?: number;
-    proteins_100g?: number;
-    carbohydrates_100g?: number;
-    fat_100g?: number;
-    fiber_100g?: number;
-    sugars_100g?: number;
-    sodium_100g?: number;
-  };
+  nutriments?: Record<string, number | undefined>;
   serving_size?: string;
   serving_quantity?: number | string;
+}
+
+/** OFF nutriment key → our micro key. OFF reports these per-100g in grams. */
+const OFF_MICRO_MAP: Record<string, string> = {
+  'vitamin-a': 'vitaminA', 'vitamin-c': 'vitaminC', 'vitamin-d': 'vitaminD',
+  'vitamin-e': 'vitaminE', 'vitamin-k': 'vitaminK',
+  'vitamin-b1': 'b1', 'vitamin-b2': 'b2', 'vitamin-pp': 'b3',
+  'pantothenic-acid': 'b5', 'vitamin-b6': 'b6', 'biotin': 'b7',
+  'vitamin-b9': 'folate', 'folates': 'folate', 'vitamin-b12': 'b12', 'choline': 'choline',
+  'calcium': 'calcium', 'copper': 'copper', 'iron': 'iron', 'magnesium': 'magnesium',
+  'manganese': 'manganese', 'phosphorus': 'phosphorus', 'potassium': 'potassium',
+  'selenium': 'selenium', 'zinc': 'zinc',
+};
+
+/** Extract whatever micronutrients OFF provides, scaled to one serving and
+ * converted from grams to our tracking unit (mg or mcg). */
+function parseOffMicros(n: Record<string, number | undefined>, scale: number): Record<string, number> {
+  const micros: Record<string, number> = {};
+  for (const [offKey, ourKey] of Object.entries(OFF_MICRO_MAP)) {
+    const grams = n[`${offKey}_100g`];
+    if (grams == null || !isFinite(grams) || grams <= 0) continue;
+    const def = MICRO_BY_KEY[ourKey];
+    const factor = def.unit === 'mcg' ? 1_000_000 : 1000; // grams → mcg / mg
+    const val = grams * factor * scale;
+    if (val > 0) micros[ourKey] = Math.round(val * 100) / 100;
+  }
+  return micros;
 }
 
 /** Work out the label's serving amount and whether it's solid (g) or liquid (ml). */
@@ -59,6 +79,7 @@ function parseProduct(product: OFFProduct): Food {
     sodium: n.sodium_100g != null ? Math.round(n.sodium_100g * 1000 * scale) : null,
     servingSize: serving ? serving.qty : 100,
     servingUnit: serving ? serving.unit : 'g',
+    micros: parseOffMicros(n, scale),
     isCustom: false,
     isFavorite: false,
     createdAt: '',

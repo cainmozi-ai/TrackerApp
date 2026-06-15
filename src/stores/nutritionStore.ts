@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Food, FoodLog, MealType, SavedMeal } from '@/types';
 import { getDatabase } from '@/database/schema';
 import { localToday, localDaysAgo } from '@/utils/dates';
+import { MICRO_KEYS, parseMicros } from '@/utils/micronutrients';
 
 interface NutritionState {
   /** The date currently shown on the nutrition screen (YYYY-MM-DD). */
@@ -17,6 +18,8 @@ interface NutritionState {
   todayFiber: number;
   todaySugar: number;
   todaySodium: number;
+  /** Today's micronutrient totals keyed by micro key (mg/mcg). */
+  todayMicros: Record<string, number>;
 
   loadTodayLogs: (date?: string) => Promise<void>;
   loadFavorites: () => Promise<void>;
@@ -59,13 +62,14 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   todayFiber: 0,
   todaySugar: 0,
   todaySodium: 0,
+  todayMicros: {},
 
   loadTodayLogs: async (date?: string) => {
     const db = await getDatabase();
     const targetDate = date || get().currentDate;
     set({ currentDate: targetDate });
     const rows = await db.getAllAsync<Record<string, unknown>>(
-      `SELECT fl.*, f.name, f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, f.serving_size, f.serving_unit, f.brand
+      `SELECT fl.*, f.name, f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, f.serving_size, f.serving_unit, f.brand, f.micros
        FROM food_logs fl JOIN foods f ON fl.food_id = f.id
        WHERE fl.log_date = ? ORDER BY fl.created_at`,
       [targetDate]
@@ -91,12 +95,14 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
         sodium: r.sodium as number | null,
         servingSize: r.serving_size as number,
         servingUnit: r.serving_unit as string,
+        micros: parseMicros(r.micros as string | null),
         isCustom: false, isFavorite: false,
         createdAt: '',
       },
     }));
 
     let cal = 0, pro = 0, car = 0, fa = 0, fib = 0, sug = 0, sod = 0;
+    const micros: Record<string, number> = {};
     for (const log of logs) {
       if (log.food) {
         cal += log.food.calories * log.servings;
@@ -106,8 +112,17 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
         fib += (log.food.fiber || 0) * log.servings;
         sug += (log.food.sugar || 0) * log.servings;
         sod += (log.food.sodium || 0) * log.servings;
+        if (log.food.micros) {
+          for (const k of MICRO_KEYS) {
+            const v = log.food.micros[k];
+            if (v) micros[k] = (micros[k] || 0) + v * log.servings;
+          }
+        }
       }
     }
+    // Sodium is stored as a macro column, not in the micros blob — fold it in so
+    // the micronutrient tracker shows it alongside the other minerals.
+    if (sod > 0) micros.sodium = (micros.sodium || 0) + sod;
 
     set({
       todayLogs: logs,
@@ -118,6 +133,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       todayFiber: Math.round(fib),
       todaySugar: Math.round(sug),
       todaySodium: Math.round(sod),
+      todayMicros: micros,
     });
   },
 
@@ -155,11 +171,12 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
 
   addCustomFood: async (food) => {
     const db = await getDatabase();
+    const microsJson = food.micros && Object.keys(food.micros).length > 0 ? JSON.stringify(food.micros) : null;
     const result = await db.runAsync(
-      `INSERT INTO foods (name, brand, barcode, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit, is_custom, is_favorite)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+      `INSERT INTO foods (name, brand, barcode, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit, micros, is_custom, is_favorite)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
       [food.name, food.brand, food.barcode, food.calories, food.protein, food.carbs, food.fat,
-       food.fiber, food.sugar, food.sodium, food.servingSize, food.servingUnit, food.isFavorite ? 1 : 0]
+       food.fiber, food.sugar, food.sodium, food.servingSize, food.servingUnit, microsJson, food.isFavorite ? 1 : 0]
     );
     return result.lastInsertRowId;
   },
@@ -305,6 +322,7 @@ function mapFood(r: Record<string, unknown>): Food {
     sodium: r.sodium as number | null,
     servingSize: r.serving_size as number,
     servingUnit: r.serving_unit as string,
+    micros: parseMicros(r.micros as string | null),
     isCustom: (r.is_custom as number) === 1,
     isFavorite: (r.is_favorite as number) === 1,
     createdAt: r.created_at as string,

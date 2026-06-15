@@ -55,6 +55,8 @@ export interface Food {
   sodium: number | null;
   servingSize: number;
   servingUnit: string;
+  /** Vitamins & minerals per serving, keyed by micronutrient (mg/mcg). */
+  micros?: Record<string, number> | null;
   isCustom: boolean;
   isFavorite: boolean;
   createdAt: string;

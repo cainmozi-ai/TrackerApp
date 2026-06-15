@@ -154,6 +154,7 @@ export async function initializeDatabase(): Promise<void> {
       sodium REAL DEFAULT 0,
       serving_size REAL DEFAULT 100,
       serving_unit TEXT DEFAULT 'g',
+      micros TEXT,
       is_custom INTEGER DEFAULT 0,
       is_favorite INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now'))
@@ -418,6 +419,8 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     "ALTER TABLE exercises ADD COLUMN log_type TEXT DEFAULT 'weight_reps'",
     'ALTER TABLE workout_sets ADD COLUMN duration_seconds INTEGER DEFAULT 0',
     'ALTER TABLE workout_sets ADD COLUMN distance REAL DEFAULT 0',
+    // Phase 16 — micronutrient tracking (vitamins & minerals as JSON)
+    'ALTER TABLE foods ADD COLUMN micros TEXT',
   ];
   for (const sql of alters) {
     try {
