@@ -2,6 +2,19 @@ import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 import exercisesData from '@/data/exercises.json';
 import programsData from '@/data/programs.json';
+import foodsData from '@/data/foods.json';
+
+interface FoodSeed {
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  sugar: number;
+  sodium: number;
+  micros?: Record<string, number>;
+}
 
 interface ProgramSeed {
   name: string;
@@ -463,9 +476,46 @@ async function seedDefaultData(db: SQLite.SQLiteDatabase): Promise<void> {
   }
 
   await seedExercises(db);
+  await seedFoods(db);
   await seedAchievements(db);
   await seedStarterTemplates(db);
   await seedPrograms(db);
+}
+
+/** Seed a library of common whole foods with USDA macros + micronutrients so the
+ * food search and micronutrient tracker are useful out of the box. Upserts by
+ * name (is_custom = 0) and is guarded so it only runs when foods are missing. */
+async function seedFoods(db: SQLite.SQLiteDatabase): Promise<void> {
+  // Cast through unknown: TS infers a union of per-food literal shapes from the
+  // JSON (each with a different subset of micro keys), which doesn't directly
+  // match FoodSeed's open micros record.
+  const foods = foodsData as unknown as FoodSeed[];
+  const exist = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM foods WHERE is_custom = 0'
+  );
+  if (exist && exist.count >= foods.length) return;
+
+  await db.withTransactionAsync(async () => {
+    for (const f of foods) {
+      const microsJson = f.micros && Object.keys(f.micros).length > 0 ? JSON.stringify(f.micros) : null;
+      const found = await db.getFirstAsync<{ id: number }>(
+        'SELECT id FROM foods WHERE name = ? AND is_custom = 0',
+        [f.name]
+      );
+      if (found) {
+        await db.runAsync(
+          'UPDATE foods SET calories = ?, protein = ?, carbs = ?, fat = ?, fiber = ?, sugar = ?, sodium = ?, micros = ? WHERE id = ?',
+          [f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, microsJson, found.id]
+        );
+      } else {
+        await db.runAsync(
+          `INSERT INTO foods (name, brand, barcode, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit, micros, is_custom, is_favorite)
+           VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, 100, 'g', ?, 0, 0)`,
+          [f.name, f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, microsJson]
+        );
+      }
+    }
+  });
 }
 
 async function seedPrograms(db: SQLite.SQLiteDatabase): Promise<void> {
