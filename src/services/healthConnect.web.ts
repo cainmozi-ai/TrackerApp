@@ -20,6 +20,15 @@ export async function requestStepsPermission(): Promise<boolean> {
   return false;
 }
 
+export interface ConnectResult {
+  ok: boolean;
+  info: string;
+}
+
+export async function connectSteps(): Promise<ConnectResult> {
+  return { ok: false, info: 'Not running on Android.' };
+}
+
 export async function openSettings(): Promise<void> {
   /* no-op on web */
 }

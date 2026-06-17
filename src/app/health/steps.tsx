@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ScrollView, StyleSheet, View, Platform, Linking } from 'react-native';
+import { ScrollView, StyleSheet, View, Platform, Linking, Alert } from 'react-native';
 import { Text, Button, SegmentedButtons, ActivityIndicator } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -11,7 +11,7 @@ import { MotionCard } from '@/components/common/MotionCard';
 import { EmptyState } from '@/components/common/EmptyState';
 import { MiniBars } from '@/components/dashboard/MiniCharts';
 import {
-  getStepsState, requestStepsPermission, getDailySteps, openSettings,
+  getStepsState, connectSteps, getDailySteps, openSettings,
   type DailySteps, type StepsState,
 } from '@/services/healthConnect';
 
@@ -56,8 +56,21 @@ export default function StepsScreen() {
 
   const connect = async () => {
     setLoading(true);
-    await requestStepsPermission();
-    await load(range);
+    const res = await connectSteps();
+    if (res.ok) {
+      await load(range);
+    } else {
+      setLoading(false);
+      // Surface the exact failure point so it can be diagnosed from the device.
+      Alert.alert(
+        'Could not connect steps',
+        `${res.info}\n\nScreenshot this and send it over so we can pinpoint the issue.`,
+        [
+          { text: 'Open Health Connect', onPress: () => openSettings() },
+          { text: 'OK' },
+        ],
+      );
+    }
   };
 
   const withSteps = data.filter(d => d.steps > 0);
