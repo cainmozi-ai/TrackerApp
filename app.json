@@ -42,6 +42,7 @@
       "expo-audio",
       "expo-asset",
       "react-native-health-connect",
+      "./plugins/withHealthConnectPermissionDelegate",
       [
         "expo-build-properties",
         {
