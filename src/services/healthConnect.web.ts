@@ -6,12 +6,22 @@ export interface DailySteps {
   steps: number;
 }
 
+export type StepsState = 'unavailable' | 'update-required' | 'needs-permission' | 'ready';
+
 export async function isStepsAvailable(): Promise<boolean> {
   return false;
 }
 
+export async function getStepsState(): Promise<StepsState> {
+  return 'unavailable';
+}
+
 export async function requestStepsPermission(): Promise<boolean> {
   return false;
+}
+
+export async function openSettings(): Promise<void> {
+  /* no-op on web */
 }
 
 export async function getDailySteps(): Promise<DailySteps[]> {

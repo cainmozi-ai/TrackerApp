@@ -27,13 +27,15 @@ export default function HealthScreen() {
           subtitle="Stay hydrated throughout the day" onPress={() => router.push('/health/water')} />
         <AppCard index={3} title="Sleep Log" icon="moon-waning-crescent" color={moduleColors.sleep}
           subtitle="Track your sleep patterns" onPress={() => router.push('/health/sleep')} />
-        <AppCard index={4} title="Weight" icon="scale-bathroom" color={accent}
+        <AppCard index={4} title="Steps" icon="shoe-print" color="#FF8A65"
+          subtitle="Sync daily steps via Health Connect" onPress={() => router.push('/health/steps')} />
+        <AppCard index={5} title="Weight" icon="scale-bathroom" color={accent}
           subtitle="Log weight & see your smoothed trend" onPress={() => router.push('/health/weight')} />
-        <AppCard index={5} title="Body Tracker" icon="tape-measure" color="#7E57C2"
+        <AppCard index={6} title="Body Tracker" icon="tape-measure" color="#7E57C2"
           subtitle="Measurements & progress photos" onPress={() => router.push('/health/measurements')} />
-        <AppCard index={6} title="Coach" icon="chart-bell-curve-cumulative" color={accent}
+        <AppCard index={7} title="Coach" icon="chart-bell-curve-cumulative" color={accent}
           subtitle="Adaptive expenditure & target recommendations" onPress={() => router.push('/health/coach')} />
-        <AppCard index={7} title="Meal Planner" icon="calendar-month" color={moduleColors.nutrition}
+        <AppCard index={8} title="Meal Planner" icon="calendar-month" color={moduleColors.nutrition}
           subtitle="Plan meals & generate shopping lists" onPress={() => router.push('/health/meal-planner')} />
       </ScrollView>
     </SafeAreaView>
