@@ -41,7 +41,15 @@
       "expo-sharing",
       "expo-audio",
       "expo-asset",
-      "react-native-health-connect"
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ]
     ],
     "extra": {
       "router": {},
