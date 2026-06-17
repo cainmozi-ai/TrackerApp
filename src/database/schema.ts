@@ -31,6 +31,10 @@ interface ExerciseSeed {
   name: string;
   muscleGroup: string;
   target?: string;
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
+  mechanic?: string;
+  region?: string;
   logType?: string;
   equipment: string;
   description: string;
@@ -243,6 +247,10 @@ export async function initializeDatabase(): Promise<void> {
       name TEXT NOT NULL,
       muscle_group TEXT,
       target TEXT,
+      primary_muscles TEXT,
+      secondary_muscles TEXT,
+      mechanic TEXT,
+      region TEXT,
       log_type TEXT DEFAULT 'weight_reps',
       equipment TEXT,
       description TEXT,
@@ -434,6 +442,12 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     'ALTER TABLE workout_sets ADD COLUMN distance REAL DEFAULT 0',
     // Phase 16 — micronutrient tracking (vitamins & minerals as JSON)
     'ALTER TABLE foods ADD COLUMN micros TEXT',
+    // Phase 17 — exercise muscle breakdown + customizable dashboard
+    'ALTER TABLE exercises ADD COLUMN primary_muscles TEXT',
+    'ALTER TABLE exercises ADD COLUMN secondary_muscles TEXT',
+    'ALTER TABLE exercises ADD COLUMN mechanic TEXT',
+    'ALTER TABLE exercises ADD COLUMN region TEXT',
+    'ALTER TABLE user_profile ADD COLUMN dashboard_config TEXT',
   ];
   for (const sql of alters) {
     try {
@@ -555,8 +569,10 @@ async function seedExercises(db: SQLite.SQLiteDatabase): Promise<void> {
   // version, and backfill tips/descriptions on ones that already exist.
   // Re-seed whenever the bundled set has data the DB hasn't stored yet. Checking
   // log_type catches installs upgrading from a version before log types existed.
+  // Re-seed whenever the bundled set has data the DB hasn't stored yet. Checking
+  // primary_muscles catches installs upgrading from before the muscle breakdown.
   const seeded = await db.getFirstAsync<{ count: number }>(
-    "SELECT COUNT(*) as count FROM exercises WHERE is_custom = 0 AND log_type IS NOT NULL"
+    "SELECT COUNT(*) as count FROM exercises WHERE is_custom = 0 AND primary_muscles IS NOT NULL"
   );
   if (seeded && seeded.count >= exercises.length) return;
 
@@ -564,19 +580,23 @@ async function seedExercises(db: SQLite.SQLiteDatabase): Promise<void> {
     for (const ex of exercises) {
       const tips = ex.tips ? JSON.stringify(ex.tips) : null;
       const logType = ex.logType ?? 'weight_reps';
+      const primary = JSON.stringify(ex.primaryMuscles ?? []);
+      const secondary = JSON.stringify(ex.secondaryMuscles ?? []);
+      const mechanic = ex.mechanic ?? 'compound';
+      const region = ex.region ?? 'upper';
       const found = await db.getFirstAsync<{ id: number }>(
         'SELECT id FROM exercises WHERE name = ? AND is_custom = 0',
         [ex.name]
       );
       if (found) {
         await db.runAsync(
-          'UPDATE exercises SET muscle_group = ?, target = ?, log_type = ?, equipment = ?, description = ?, tips = ? WHERE id = ?',
-          [ex.muscleGroup, ex.target ?? null, logType, ex.equipment, ex.description, tips, found.id]
+          'UPDATE exercises SET muscle_group = ?, target = ?, primary_muscles = ?, secondary_muscles = ?, mechanic = ?, region = ?, log_type = ?, equipment = ?, description = ?, tips = ? WHERE id = ?',
+          [ex.muscleGroup, ex.target ?? null, primary, secondary, mechanic, region, logType, ex.equipment, ex.description, tips, found.id]
         );
       } else {
         await db.runAsync(
-          'INSERT INTO exercises (name, muscle_group, target, log_type, equipment, description, tips, is_custom) VALUES (?, ?, ?, ?, ?, ?, ?, 0)',
-          [ex.name, ex.muscleGroup, ex.target ?? null, logType, ex.equipment, ex.description, tips]
+          'INSERT INTO exercises (name, muscle_group, target, primary_muscles, secondary_muscles, mechanic, region, log_type, equipment, description, tips, is_custom) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
+          [ex.name, ex.muscleGroup, ex.target ?? null, primary, secondary, mechanic, region, logType, ex.equipment, ex.description, tips]
         );
       }
     }

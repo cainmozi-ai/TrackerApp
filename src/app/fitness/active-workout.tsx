@@ -14,6 +14,7 @@ import { PlateCalculator } from '@/components/workout/PlateCalculator';
 import { useWorkoutStore, estimate1RM } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
 import { type LogType, formatSet, formatSetCompact } from '@/utils/workout';
+import { formatMuscles } from '@/utils/muscles';
 import type { Exercise, WorkoutSet } from '@/types';
 
 interface Target { repMin: number; repMax: number }
@@ -438,7 +439,9 @@ export default function ActiveWorkoutScreen() {
                 <TouchableRipple key={ex.id} onPress={() => addExerciseToSession(ex)} style={styles.pickerItem}>
                   <View>
                     <Text variant="bodyLarge" style={{ color: colors.onSurface }}>{ex.name}</Text>
-                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>{ex.muscleGroup} · {ex.equipment}</Text>
+                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }} numberOfLines={1}>
+                      {ex.primaryMuscles.length ? formatMuscles(ex.primaryMuscles, ex.secondaryMuscles) : ex.muscleGroup} · {ex.equipment}
+                    </Text>
                   </View>
                 </TouchableRipple>
               ))}

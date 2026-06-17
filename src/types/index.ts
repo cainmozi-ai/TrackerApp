@@ -1,3 +1,19 @@
+/** Customizable home dashboard layout. */
+export interface DashboardConfig {
+  /** Ordered list of enabled section keys. */
+  sections: string[];
+  /** Which muscle groups get a set-count card. */
+  muscleGroups: string[];
+  /** Which exercise ids get a progress card. */
+  exercises: number[];
+  /** Metric shown on exercise cards. */
+  exerciseMetric: 'weight' | '1rm' | 'volume';
+  /** Weekly rings: active program vs all workouts. */
+  weeklyMode: 'active' | 'all';
+  /** Weekly ring targets. */
+  targets: { muscles: number; sets: number; exercises: number };
+}
+
 export interface UserProfile {
   id: number;
   name: string | null;
@@ -16,6 +32,7 @@ export interface UserProfile {
   waterTarget: number;
   monthlyBudget: number | null;
   equipment: string[];
+  dashboardConfig: DashboardConfig | null;
   weightUnit: 'kg' | 'lbs';
   themePref: 'light' | 'dark';
   onboarded: boolean;
@@ -106,6 +123,14 @@ export interface Exercise {
   muscleGroup: string;
   /** Specific head/region the exercise emphasizes, e.g. "Biceps — long head". */
   target: string;
+  /** Muscles primarily worked (canonical names from utils/muscles). */
+  primaryMuscles: string[];
+  /** Synergist muscles. */
+  secondaryMuscles: string[];
+  /** 'compound' | 'isolation'. */
+  mechanic: string;
+  /** 'upper' | 'lower' | 'core' — drives the Type filter. */
+  region: string;
   /** How it's measured: 'weight_reps' | 'bodyweight' | 'duration' | 'cardio'. */
   logType: string;
   equipment: string;

@@ -3,6 +3,7 @@ import type { SQLiteBindValue } from 'expo-sqlite';
 import type { UserProfile } from '@/types';
 import { getDatabase } from '@/database/schema';
 import { useGamificationStore } from '@/stores/gamificationStore';
+import { parseDashboardConfig } from '@/utils/dashboard';
 
 interface UserState {
   profile: UserProfile | null;
@@ -95,6 +96,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           waterTarget: row.water_target as number,
           monthlyBudget: row.monthly_budget as number | null,
           equipment: parseEquipment(row.equipment as string | null),
+          dashboardConfig: parseDashboardConfig(row.dashboard_config as string | null),
           weightUnit: row.weight_unit as 'kg' | 'lbs',
           themePref: ((row.theme_pref as string | null) ?? 'light') as 'light' | 'dark',
           onboarded: ((row.onboarded as number | null) ?? 0) === 1,
@@ -120,7 +122,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       fiberTarget: 'fiber_target', sugarTarget: 'sugar_target',
       sodiumTarget: 'sodium_target',
       monthlyBudget: 'monthly_budget', weightUnit: 'weight_unit',
-      equipment: 'equipment',
+      equipment: 'equipment', dashboardConfig: 'dashboard_config',
       themePref: 'theme_pref',
       onboarded: 'onboarded',
     };
@@ -129,7 +131,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       if (dbKey && val !== undefined) {
         fields.push(`${dbKey} = ?`);
         values.push(
-          Array.isArray(val) ? JSON.stringify(val)
+          val !== null && typeof val === 'object' ? JSON.stringify(val) // arrays + config object
             : typeof val === 'boolean' ? (val ? 1 : 0)
             : (val as SQLiteBindValue)
         );

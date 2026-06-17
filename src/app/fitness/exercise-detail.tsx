@@ -66,10 +66,25 @@ export default function ExerciseDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.tagRow}>
           <Chip icon="arm-flex" compact>{exercise.muscleGroup}</Chip>
-          {!!exercise.target && <Chip icon="target" compact>{exercise.target}</Chip>}
           <Chip icon="dumbbell" compact>{exercise.equipment}</Chip>
+          <Chip icon="cog" compact>{exercise.mechanic === 'isolation' ? 'Isolation' : 'Compound'}</Chip>
           {exercise.isCustom && <Chip icon="account" compact>Custom</Chip>}
         </View>
+
+        {(exercise.primaryMuscles.length > 0 || exercise.secondaryMuscles.length > 0) && (
+          <View style={styles.musclesRow}>
+            {exercise.primaryMuscles.length > 0 && (
+              <Text variant="bodySmall" style={{ color: colors.onSurface }}>
+                <Text style={{ fontWeight: '700' }}>Primary: </Text>{exercise.primaryMuscles.join(', ')}
+              </Text>
+            )}
+            {exercise.secondaryMuscles.length > 0 && (
+              <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                <Text style={{ fontWeight: '700' }}>Secondary: </Text>{exercise.secondaryMuscles.join(', ')}
+              </Text>
+            )}
+          </View>
+        )}
 
         {!!exercise.description && (
           <Text variant="bodyMedium" style={[styles.description, { color: colors.onSurfaceVariant }]}>
@@ -191,6 +206,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   tagRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.sm, flexWrap: 'wrap' },
+  musclesRow: { gap: 2, marginBottom: spacing.md },
   description: { marginBottom: spacing.md, lineHeight: 20 },
   videoBtn: { marginBottom: spacing.md, borderRadius: shape.pill },
   card: { marginBottom: spacing.sm },

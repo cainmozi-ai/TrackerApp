@@ -4,6 +4,7 @@ import { Text, TextInput, Button, IconButton } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { LineChart } from 'react-native-chart-kit';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, accent, withAlpha } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
@@ -42,6 +43,23 @@ export default function WeightScreen() {
   const firstTrend = series.length ? series[0].trend : null;
   const totalChange = latestTrend !== null && firstTrend !== null ? Math.round((latestTrend - firstTrend) * 10) / 10 : null;
 
+  // Trend delta over the last N days (null when there isn't enough history yet).
+  const changeOver = (days: number): number | null => {
+    if (series.length < 2) return null;
+    const last = series[series.length - 1];
+    const targetTime = new Date(`${last.date}T00:00:00`).getTime() - days * 86400000;
+    let ref: TrendPoint | null = null;
+    for (const s of series) {
+      if (new Date(`${s.date}T00:00:00`).getTime() <= targetTime) ref = s;
+    }
+    if (!ref || ref === last) return null;
+    return Math.round((last.trend - ref.trend) * 10) / 10;
+  };
+  const changeWindows: { label: string; days: number }[] = [
+    { label: '3-day', days: 3 }, { label: '7-day', days: 7 }, { label: '14-day', days: 14 },
+    { label: '30-day', days: 30 }, { label: '90-day', days: 90 },
+  ];
+
   const chartConfig = {
     backgroundGradientFrom: colors.surface,
     backgroundGradientTo: colors.surface,
@@ -78,6 +96,31 @@ export default function WeightScreen() {
               <Stat label="Trend" value={`${latestTrend} ${unit}`} />
               <Stat label="Change" value={totalChange !== null ? `${totalChange > 0 ? '+' : ''}${totalChange} ${unit}` : '—'} />
               <Stat label="Logs" value={String(recent.length)} />
+            </MotionCard>
+
+            <MotionCard style={styles.changesCard} noEnter>
+              <Text variant="titleSmall" style={[styles.cardTitle, { color: colors.onSurface }]}>Weight Changes</Text>
+              {changeWindows.map(w => {
+                const d = changeOver(w.days);
+                const down = d !== null && d < 0;
+                return (
+                  <View key={w.label} style={styles.changeRow}>
+                    <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant, width: 64 }}>{w.label}</Text>
+                    <Text variant="bodyMedium" style={{ flex: 1, color: colors.onSurface, fontWeight: '600' }}>
+                      {d === null ? '— ' : `${d > 0 ? '+' : ''}${d} `}{unit}
+                    </Text>
+                    {d !== null && (
+                      <View style={styles.changeTag}>
+                        <MaterialCommunityIcons name={down ? 'trending-down' : d > 0 ? 'trending-up' : 'trending-neutral'} size={16}
+                          color={down ? '#4FC3F7' : d > 0 ? '#FF8A65' : colors.onSurfaceVariant} />
+                        <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
+                          {down ? 'Decrease' : d > 0 ? 'Increase' : 'Steady'}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
             </MotionCard>
 
             <MotionCard style={styles.chartCard} noEnter>
@@ -133,6 +176,9 @@ const styles = StyleSheet.create({
   logBtn: { borderRadius: shape.sm },
   statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: spacing.md },
   stat: { alignItems: 'center' },
+  changesCard: { marginBottom: spacing.md },
+  changeRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
+  changeTag: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   chartCard: { marginBottom: spacing.md, alignItems: 'center' },
   chart: { borderRadius: shape.md, marginTop: spacing.sm },
   sectionTitle: { fontWeight: '700', marginBottom: spacing.sm },

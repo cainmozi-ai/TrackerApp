@@ -33,6 +33,15 @@ export interface Program {
   days: ProgramDay[];
 }
 
+export interface DashExercise {
+  id: number;
+  name: string;
+  logType: string;
+  lastWeight: number;
+  last1RM: number;
+  lastVolume: number;
+}
+
 export interface WorkoutSummary {
   workout: WorkoutLog;
   exerciseCount: number;
@@ -109,6 +118,8 @@ interface WorkoutState {
   getWorkoutDetail: (workoutId: number) => Promise<{ workout: WorkoutLog; sets: WorkoutSet[] } | null>;
   deleteWorkout: (workoutId: number) => Promise<void>;
   getWeekWorkoutCount: () => Promise<number>;
+  getWeekTrainingStats: (days?: number) => Promise<{ muscles: number; sets: number; exercises: number }>;
+  getTopExercises: (limit?: number) => Promise<DashExercise[]>;
   getWorkoutSummaries: (limit?: number) => Promise<WorkoutSummary[]>;
   getLastSets: (exerciseId: number) => Promise<WorkoutSet[]>;
   getProgressionSuggestion: (exerciseId: number, repMax: number) => Promise<{ weight: number; reps: number } | null>;
@@ -291,6 +302,10 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         equipment: r.equipment as string,
         description: r.description as string,
         target: (r.target as string | null) ?? '',
+        primaryMuscles: [],
+        secondaryMuscles: [],
+        mechanic: 'compound',
+        region: 'upper',
         logType: (r.log_type as string | null) ?? 'weight_reps',
         tips: [],
         isCustom: (r.is_custom as number) === 1,
@@ -493,6 +508,10 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         equipment: '',
         description: '',
         target: '',
+        primaryMuscles: [],
+        secondaryMuscles: [],
+        mechanic: 'compound',
+        region: 'upper',
         tips: [],
         isCustom: false,
       },
@@ -549,6 +568,48 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       [localDaysAgo(7)]
     );
     return row?.count ?? 0;
+  },
+
+  getWeekTrainingStats: async (days = 7) => {
+    const db = await getDatabase();
+    const start = localDaysAgo(days);
+    const row = await db.getFirstAsync<{ sets: number; exercises: number }>(
+      `SELECT COUNT(*) as sets, COUNT(DISTINCT ws.exercise_id) as exercises
+       FROM workout_sets ws JOIN workout_logs wl ON ws.workout_log_id = wl.id
+       WHERE wl.finished_at IS NOT NULL AND date(wl.started_at) >= ? AND ws.set_type != 'warmup'`,
+      [start]
+    );
+    const muscleRow = await db.getFirstAsync<{ groups: number }>(
+      `SELECT COUNT(DISTINCT e.muscle_group) as groups
+       FROM workout_sets ws JOIN workout_logs wl ON ws.workout_log_id = wl.id
+       JOIN exercises e ON ws.exercise_id = e.id
+       WHERE wl.finished_at IS NOT NULL AND date(wl.started_at) >= ? AND ws.set_type != 'warmup'`,
+      [start]
+    );
+    return { muscles: muscleRow?.groups ?? 0, sets: row?.sets ?? 0, exercises: row?.exercises ?? 0 };
+  },
+
+  getTopExercises: async (limit = 4) => {
+    const db = await getDatabase();
+    // Most-recently-trained exercises across finished workouts.
+    const rows = await db.getAllAsync<{ id: number; name: string; log_type: string | null }>(
+      `SELECT e.id, e.name, e.log_type, MAX(wl.started_at) as last_trained
+       FROM workout_sets ws JOIN workout_logs wl ON ws.workout_log_id = wl.id
+       JOIN exercises e ON ws.exercise_id = e.id
+       WHERE wl.finished_at IS NOT NULL
+       GROUP BY e.id ORDER BY last_trained DESC LIMIT ?`,
+      [limit]
+    );
+    const out: DashExercise[] = [];
+    for (const r of rows) {
+      const last = await get().getLastSets(r.id);
+      const working = last.filter(s => s.setType !== 'warmup');
+      const lastWeight = working.length ? Math.max(...working.map(s => s.weight)) : 0;
+      const last1RM = working.reduce((b, s) => Math.max(b, estimate1RM(s.weight, s.reps)), 0);
+      const lastVolume = working.reduce((sum, s) => sum + s.weight * s.reps, 0);
+      out.push({ id: r.id, name: r.name, logType: r.log_type ?? 'weight_reps', lastWeight, last1RM, lastVolume: Math.round(lastVolume) });
+    }
+    return out;
   },
 
   getLastSets: async (exerciseId) => {
@@ -687,6 +748,10 @@ async function refreshActiveSets(
         equipment: '',
         description: '',
         target: '',
+        primaryMuscles: [],
+        secondaryMuscles: [],
+        mechanic: 'compound',
+        region: 'upper',
         tips: [],
         isCustom: false,
       },
@@ -710,23 +775,29 @@ function mapSet(r: Record<string, unknown>): WorkoutSet {
   };
 }
 
-function mapExercise(r: Record<string, unknown>): Exercise {
-  let tips: string[] = [];
+function parseStrArray(raw: unknown): string[] {
   try {
-    const parsed = JSON.parse((r.tips as string | null) || '[]');
-    if (Array.isArray(parsed)) tips = parsed;
+    const parsed = JSON.parse((raw as string | null) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    // Malformed tips JSON — show none.
+    return [];
   }
+}
+
+function mapExercise(r: Record<string, unknown>): Exercise {
   return {
     id: r.id as number,
     name: r.name as string,
     muscleGroup: r.muscle_group as string,
     target: (r.target as string | null) ?? '',
+    primaryMuscles: parseStrArray(r.primary_muscles),
+    secondaryMuscles: parseStrArray(r.secondary_muscles),
+    mechanic: (r.mechanic as string | null) ?? 'compound',
+    region: (r.region as string | null) ?? 'upper',
     logType: (r.log_type as string | null) ?? 'weight_reps',
     equipment: r.equipment as string,
     description: r.description as string,
-    tips,
+    tips: parseStrArray(r.tips),
     isCustom: (r.is_custom as number) === 1,
   };
 }
