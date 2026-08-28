@@ -38,11 +38,11 @@ function repTarget(ex: Exercise, tgt?: Target): string {
 
 export default function ActiveWorkoutScreen() {
   const { colors } = useAppTheme();
-  const params = useLocalSearchParams<{ workoutId?: string; templateId?: string; repeatOf?: string }>();
+  const params = useLocalSearchParams<{ workoutId?: string; templateId?: string; repeatOf?: string; exerciseId?: string }>();
   const {
     activeSets, exercises, templates, loadTemplates, loadExercises, startWorkout, getActiveWorkout, discardWorkout, loadActiveSets,
     getTemplateExercises, getLastSets, getProgressionSuggestion, logSet, updateSet, removeSet, finishWorkout,
-    getExerciseBest, getWorkoutDetail, findExercisesByNames,
+    getExerciseBest, getWorkoutDetail, findExercisesByNames, getExerciseById,
   } = useWorkoutStore();
   const { reward, profile, loadProfile } = useUserStore();
 
@@ -151,6 +151,12 @@ export default function ActiveWorkoutScreen() {
             }
           }
         }
+      }
+
+      // Pre-load a single exercise (e.g. from the Cardio quick-start).
+      if (params.exerciseId && !id) {
+        const ex = await getExerciseById(Number(params.exerciseId));
+        if (ex) await addExerciseToSessionAsync(ex);
       }
 
       // Merge in exercises that already have logged sets (resume case).

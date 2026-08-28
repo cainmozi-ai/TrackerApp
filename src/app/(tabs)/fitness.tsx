@@ -13,13 +13,21 @@ import type { WorkoutLog } from '@/types';
 
 export default function FitnessScreen() {
   const { colors } = useAppTheme();
-  const { getActiveWorkout, discardWorkout } = useWorkoutStore();
+  const { getActiveWorkout, discardWorkout, loadTemplates, getWeeklySchedule } = useWorkoutStore();
   const [active, setActive] = useState<WorkoutLog | null>(null);
   const [guard, setGuard] = useState(false);
+  const [todaySplit, setTodaySplit] = useState<{ id: number; name: string } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       getActiveWorkout().then(setActive);
+      (async () => {
+        await loadTemplates();
+        const sched = await getWeeklySchedule();
+        const tid = sched[new Date().getDay()];
+        const t = tid ? useWorkoutStore.getState().templates.find(x => x.id === tid) : null;
+        setTodaySplit(t ? { id: t.id, name: t.name } : null);
+      })();
     }, [])
   );
 
@@ -62,6 +70,18 @@ export default function FitnessScreen() {
           </Pressable>
         )}
 
+        {todaySplit && (
+          <Pressable onPress={() => router.push(`/fitness/active-workout?templateId=${todaySplit.id}`)}
+            style={[styles.resumeBanner, { backgroundColor: withAlpha(accent, 0.12), borderColor: accent }]}>
+            <MaterialCommunityIcons name="calendar-star" size={26} color={accent} />
+            <View style={styles.resumeText}>
+              <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>Today's split</Text>
+              <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>{todaySplit.name} · tap to start</Text>
+            </View>
+            <MaterialCommunityIcons name="play-circle" size={24} color={accent} />
+          </Pressable>
+        )}
+
         <SectionHeader title="Modules" />
 
         <AppCard index={0} title="Start Workout" icon="play-circle" color={colors.primary}
@@ -74,6 +94,10 @@ export default function FitnessScreen() {
           subtitle="Browse 90+ exercises by muscle group" onPress={() => router.push('/fitness/exercise-library')} />
         <AppCard index={4} title="Progress" icon="chart-line" color={moduleColors.habits}
           subtitle="View your strength and volume trends" onPress={() => router.push('/fitness/progress')} />
+        <AppCard index={5} title="Weekly Split" icon="calendar-week" color={accent}
+          subtitle="Plan a routine for each day" onPress={() => router.push('/fitness/weekly-split')} />
+        <AppCard index={6} title="Cardio" icon="heart-pulse" color="#FF8A65"
+          subtitle="Log runs, rides, rows & more" onPress={() => router.push('/fitness/cardio')} />
       </ScrollView>
 
       <Portal>

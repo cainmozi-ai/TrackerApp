@@ -150,6 +150,9 @@ export default function ExerciseLibraryScreen() {
                   </View>
                   <View style={styles.exInfo}>
                     <Text variant="titleSmall" numberOfLines={2}>{ex.name}</Text>
+                    {!!ex.target && (
+                      <Text variant="labelSmall" style={{ color: tileColor, fontWeight: '700' }} numberOfLines={1}>{ex.target}</Text>
+                    )}
                     {!!muscles && (
                       <Text variant="bodySmall" style={styles.exMeta} numberOfLines={2}>{muscles}</Text>
                     )}

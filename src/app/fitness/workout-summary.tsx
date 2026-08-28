@@ -12,6 +12,7 @@ import { spacing, shape, accent, moduleColors, withAlpha } from '@/theme';
 import { useWorkoutStore, type WorkoutPR } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
 import { WorkoutDateDialog } from '@/components/workout/WorkoutDateDialog';
+import { MuscleMap } from '@/components/workout/MuscleMap';
 import { type LogType, formatSetCompact, formatDuration as formatSecs } from '@/utils/workout';
 import type { WorkoutLog, WorkoutSet } from '@/types';
 
@@ -75,6 +76,11 @@ export default function WorkoutSummaryScreen() {
   const exerciseCount = new Set(sets.map(s => s.exerciseId)).size;
   const totalVolume = Math.round(sets.reduce((sum, s) => sum + s.weight * s.reps, 0));
   const totalReps = sets.reduce((sum, s) => sum + s.reps, 0);
+  const setsByGroup = sets.reduce((acc, s) => {
+    const g = s.exercise?.muscleGroup;
+    if (g) acc[g] = (acc[g] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   const shareText = () => {
     const lines = [
@@ -181,6 +187,13 @@ export default function WorkoutSummaryScreen() {
           <MaterialCommunityIcons name="star-four-points" size={22} color={moduleColors.gamification} />
           <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>+50 XP earned</Text>
         </Animated.View>
+
+        {Object.keys(setsByGroup).length > 0 && (
+          <Animated.View entering={FadeInUp.delay(450)} style={[styles.mapCard, { backgroundColor: colors.surface }]}>
+            <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '800', marginBottom: spacing.xs }}>Muscles worked</Text>
+            <MuscleMap setsByGroup={setsByGroup} />
+          </Animated.View>
+        )}
         </View>
 
         <Button mode="contained-tonal" icon="share-variant" style={styles.shareBtn} onPress={handleShare}>
@@ -241,6 +254,7 @@ const styles = StyleSheet.create({
   prCard: { padding: spacing.md, borderRadius: shape.lg, borderWidth: 1.5, marginBottom: spacing.sm },
   prRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4 },
   xpCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: shape.lg, marginBottom: spacing.sm },
+  mapCard: { padding: spacing.md, borderRadius: shape.lg, marginBottom: spacing.sm },
   shareBtn: { marginBottom: spacing.sm, borderRadius: shape.pill },
   sectionTitle: { fontWeight: '700', marginTop: spacing.sm, marginBottom: spacing.xs },
   exRow: { padding: spacing.md, borderRadius: shape.md, marginBottom: spacing.xs },

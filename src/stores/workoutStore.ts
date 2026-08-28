@@ -106,6 +106,9 @@ interface WorkoutState {
   addExerciseToTemplate: (templateId: number, exerciseId: number, sets: number, reps: number, weight: number) => Promise<void>;
   removeTemplateExercise: (id: number) => Promise<void>;
   reorderTemplateExercises: (orderedIds: number[]) => Promise<void>;
+  /** Weekly split: map of day-of-week (0=Sun..6=Sat) → template id (or null). */
+  getWeeklySchedule: () => Promise<Record<number, number | null>>;
+  setDaySchedule: (dayOfWeek: number, templateId: number | null) => Promise<void>;
   startWorkout: (templateId?: number, name?: string) => Promise<number>;
   getActiveWorkout: () => Promise<WorkoutLog | null>;
   discardWorkout: (workoutId: number) => Promise<void>;
@@ -130,6 +133,9 @@ interface WorkoutState {
   getExerciseHistory: (exerciseId: number) => Promise<{ date: string; maxWeight: number; volume: number }[]>;
   /** Look up exercises by exact name (case-insensitive), preserving input order. */
   findExercisesByNames: (names: string[]) => Promise<Exercise[]>;
+  getExerciseById: (id: number) => Promise<Exercise | null>;
+  getCardioExercises: () => Promise<Exercise[]>;
+  getRecentCardio: (limit?: number) => Promise<{ id: number; date: string; name: string; distance: number; durationSeconds: number }[]>;
   getMuscleVolume: (days?: number) => Promise<{ muscleGroup: string; sets: number }[]>;
   /** Per-muscle-group set counts broken down by set type, over a window. */
   getMuscleSetBreakdown: (days?: number) => Promise<{ muscleGroup: string; total: number; byType: Record<string, number> }[]>;
@@ -345,6 +351,26 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     }
   },
 
+  getWeeklySchedule: async () => {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<{ day_of_week: number; template_id: number | null }>(
+      'SELECT day_of_week, template_id FROM weekly_schedule');
+    const out: Record<number, number | null> = {};
+    for (const r of rows) out[r.day_of_week] = r.template_id;
+    return out;
+  },
+
+  setDaySchedule: async (dayOfWeek, templateId) => {
+    const db = await getDatabase();
+    if (templateId == null) {
+      await db.runAsync('DELETE FROM weekly_schedule WHERE day_of_week = ?', [dayOfWeek]);
+    } else {
+      await db.runAsync(
+        'INSERT INTO weekly_schedule (day_of_week, template_id) VALUES (?, ?) ON CONFLICT(day_of_week) DO UPDATE SET template_id = excluded.template_id',
+        [dayOfWeek, templateId]);
+    }
+  },
+
   startWorkout: async (templateId, name) => {
     const db = await getDatabase();
     const workoutName = name || 'Quick Workout';
@@ -443,6 +469,31 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     return names
       .map(n => byName.get(n.toLowerCase()))
       .filter((e): e is Exercise => !!e);
+  },
+
+  getExerciseById: async (id) => {
+    const db = await getDatabase();
+    const r = await db.getFirstAsync<Record<string, unknown>>('SELECT * FROM exercises WHERE id = ?', [id]);
+    return r ? mapExercise(r) : null;
+  },
+
+  getCardioExercises: async () => {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<Record<string, unknown>>(
+      "SELECT * FROM exercises WHERE log_type = 'cardio' ORDER BY name");
+    return rows.map(mapExercise);
+  },
+
+  getRecentCardio: async (limit = 20) => {
+    const db = await getDatabase();
+    return await db.getAllAsync<{ id: number; date: string; name: string; distance: number; durationSeconds: number }>(
+      `SELECT ws.id as id, date(wl.started_at) as date, e.name as name,
+              ws.distance as distance, ws.duration_seconds as durationSeconds
+       FROM workout_sets ws
+       JOIN workout_logs wl ON ws.workout_log_id = wl.id
+       JOIN exercises e ON ws.exercise_id = e.id
+       WHERE e.log_type = 'cardio' AND wl.finished_at IS NOT NULL
+       ORDER BY wl.started_at DESC LIMIT ?`, [limit]);
   },
 
   updateWorkoutDate: async (workoutId, newStartMs) => {

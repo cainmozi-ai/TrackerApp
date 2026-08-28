@@ -244,6 +244,11 @@ export async function initializeDatabase(): Promise<void> {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS weekly_schedule (
+      day_of_week INTEGER PRIMARY KEY,
+      template_id INTEGER
+    );
+
     CREATE TABLE IF NOT EXISTS weight_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       weight REAL NOT NULL,
