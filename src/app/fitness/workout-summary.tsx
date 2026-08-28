@@ -70,7 +70,7 @@ export default function WorkoutSummaryScreen() {
     for (const pr of prs) {
       lines.push(`🏆 PR — ${pr.exerciseName}: ${prText(pr, weightUnit)}`);
     }
-    lines.push('Tracked with Life Tracker');
+    lines.push('Tracked with Incus');
     return lines.join('\n');
   };
 

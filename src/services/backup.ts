@@ -109,7 +109,7 @@ export async function importBackup(json: string): Promise<BackupResult> {
     throw new Error("That file isn't valid JSON");
   }
   if (parsed.app !== 'life-tracker' || !parsed.tables) {
-    throw new Error("That file isn't a Life Tracker backup");
+    throw new Error("That file isn't an Incus backup");
   }
 
   const db = await getDatabase();

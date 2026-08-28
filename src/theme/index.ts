@@ -21,78 +21,78 @@ const fontConfig = {
 
 const fonts = configureFonts({ config: fontConfig });
 
-// Single brand accent — MacroFactor-style: one strong colour on a monochrome ground.
-const GREEN = '#34D27A';
-const GREEN_DIM = '#1F8A50';
+// Single brand accent — Incus: one strong RED on a black / white ground.
+const RED = '#E5322B';
+const RED_DIM = '#C41E14';
 
-// --- Dark palette (the default / showcase): charcoal + green ---
+// --- Dark palette (the default): near-black + white + red ---
 const darkColors = {
   ...MD3DarkTheme.colors,
-  primary: GREEN,
-  primaryContainer: '#103D24',
+  primary: RED,
+  primaryContainer: '#3A1210',
   secondary: '#9AA0A6',
-  secondaryContainer: '#2A2A2C',
-  tertiary: GREEN,
-  tertiaryContainer: '#103D24',
-  background: '#121212',
-  surface: '#1C1C1E',
-  surfaceVariant: '#2A2A2C',
-  surfaceDisabled: '#1C1C1E',
+  secondaryContainer: '#232323',
+  tertiary: RED,
+  tertiaryContainer: '#3A1210',
+  background: '#0B0B0B',
+  surface: '#161616',
+  surfaceVariant: '#232323',
+  surfaceDisabled: '#161616',
   error: '#FF6B6B',
   errorContainer: '#3A1A1A',
-  onPrimary: '#06220F',
-  onPrimaryContainer: '#B8F5D0',
+  onPrimary: '#FFFFFF',
+  onPrimaryContainer: '#FFD9D6',
   onSecondary: '#FFFFFF',
   onSecondaryContainer: '#E3E3E6',
-  onTertiary: '#06220F',
-  onTertiaryContainer: '#B8F5D0',
-  onBackground: '#F2F2F4',
-  onSurface: '#F2F2F4',
-  onSurfaceVariant: '#9A9AA0',
-  outline: '#323234',
-  outlineVariant: '#262628',
+  onTertiary: '#FFFFFF',
+  onTertiaryContainer: '#FFD9D6',
+  onBackground: '#F4F4F5',
+  onSurface: '#F4F4F5',
+  onSurfaceVariant: '#A0A0A2',
+  outline: '#2C2C2C',
+  outlineVariant: '#202020',
   elevation: {
     level0: 'transparent',
-    level1: '#1C1C1E',
-    level2: '#222224',
-    level3: '#262628',
-    level4: '#2A2A2C',
-    level5: '#2E2E30',
+    level1: '#161616',
+    level2: '#1C1C1C',
+    level3: '#222222',
+    level4: '#282828',
+    level5: '#2E2E2E',
   },
 };
 
-// --- Light palette (refined alternate — minimal, same green accent) ---
+// --- Light palette (white + black + red) ---
 const lightColors = {
   ...MD3LightTheme.colors,
-  primary: GREEN_DIM,
-  primaryContainer: '#CFF3DE',
+  primary: RED_DIM,
+  primaryContainer: '#FCD9D6',
   secondary: '#5F6368',
-  secondaryContainer: '#ECEDEF',
-  tertiary: GREEN_DIM,
-  tertiaryContainer: '#CFF3DE',
+  secondaryContainer: '#ECECEC',
+  tertiary: RED_DIM,
+  tertiaryContainer: '#FCD9D6',
   background: '#FAFAFA',
   surface: '#FFFFFF',
-  surfaceVariant: '#F0F1F2',
+  surfaceVariant: '#F1F1F1',
   error: '#D7373F',
   errorContainer: '#FFDAD6',
   onPrimary: '#FFFFFF',
-  onPrimaryContainer: '#04210F',
+  onPrimaryContainer: '#3A0704',
   onSecondary: '#FFFFFF',
   onSecondaryContainer: '#1A1C1E',
   onTertiary: '#FFFFFF',
-  onTertiaryContainer: '#04210F',
-  onBackground: '#17181A',
-  onSurface: '#17181A',
-  onSurfaceVariant: '#5F6368',
-  outline: '#DADCE0',
-  outlineVariant: '#E8EAED',
+  onTertiaryContainer: '#3A0704',
+  onBackground: '#111113',
+  onSurface: '#111113',
+  onSurfaceVariant: '#5A5A5A',
+  outline: '#DEDEDE',
+  outlineVariant: '#ECECEC',
   elevation: {
     level0: 'transparent',
     level1: '#FFFFFF',
-    level2: '#F7F8F9',
-    level3: '#F2F3F4',
-    level4: '#EEEFF1',
-    level5: '#EAEBED',
+    level2: '#F7F7F7',
+    level3: '#F2F2F2',
+    level4: '#EEEEEE',
+    level5: '#EAEAEA',
   },
 };
 
@@ -103,17 +103,16 @@ export const darkTheme = { ...MD3DarkTheme, colors: darkColors, fonts };
  * importing `theme` directly inherit dark; migrated screens use `useAppTheme()`. */
 export const theme = darkTheme;
 
-// --- Module accents: flattened to muted, near-grayscale tones (MacroFactor
-// keeps things monochrome). Green is the one true accent (see GREEN/primary);
-// these stay desaturated so the UI reads calm + data-first, while still giving
-// just enough differentiation for legends/markers. ---
+// --- Module accents: muted neutral tones on the black/white ground. RED is
+// the one true brand accent (see RED/primary); these stay desaturated so the
+// UI reads calm + data-first, with just enough differentiation for legends. ---
 export const moduleColors = {
   nutrition: '#B7ADA6',
   water: '#90A4AE',
   sleep: '#A29CB0',
   workout: '#B3A595',
   tasks: '#AEA98F',
-  habits: GREEN,
+  habits: RED,
   budget: '#8FAAA2',
   gamification: '#C2B488',
 };
@@ -121,7 +120,7 @@ export const moduleColors = {
 export type ModuleKey = keyof typeof moduleColors;
 
 /** The single brand accent, for code that wants it explicitly. */
-export const accent = GREEN;
+export const accent = RED;
 
 // --- Spacing ---
 export const spacing = {

@@ -253,7 +253,7 @@ export default function ProfileScreen() {
           </Button>
         </View>
 
-        <Text variant="labelSmall" style={styles.version}>Life Tracker v1.0.0</Text>
+        <Text variant="labelSmall" style={styles.version}>Incus v1.0.0</Text>
       </ScrollView>
 
       <Portal>

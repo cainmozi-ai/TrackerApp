@@ -64,7 +64,7 @@ export default function OnboardingScreen() {
             <MaterialCommunityIcons name="rocket-launch" size={40} color={colors.primary} />
           </View>
           <Text variant="headlineMedium" style={[styles.title, { color: colors.onBackground }]}>
-            Welcome to Life Tracker
+            Welcome to Incus
           </Text>
           <Text variant="bodyMedium" style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
             A few quick details and we'll set your daily targets. You can change these anytime.

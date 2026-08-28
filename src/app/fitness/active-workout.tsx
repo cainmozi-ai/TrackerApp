@@ -50,6 +50,7 @@ export default function ActiveWorkoutScreen() {
   const [displayed, setDisplayed] = useState<Exercise[]>([]);
   const [targets, setTargets] = useState<Record<number, Target>>({});
   const [previous, setPrevious] = useState<Record<number, WorkoutSet[]>>({});
+  const [best, setBest] = useState<Record<number, { maxWeight: number; max1RM: number }>>({});
   const [suggestion, setSuggestion] = useState<Record<number, { weight: number; reps: number } | null>>({});
   const [keypadFor, setKeypadFor] = useState<{ exId: number; name: string; logType: LogType; initial: { weight?: string; reps?: string; durationSeconds?: number; distance?: string; rpe?: number | null; setType?: SetType }; editSetId?: number } | null>(null);
   const [plateFor, setPlateFor] = useState<number | null>(null);
@@ -89,6 +90,7 @@ export default function ActiveWorkoutScreen() {
     const tg: Record<number, Target> = {};
     const prev: Record<number, WorkoutSet[]> = {};
     const sug: Record<number, { weight: number; reps: number } | null> = {};
+    const bst: Record<number, { maxWeight: number; max1RM: number }> = {};
     const list: Exercise[] = [];
     for (const t of te) {
       if (t.exercise) list.push(t.exercise);
@@ -97,11 +99,13 @@ export default function ActiveWorkoutScreen() {
       tg[t.exerciseId] = { repMin, repMax };
       prev[t.exerciseId] = await getLastSets(t.exerciseId);
       sug[t.exerciseId] = await getProgressionSuggestion(t.exerciseId, repMax);
+      bst[t.exerciseId] = await getExerciseBest(t.exerciseId);
     }
     setDisplayed(d => [...d, ...list.filter(ex => !d.some(e => e.id === ex.id))]);
     setTargets(t => ({ ...t, ...tg }));
     setPrevious(p => ({ ...p, ...prev }));
     setSuggestion(s => ({ ...s, ...sug }));
+    setBest(b => ({ ...b, ...bst }));
   };
 
   useEffect(() => {
@@ -165,8 +169,10 @@ export default function ActiveWorkoutScreen() {
     setTargets(t => (t[ex.id] ? t : { ...t, [ex.id]: { repMin: 8, repMax: 12 } }));
     const prev = await getLastSets(ex.id);
     const sug = await getProgressionSuggestion(ex.id, 12);
+    const b = await getExerciseBest(ex.id);
     setPrevious(p => (p[ex.id] ? p : { ...p, [ex.id]: prev }));
     setSuggestion(s => (s[ex.id] !== undefined ? s : { ...s, [ex.id]: sug }));
+    setBest(bs => (bs[ex.id] ? bs : { ...bs, [ex.id]: b }));
     return added;
   };
 
@@ -382,6 +388,12 @@ export default function ActiveWorkoutScreen() {
               <Text variant="labelSmall" style={[styles.prevLine, { color: colors.onSurfaceVariant }]}>
                 {prev.length ? `Last: ${prev.map(p => formatSetCompact(p, (ex.logType || 'weight_reps') as LogType)).join(', ')}` : 'No history yet'}
               </Text>
+              {ex.logType === 'weight_reps' && !!best[ex.id]?.maxWeight && (
+                <Text variant="labelSmall" style={[styles.bestLine, { color: accent }]}>
+                  🏆 Best: {best[ex.id].maxWeight}{weightUnit}
+                  {best[ex.id].max1RM ? ` · est 1RM ${Math.round(best[ex.id].max1RM)}${weightUnit}` : ''}
+                </Text>
+              )}
 
               {sets.map((s, i) => (
                 <Pressable key={s.id} style={styles.setRow} onPress={() => openEditSet(s, ex)}>
@@ -540,7 +552,8 @@ const styles = StyleSheet.create({
   classRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   classChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   gymToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: shape.pill, marginBottom: spacing.sm },
-  prevLine: { marginTop: 2, marginBottom: spacing.xs },
+  prevLine: { marginTop: 2 },
+  bestLine: { marginBottom: spacing.xs, fontWeight: '700' },
   setRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2 },
   typeDot: { width: 8, height: 8, borderRadius: 4, marginRight: spacing.sm },
   setNum: { width: 52 },

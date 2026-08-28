@@ -86,7 +86,7 @@ export default function StepsScreen() {
           <MaterialCommunityIcons name="shoe-print" size={40} color={STEP_COLOR} />
           <Text variant="titleMedium" style={[styles.connectTitle, { color: colors.onSurface }]}>Connect your steps</Text>
           <Text variant="bodyMedium" style={[styles.connectBody, { color: colors.onSurfaceVariant }]}>
-            Allow Life Tracker to read your daily step count from Health Connect. Your steps come from Samsung Health,
+            Allow Incus to read your daily step count from Health Connect. Your steps come from Samsung Health,
             Google Fit, or whichever app you use — synced privately on your device.
           </Text>
           <Button mode="contained" buttonColor={STEP_COLOR} style={styles.connectBtn} onPress={connect}>
@@ -109,8 +109,8 @@ export default function StepsScreen() {
           {onWeb
             ? 'Steps sync runs through Health Connect on the Android app — it isn’t available in the web preview.'
             : s === 'update-required'
-              ? 'Your Health Connect app needs an update before Life Tracker can read your steps.'
-              : 'Life Tracker reads your steps from Health Connect — the hub that links Samsung Health and Google Fit. Install it (built in on Android 14+), then come back to connect.'}
+              ? 'Your Health Connect app needs an update before Incus can read your steps.'
+              : 'Incus reads your steps from Health Connect — the hub that links Samsung Health and Google Fit. Install it (built in on Android 14+), then come back to connect.'}
         </Text>
         {!onWeb && (
           <Button mode="contained" buttonColor={STEP_COLOR} style={styles.connectBtn} onPress={openPlayStore}>
