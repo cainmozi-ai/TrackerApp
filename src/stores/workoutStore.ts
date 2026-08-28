@@ -131,6 +131,8 @@ interface WorkoutState {
   /** Look up exercises by exact name (case-insensitive), preserving input order. */
   findExercisesByNames: (names: string[]) => Promise<Exercise[]>;
   getMuscleVolume: (days?: number) => Promise<{ muscleGroup: string; sets: number }[]>;
+  /** Per-muscle-group set counts broken down by set type, over a window. */
+  getMuscleSetBreakdown: (days?: number) => Promise<{ muscleGroup: string; total: number; byType: Record<string, number> }[]>;
   getWorkoutDates: () => Promise<string[]>;
 }
 
@@ -747,6 +749,28 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       [localDaysAgo(days)]
     );
     return rows.filter(r => r.muscleGroup);
+  },
+
+  getMuscleSetBreakdown: async (days = 30) => {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<{ muscleGroup: string; setType: string; c: number }>(
+      `SELECT e.muscle_group as muscleGroup, ws.set_type as setType, COUNT(*) as c
+       FROM workout_sets ws
+       JOIN workout_logs wl ON ws.workout_log_id = wl.id
+       JOIN exercises e ON ws.exercise_id = e.id
+       WHERE wl.finished_at IS NOT NULL AND date(wl.started_at) >= ?
+       GROUP BY e.muscle_group, ws.set_type`,
+      [localDaysAgo(days)]
+    );
+    const byGroup = new Map<string, { muscleGroup: string; total: number; byType: Record<string, number> }>();
+    for (const r of rows) {
+      if (!r.muscleGroup) continue;
+      let g = byGroup.get(r.muscleGroup);
+      if (!g) { g = { muscleGroup: r.muscleGroup, total: 0, byType: {} }; byGroup.set(r.muscleGroup, g); }
+      g.byType[r.setType || 'normal'] = (g.byType[r.setType || 'normal'] || 0) + r.c;
+      g.total += r.c;
+    }
+    return [...byGroup.values()].sort((a, b) => b.total - a.total);
   },
 
   getExerciseHistory: async (exerciseId) => {

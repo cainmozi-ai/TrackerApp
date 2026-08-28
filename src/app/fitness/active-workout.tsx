@@ -387,7 +387,7 @@ export default function ActiveWorkoutScreen() {
                     )}
                   </View>
                   <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
-                    {ex.muscleGroup}{repTarget(ex, tgt)}
+                    {ex.target || ex.muscleGroup}{repTarget(ex, tgt)}
                   </Text>
                 </Pressable>
                 <View style={styles.exControls}>

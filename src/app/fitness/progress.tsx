@@ -13,12 +13,24 @@ import type { Exercise } from '@/types';
 
 const screenWidth = Dimensions.get('window').width;
 
+/** Set-type legend + segment colours for the per-muscle breakdown. */
+const SET_TYPE_META: { key: string; label: string; color: string }[] = [
+  { key: 'warmup', label: 'Warm-up', color: '#5AA9E6' },
+  { key: 'normal', label: 'Normal', color: '#9A9AA0' },
+  { key: 'failure', label: 'Failure', color: '#FF6B6B' },
+  { key: 'drop', label: 'Drop', color: '#B388FF' },
+  { key: 'assisted', label: 'Assisted', color: '#66BB6A' },
+  { key: 'partial', label: 'Partials', color: '#FFA726' },
+  { key: 'static', label: 'Static', color: '#AB47BC' },
+];
+
 export default function ProgressScreen() {
-  const { recentWorkouts, loadRecentWorkouts, exercises, loadExercises, getExerciseHistory, getMuscleVolume, getProgressionReport, getWorkoutSummaries } = useWorkoutStore();
+  const { recentWorkouts, loadRecentWorkouts, exercises, loadExercises, getExerciseHistory, getMuscleVolume, getMuscleSetBreakdown, getProgressionReport, getWorkoutSummaries } = useWorkoutStore();
   const [summaries, setSummaries] = useState<WorkoutSummary[]>([]);
   const [selected, setSelected] = useState<Exercise | null>(null);
   const [history, setHistory] = useState<{ date: string; maxWeight: number; volume: number }[]>([]);
   const [muscleVol, setMuscleVol] = useState<{ muscleGroup: string; sets: number }[]>([]);
+  const [breakdown, setBreakdown] = useState<{ muscleGroup: string; total: number; byType: Record<string, number> }[]>([]);
   const [progression, setProgression] = useState<ProgressionEntry[]>([]);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [search, setSearch] = useState('');
@@ -27,6 +39,7 @@ export default function ProgressScreen() {
     loadRecentWorkouts();
     loadExercises('All');
     getMuscleVolume(7).then(setMuscleVol);
+    getMuscleSetBreakdown(30).then(setBreakdown);
     getProgressionReport().then(setProgression);
     getWorkoutSummaries().then(setSummaries);
   }, []);
@@ -80,6 +93,34 @@ export default function ProgressScreen() {
             })()}
           </Surface>
         )}
+
+        {breakdown.length > 0 && (() => {
+          const present = SET_TYPE_META.filter(t => breakdown.some(m => m.byType[t.key]));
+          return (
+            <Surface style={styles.chartCard} elevation={1}>
+              <Text variant="titleSmall" style={styles.chartTitle}>Sets by type · 30 days</Text>
+              <View style={styles.legendRow}>
+                {present.map(t => (
+                  <View key={t.key} style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: t.color }]} />
+                    <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{t.label}</Text>
+                  </View>
+                ))}
+              </View>
+              {breakdown.map(m => (
+                <View key={m.muscleGroup} style={styles.volRow}>
+                  <Text variant="labelMedium" style={[styles.volLabel, { color: colors.onSurfaceVariant }]}>{m.muscleGroup}</Text>
+                  <View style={styles.bdBar}>
+                    {present.map(t => (m.byType[t.key]
+                      ? <View key={t.key} style={{ flex: m.byType[t.key], backgroundColor: t.color }} />
+                      : null))}
+                  </View>
+                  <Text variant="labelMedium" style={[styles.volCount, { color: colors.onSurface }]}>{m.total}</Text>
+                </View>
+              ))}
+            </Surface>
+          );
+        })()}
 
         {progression.length > 0 && (
           <>
@@ -221,6 +262,10 @@ const styles = StyleSheet.create({
   volTrack: { flex: 1, height: 10, borderRadius: 5, overflow: 'hidden' },
   volFill: { height: '100%', borderRadius: 5 },
   volCount: { width: 24, textAlign: 'right' },
+  legendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignSelf: 'stretch', marginBottom: spacing.sm },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  bdBar: { flex: 1, flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', backgroundColor: 'rgba(128,128,128,0.12)' },
   chart: { borderRadius: 12 },
   workoutRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: theme.colors.surface, borderRadius: 10, marginBottom: spacing.xs, gap: spacing.sm },
   progressionTouch: { borderRadius: 10, marginBottom: spacing.xs },
