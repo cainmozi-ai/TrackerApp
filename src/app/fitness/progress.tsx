@@ -9,9 +9,14 @@ import { theme, moduleColors, spacing, accent, withAlpha } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useWorkoutStore, type ProgressionEntry, type WorkoutSummary } from '@/stores/workoutStore';
+import { VOLUME_LANDMARKS, volumeStatus, type VolumeStatus } from '@/data/volumeLandmarks';
 import type { Exercise } from '@/types';
 
 const screenWidth = Dimensions.get('window').width;
+
+const VOL_STATUS_COLOR: Record<VolumeStatus, string> = {
+  under: '#FF6B6B', low: '#FFA726', optimal: '#66BB6A', high: '#66BB6A', over: '#B388FF',
+};
 
 /** Set-type legend + segment colours for the per-muscle breakdown. */
 const SET_TYPE_META: { key: string; label: string; color: string }[] = [
@@ -78,18 +83,33 @@ export default function ProgressScreen() {
 
         {muscleVol.length > 0 && (
           <Surface style={styles.chartCard} elevation={1}>
-            <Text variant="titleSmall" style={styles.chartTitle}>Set Levels · this week</Text>
+            <Text variant="titleSmall" style={styles.chartTitle}>Weekly volume · sets vs landmarks</Text>
+            <Text variant="labelSmall" style={[styles.volSub, { color: colors.onSurfaceVariant }]}>
+              The bar spans your minimum-effective to maximum-recoverable weekly sets.
+            </Text>
             {(() => {
-              const max = Math.max(...muscleVol.map(m => m.sets), 1);
-              return muscleVol.map(m => (
-                <View key={m.muscleGroup} style={styles.volRow}>
-                  <Text variant="labelMedium" style={[styles.volLabel, { color: colors.onSurfaceVariant }]}>{m.muscleGroup}</Text>
-                  <View style={[styles.volTrack, { backgroundColor: withAlpha(accent, 0.15) }]}>
-                    <View style={[styles.volFill, { width: `${(m.sets / max) * 100}%`, backgroundColor: accent }]} />
+              const bySet: Record<string, number> = {};
+              for (const m of muscleVol) bySet[m.muscleGroup] = m.sets;
+              return Object.entries(VOLUME_LANDMARKS).map(([group, lm]) => {
+                const sets = bySet[group] || 0;
+                const { status, label } = volumeStatus(sets, lm);
+                const color = VOL_STATUS_COLOR[status];
+                // MEV sits at mev/mrv of the track; the fill caps at the MRV width.
+                const mevPct = Math.min(100, (lm.mev / lm.mrv) * 100);
+                const fillPct = Math.min(100, (sets / lm.mrv) * 100);
+                return (
+                  <View key={group} style={styles.lmRow}>
+                    <View style={styles.lmHead}>
+                      <Text variant="labelMedium" style={{ color: colors.onSurface, fontWeight: '700' }}>{group}</Text>
+                      <Text variant="labelSmall" style={{ color }}>{sets} sets · {label}</Text>
+                    </View>
+                    <View style={[styles.lmTrack, { backgroundColor: withAlpha(colors.onSurfaceVariant, 0.12) }]}>
+                      <View style={[styles.lmFill, { width: `${fillPct}%`, backgroundColor: color }]} />
+                      <View style={[styles.lmMev, { left: `${mevPct}%`, backgroundColor: colors.onSurface }]} />
+                    </View>
                   </View>
-                  <Text variant="labelMedium" style={[styles.volCount, { color: colors.onSurface }]}>{m.sets}</Text>
-                </View>
-              ));
+                );
+              });
             })()}
           </Surface>
         )}
@@ -262,6 +282,12 @@ const styles = StyleSheet.create({
   volTrack: { flex: 1, height: 10, borderRadius: 5, overflow: 'hidden' },
   volFill: { height: '100%', borderRadius: 5 },
   volCount: { width: 24, textAlign: 'right' },
+  volSub: { alignSelf: 'flex-start', marginBottom: spacing.sm },
+  lmRow: { alignSelf: 'stretch', marginBottom: spacing.sm },
+  lmHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  lmTrack: { height: 10, borderRadius: 5, position: 'relative', overflow: 'hidden' },
+  lmFill: { height: '100%', borderRadius: 5 },
+  lmMev: { position: 'absolute', top: -2, width: 2, height: 14, opacity: 0.6 },
   legendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignSelf: 'stretch', marginBottom: spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },

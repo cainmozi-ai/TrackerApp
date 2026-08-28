@@ -84,6 +84,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           age: row.age as number | null,
           weight: row.weight as number | null,
           height: row.height as number | null,
+          sex: (row.sex as string | null) ?? null,
           activityLevel: row.activity_level as string | null,
           goal: (row.goal as string | null) ?? null,
           calorieTarget: row.calorie_target as number,
@@ -114,7 +115,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     const fields: string[] = [];
     const values: SQLiteBindValue[] = [];
     const keyMap: Record<string, string> = {
-      name: 'name', age: 'age', weight: 'weight', height: 'height',
+      name: 'name', age: 'age', weight: 'weight', height: 'height', sex: 'sex',
       activityLevel: 'activity_level', goal: 'goal',
       calorieTarget: 'calorie_target',
       proteinTarget: 'protein_target', carbsTarget: 'carbs_target',

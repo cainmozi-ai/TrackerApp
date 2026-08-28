@@ -7,6 +7,7 @@ import { StyleSheet } from 'react-native';
 import { ThemeProvider, useAppTheme, ThemePrefLoader } from '@/theme/ThemeContext';
 import { DatabaseProvider } from '@/database/DatabaseProvider';
 import { useUserStore } from '@/stores/userStore';
+import { initNotifications } from '@/stores/reminderStore';
 
 // Silence noisy, non-actionable deprecation warnings emitted by library
 // internals (react-native-paper / react-native-web). Real errors still show.
@@ -36,6 +37,7 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     loadProfile().then(() => setChecked(true));
+    initNotifications();
   }, []);
 
   useEffect(() => {

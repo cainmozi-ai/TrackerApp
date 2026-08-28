@@ -42,7 +42,7 @@ export default function ActiveWorkoutScreen() {
   const {
     activeSets, exercises, templates, loadTemplates, loadExercises, startWorkout, getActiveWorkout, discardWorkout, loadActiveSets,
     getTemplateExercises, getLastSets, getProgressionSuggestion, logSet, updateSet, removeSet, finishWorkout,
-    getExerciseBest, getWorkoutDetail, findExercisesByNames, getExerciseById,
+    getExerciseBest, getWorkoutDetail, findExercisesByNames, getExerciseById, applyProgressionToTemplate,
   } = useWorkoutStore();
   const { reward, profile, loadProfile } = useUserStore();
 
@@ -53,6 +53,9 @@ export default function ActiveWorkoutScreen() {
   const [previous, setPrevious] = useState<Record<number, WorkoutSet[]>>({});
   const [best, setBest] = useState<Record<number, { maxWeight: number; max1RM: number }>>({});
   const [suggestion, setSuggestion] = useState<Record<number, { weight: number; reps: number } | null>>({});
+  // Exercise id → its template_exercises row id, so we can write progression back to the routine.
+  const [teByExercise, setTeByExercise] = useState<Record<number, number>>({});
+  const [appliedTe, setAppliedTe] = useState<Record<number, boolean>>({});
   const [keypadFor, setKeypadFor] = useState<{ exId: number; name: string; logType: LogType; initial: { weight?: string; reps?: string; durationSeconds?: number; distance?: string; rpe?: number | null; setType?: SetType }; editSetId?: number } | null>(null);
   const [plateFor, setPlateFor] = useState<number | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -93,12 +96,14 @@ export default function ActiveWorkoutScreen() {
     const prev: Record<number, WorkoutSet[]> = {};
     const sug: Record<number, { weight: number; reps: number } | null> = {};
     const bst: Record<number, { maxWeight: number; max1RM: number }> = {};
+    const teMap: Record<number, number> = {};
     const list: Exercise[] = [];
     for (const t of te) {
       if (t.exercise) list.push(t.exercise);
       const repMax = t.targetRepMax ?? t.targetReps ?? 10;
       const repMin = t.targetRepMin ?? Math.max(1, repMax - 3);
       tg[t.exerciseId] = { repMin, repMax };
+      teMap[t.exerciseId] = t.id;
       prev[t.exerciseId] = await getLastSets(t.exerciseId);
       sug[t.exerciseId] = await getProgressionSuggestion(t.exerciseId, repMax);
       bst[t.exerciseId] = await getExerciseBest(t.exerciseId);
@@ -108,6 +113,16 @@ export default function ActiveWorkoutScreen() {
     setPrevious(p => ({ ...p, ...prev }));
     setSuggestion(s => ({ ...s, ...sug }));
     setBest(b => ({ ...b, ...bst }));
+    setTeByExercise(m => ({ ...m, ...teMap }));
+  };
+
+  const applyToRoutine = async (ex: Exercise) => {
+    const teId = teByExercise[ex.id];
+    const sug = suggestion[ex.id];
+    if (!teId || !sug) return;
+    await applyProgressionToTemplate(teId, sug.weight, targets[ex.id]?.repMin);
+    setAppliedTe(a => ({ ...a, [ex.id]: true }));
+    setPrSnack(`Routine updated: ${ex.name} → ${sug.weight}${weightUnit}`);
   };
 
   useEffect(() => {
@@ -447,12 +462,23 @@ export default function ActiveWorkoutScreen() {
               ))}
 
               {ex.logType === 'weight_reps' && !!sug && (
-                <Pressable onPress={() => openKeypad(ex)} style={[styles.suggestChip, { backgroundColor: withAlpha(accent, 0.16) }]}>
-                  <MaterialCommunityIcons name="trending-up" size={15} color={accent} />
-                  <Text variant="labelMedium" style={{ color: accent, fontWeight: '700' }}>
-                    Suggested: {sug.weight}{weightUnit} × {sug.reps}
-                  </Text>
-                </Pressable>
+                <View style={styles.suggestRow}>
+                  <Pressable onPress={() => openKeypad(ex)} style={[styles.suggestChip, { backgroundColor: withAlpha(accent, 0.16) }]}>
+                    <MaterialCommunityIcons name="trending-up" size={15} color={accent} />
+                    <Text variant="labelMedium" style={{ color: accent, fontWeight: '700' }}>
+                      Suggested: {sug.weight}{weightUnit} × {sug.reps}
+                    </Text>
+                  </Pressable>
+                  {teByExercise[ex.id] != null && (
+                    <Pressable onPress={() => applyToRoutine(ex)} disabled={appliedTe[ex.id]}
+                      style={[styles.applyChip, { borderColor: accent, opacity: appliedTe[ex.id] ? 0.5 : 1 }]}>
+                      <MaterialCommunityIcons name={appliedTe[ex.id] ? 'check' : 'content-save-outline'} size={14} color={accent} />
+                      <Text variant="labelSmall" style={{ color: accent, fontWeight: '700' }}>
+                        {appliedTe[ex.id] ? 'Saved' : 'Apply to routine'}
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
               )}
 
               <Button mode="contained-tonal" icon="plus" onPress={() => openKeypad(ex)} style={styles.addSetBtn}>
@@ -623,6 +649,8 @@ const styles = StyleSheet.create({
   setNum: { width: 52 },
   setData: { flex: 1, fontWeight: '600' },
   suggestChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: shape.pill, marginTop: spacing.xs },
+  suggestRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
+  applyChip: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: shape.pill, borderWidth: 1, marginTop: spacing.xs },
   addSetBtn: { marginTop: spacing.sm, alignSelf: 'flex-start' },
   addExBtn: { marginTop: spacing.sm },
   addCircuitBtn: { marginTop: spacing.xs },

@@ -169,6 +169,18 @@ export default function ProfileScreen() {
           <Switch value={dark} onValueChange={toggle} color={colors.primary} />
         </Surface>
 
+        <Text variant="titleSmall" style={styles.sectionTitle}>Notifications</Text>
+        <TouchableRipple onPress={() => router.push('/profile/reminders')} style={styles.linkRow} borderless>
+          <View style={styles.linkRowInner}>
+            <MaterialCommunityIcons name="bell-outline" size={22} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text variant="bodyLarge" style={{ color: colors.onSurface }}>Reminders</Text>
+              <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Workout, habit, hydration & streak nudges</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
+          </View>
+        </TouchableRipple>
+
         <Text variant="titleSmall" style={styles.sectionTitle}>About You</Text>
         <TextInput label="Name" value={name} onChangeText={setName} mode="outlined" style={styles.input} />
         <View style={styles.row}>
@@ -299,6 +311,8 @@ const styles = StyleSheet.create({
   achievementsText: { flex: 1, fontWeight: '500' },
   sectionTitle: { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.sm },
   appearanceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderRadius: 16 },
+  linkRow: { borderRadius: 16 },
+  linkRowInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
   appearanceLabel: { flex: 1, fontWeight: '500' },
   input: { marginBottom: spacing.sm, backgroundColor: theme.colors.surface },
   row: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },

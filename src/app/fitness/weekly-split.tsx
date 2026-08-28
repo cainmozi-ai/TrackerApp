@@ -8,6 +8,7 @@ import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, accent } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useReminderStore } from '@/stores/reminderStore';
 
 const DAYS = [
   { dow: 1, label: 'Monday' },
@@ -39,6 +40,8 @@ export default function WeeklySplitScreen() {
     await setDaySchedule(dow, templateId);
     setSchedule(s => ({ ...s, [dow]: templateId }));
     setPickDay(null);
+    // Keep the workout reminder in sync with the new split.
+    await useReminderStore.getState().rescheduleWorkout();
   };
 
   return (

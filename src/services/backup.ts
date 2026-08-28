@@ -23,6 +23,7 @@ const BACKUP_TABLES = [
   'workout_templates',
   'template_exercises',
   'weekly_schedule',
+  'reminders',
   'workout_logs',
   'workout_sets',
   'tasks',

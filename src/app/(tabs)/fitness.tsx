@@ -98,6 +98,8 @@ export default function FitnessScreen() {
           subtitle="Plan a routine for each day" onPress={() => router.push('/fitness/weekly-split')} />
         <AppCard index={6} title="Cardio" icon="heart-pulse" color="#FF8A65"
           subtitle="Log runs, rides, rows & more" onPress={() => router.push('/fitness/cardio')} />
+        <AppCard index={7} title="Records" icon="trophy" color="#F5B301"
+          subtitle="Personal bests & strength standards" onPress={() => router.push('/fitness/records')} />
       </ScrollView>
 
       <Portal>

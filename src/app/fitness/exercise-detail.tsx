@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View, Linking } from 'react-native';
-import { Text, Button, Chip } from 'react-native-paper';
+import { Text, Button, Chip, IconButton } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,12 +11,13 @@ import { MotionCard } from '@/components/common/MotionCard';
 import { useWorkoutStore, estimate1RM } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
 import { type LogType, formatSet } from '@/utils/workout';
+import { effectiveIncrement } from '@/utils/progression';
 import type { Exercise, WorkoutSet } from '@/types';
 
 export default function ExerciseDetailScreen() {
   const { colors } = useAppTheme();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { getExercise, getLastSets, getProgressionSuggestion, getExerciseHistory } = useWorkoutStore();
+  const { getExercise, getLastSets, getProgressionSuggestion, getExerciseHistory, setExerciseIncrement } = useWorkoutStore();
   const { profile } = useUserStore();
   const unit = profile?.weightUnit ?? 'kg';
   const [exercise, setExercise] = useState<Exercise | null>(null);
@@ -54,6 +55,13 @@ export default function ExerciseDetailScreen() {
 
   const logType = (exercise.logType || 'weight_reps') as LogType;
   const isWeight = logType === 'weight_reps';
+  const currentInc = effectiveIncrement(exercise.weightIncrement, exercise.equipment);
+  const changeIncrement = async (delta: number) => {
+    const next = Math.max(0.5, Math.round((currentInc + delta) * 100) / 100);
+    await setExerciseIncrement(exercise.id, next);
+    setExercise({ ...exercise, weightIncrement: next });
+    setSuggestion(await getProgressionSuggestion(exercise.id, 12));
+  };
   const working = lastSets.filter(s => s.setType !== 'warmup');
   const best1RM = working.reduce((best, s) => Math.max(best, estimate1RM(s.weight, s.reps)), 0);
   const lastWeight = working.length ? Math.max(...working.map(s => s.weight)) : 0;
@@ -164,6 +172,22 @@ export default function ExerciseDetailScreen() {
                       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Sessions</Text>
                     </View>
                   </View>
+
+                  <View style={[styles.incRow, { backgroundColor: withAlpha(accent, 0.08) }]}>
+                    <MaterialCommunityIcons name="weight" size={18} color={accent} />
+                    <View style={styles.verdictText}>
+                      <Text variant="bodyMedium" style={{ color: colors.onSurface, fontWeight: '700' }}>Weight jump</Text>
+                      <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
+                        Added when you hit the top of the rep range
+                        {exercise.weightIncrement == null ? ' · default for this equipment' : ''}
+                      </Text>
+                    </View>
+                    <IconButton icon="minus" size={16} mode="contained-tonal" onPress={() => changeIncrement(-0.5)} />
+                    <Text variant="titleMedium" style={{ color: accent, fontWeight: '800', minWidth: 52, textAlign: 'center' }}>
+                      +{currentInc} {unit}
+                    </Text>
+                    <IconButton icon="plus" size={16} mode="contained-tonal" onPress={() => changeIncrement(0.5)} />
+                  </View>
                 </>
               )}
 
@@ -217,6 +241,7 @@ const styles = StyleSheet.create({
   tipText: { flex: 1, lineHeight: 20 },
   verdict: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: shape.md, marginBottom: spacing.sm },
   verdictText: { flex: 1 },
+  incRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.sm, borderRadius: shape.md, marginBottom: spacing.sm },
   statRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: spacing.sm },
   stat: { alignItems: 'center' },
   lastLabel: { marginBottom: 2 },

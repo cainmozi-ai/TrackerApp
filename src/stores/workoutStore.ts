@@ -2,6 +2,7 @@
 import type { Exercise, WorkoutTemplate, WorkoutLog, WorkoutSet, TemplateExercise } from '@/types';
 import { getDatabase } from '@/database/schema';
 import { localNow, localDaysAgo } from '@/utils/dates';
+import { effectiveIncrement } from '@/utils/progression';
 
 /** Gym equipment grouped by category — drives the My Gym selector and exercise filtering. */
 export const EQUIPMENT_GROUPS: { label: string; items: string[] }[] = [
@@ -86,6 +87,21 @@ export interface ProgressionEntry {
   status: 'increase' | 'reps';
 }
 
+export interface ExerciseRecord {
+  exercise: Exercise;
+  /** Heaviest weight lifted for at least one rep (working sets only). */
+  bestWeight: number;
+  bestWeightReps: number;
+  /** Highest estimated 1RM (Epley) across all working sets. */
+  best1RM: number;
+  /** Most reps in a single set. */
+  bestReps: number;
+  /** Best single-set volume (weight × reps). */
+  bestVolume: number;
+  /** ISO date of the best-1RM set. */
+  date: string;
+}
+
 interface WorkoutState {
   exercises: Exercise[];
   templates: WorkoutTemplate[];
@@ -103,9 +119,17 @@ interface WorkoutState {
   createTemplate: (name: string, description?: string) => Promise<number>;
   deleteTemplate: (id: number) => Promise<void>;
   getTemplateExercises: (templateId: number) => Promise<TemplateExercise[]>;
-  addExerciseToTemplate: (templateId: number, exerciseId: number, sets: number, reps: number, weight: number) => Promise<void>;
+  addExerciseToTemplate: (templateId: number, exerciseId: number, sets: number, reps: number, weight: number, repMin?: number | null, repMax?: number | null) => Promise<void>;
   removeTemplateExercise: (id: number) => Promise<void>;
   reorderTemplateExercises: (orderedIds: number[]) => Promise<void>;
+  /** Edit a routine row's targets (sets, rep range, working weight). */
+  updateTemplateExercise: (teId: number, patch: { targetSets?: number; targetReps?: number; targetRepMin?: number | null; targetRepMax?: number | null; targetWeight?: number }) => Promise<void>;
+  /** Set the per-exercise progressive-overload weight jump (kg); null resets to the equipment default. */
+  setExerciseIncrement: (exerciseId: number, increment: number | null) => Promise<void>;
+  /** Write a progressed target weight (and optional rep floor) back to a routine row. */
+  applyProgressionToTemplate: (teId: number, weight: number, repMin?: number) => Promise<void>;
+  /** All-time bests per weight_reps exercise the user has trained. */
+  getAllRecords: () => Promise<ExerciseRecord[]>;
   /** Weekly split: map of day-of-week (0=Sun..6=Sat) → template id (or null). */
   getWeeklySchedule: () => Promise<Record<number, number | null>>;
   setDaySchedule: (dayOfWeek: number, templateId: number | null) => Promise<void>;
@@ -294,7 +318,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const db = await getDatabase();
     const rows = await db.getAllAsync<Record<string, unknown>>(
       `SELECT te.*, e.name, e.muscle_group, e.target, e.log_type, e.equipment, e.description, e.is_custom,
-              e.mechanic, e.region, e.primary_muscles, e.secondary_muscles
+              e.mechanic, e.region, e.primary_muscles, e.secondary_muscles, e.weight_increment
        FROM template_exercises te JOIN exercises e ON te.exercise_id = e.id
        WHERE te.template_id = ? ORDER BY te.sort_order`,
       [templateId]
@@ -322,21 +346,54 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         region: (r.region as string | null) ?? 'upper',
         logType: (r.log_type as string | null) ?? 'weight_reps',
         tips: [],
+        weightIncrement: (r.weight_increment as number | null) ?? null,
         isCustom: (r.is_custom as number) === 1,
       },
     }));
   },
 
-  addExerciseToTemplate: async (templateId, exerciseId, sets, reps, weight) => {
+  addExerciseToTemplate: async (templateId, exerciseId, sets, reps, weight, repMin = null, repMax = null) => {
     const db = await getDatabase();
     const maxOrder = await db.getFirstAsync<{ m: number }>(
       'SELECT COALESCE(MAX(sort_order), -1) as m FROM template_exercises WHERE template_id = ?',
       [templateId]
     );
     await db.runAsync(
-      'INSERT INTO template_exercises (template_id, exercise_id, target_sets, target_reps, target_weight, sort_order) VALUES (?, ?, ?, ?, ?, ?)',
-      [templateId, exerciseId, sets, reps, weight, (maxOrder?.m ?? -1) + 1]
+      'INSERT INTO template_exercises (template_id, exercise_id, target_sets, target_reps, target_rep_min, target_rep_max, target_weight, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [templateId, exerciseId, sets, reps, repMin, repMax, weight, (maxOrder?.m ?? -1) + 1]
     );
+  },
+
+  updateTemplateExercise: async (teId, patch) => {
+    const db = await getDatabase();
+    const cols: string[] = [];
+    const vals: (number | null)[] = [];
+    const map: Record<string, string> = {
+      targetSets: 'target_sets', targetReps: 'target_reps',
+      targetRepMin: 'target_rep_min', targetRepMax: 'target_rep_max', targetWeight: 'target_weight',
+    };
+    for (const [k, col] of Object.entries(map)) {
+      const v = (patch as Record<string, number | null | undefined>)[k];
+      if (v !== undefined) { cols.push(`${col} = ?`); vals.push(v); }
+    }
+    if (cols.length === 0) return;
+    await db.runAsync(`UPDATE template_exercises SET ${cols.join(', ')} WHERE id = ?`, [...vals, teId]);
+  },
+
+  setExerciseIncrement: async (exerciseId, increment) => {
+    const db = await getDatabase();
+    await db.runAsync('UPDATE exercises SET weight_increment = ? WHERE id = ?', [increment, exerciseId]);
+    // Refresh the cached exercise list so screens reading from the store see it.
+    await get().loadExercises();
+  },
+
+  applyProgressionToTemplate: async (teId, weight, repMin) => {
+    const db = await getDatabase();
+    if (repMin != null) {
+      await db.runAsync('UPDATE template_exercises SET target_weight = ?, target_reps = ? WHERE id = ?', [weight, repMin, teId]);
+    } else {
+      await db.runAsync('UPDATE template_exercises SET target_weight = ? WHERE id = ?', [weight, teId]);
+    }
   },
 
   removeTemplateExercise: async (id) => {
@@ -612,6 +669,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         mechanic: 'compound',
         region: 'upper',
         tips: [],
+        weightIncrement: null,
         isCustom: false,
       },
     }));
@@ -735,8 +793,11 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const workingSets = last.filter(s => s.weight === topWeight);
     const hitTop = workingSets.length > 0 && workingSets.every(s => s.reps >= repMax);
     if (hitTop) {
-      // Progress load; smaller jump for lighter lifts.
-      const increment = topWeight >= 40 ? 2.5 : 1.25;
+      // Progress load by the exercise's configured jump (or its equipment default).
+      const db = await getDatabase();
+      const ex = await db.getFirstAsync<{ weight_increment: number | null; equipment: string | null }>(
+        'SELECT weight_increment, equipment FROM exercises WHERE id = ?', [exerciseId]);
+      const increment = effectiveIncrement(ex?.weight_increment ?? null, ex?.equipment ?? null);
       const minReps = Math.max(1, repMax - 3);
       return { weight: Math.round((topWeight + increment) * 100) / 100, reps: minReps };
     }
@@ -786,6 +847,48 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       });
     }
     return report;
+  },
+
+  getAllRecords: async () => {
+    const db = await getDatabase();
+    // Every weight_reps exercise trained in a finished workout (exclude warm-ups),
+    // most-recently-trained first.
+    const trained = await db.getAllAsync<Record<string, unknown>>(
+      `SELECT e.*, MAX(wl.started_at) as last_trained
+       FROM workout_sets ws
+       JOIN workout_logs wl ON ws.workout_log_id = wl.id
+       JOIN exercises e ON ws.exercise_id = e.id
+       WHERE wl.finished_at IS NOT NULL AND ws.set_type != 'warmup'
+         AND COALESCE(e.log_type, 'weight_reps') = 'weight_reps'
+       GROUP BY e.id ORDER BY last_trained DESC`
+    );
+    const records: ExerciseRecord[] = [];
+    for (const row of trained) {
+      const exercise = mapExercise(row);
+      const sets = await db.getAllAsync<{ weight: number; reps: number; started_at: string }>(
+        `SELECT ws.weight, ws.reps, wl.started_at
+         FROM workout_sets ws JOIN workout_logs wl ON ws.workout_log_id = wl.id
+         WHERE ws.exercise_id = ? AND wl.finished_at IS NOT NULL AND ws.set_type != 'warmup'
+           AND ws.weight > 0 AND ws.reps > 0`,
+        [exercise.id]
+      );
+      if (sets.length === 0) continue;
+      let bestWeight = 0, bestWeightReps = 0, best1RM = 0, bestReps = 0, bestVolume = 0, date = '';
+      for (const s of sets) {
+        if (s.weight > bestWeight) { bestWeight = s.weight; bestWeightReps = s.reps; }
+        const e1 = estimate1RM(s.weight, s.reps);
+        if (e1 > best1RM) { best1RM = e1; date = s.started_at; }
+        if (s.reps > bestReps) bestReps = s.reps;
+        const vol = s.weight * s.reps;
+        if (vol > bestVolume) bestVolume = vol;
+      }
+      records.push({
+        exercise, bestWeight, bestWeightReps,
+        best1RM: Math.round(best1RM * 10) / 10,
+        bestReps, bestVolume: Math.round(bestVolume), date,
+      });
+    }
+    return records;
   },
 
   getMuscleVolume: async (days = 7) => {
@@ -874,6 +977,7 @@ async function refreshActiveSets(
         mechanic: 'compound',
         region: 'upper',
         tips: [],
+        weightIncrement: null,
         isCustom: false,
       },
     })),
@@ -919,6 +1023,7 @@ function mapExercise(r: Record<string, unknown>): Exercise {
     equipment: r.equipment as string,
     description: r.description as string,
     tips: parseStrArray(r.tips),
+    weightIncrement: (r.weight_increment as number | null) ?? null,
     isCustom: (r.is_custom as number) === 1,
   };
 }

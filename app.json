@@ -41,6 +41,12 @@
       "expo-sharing",
       "expo-audio",
       "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "color": "#E5322B"
+        }
+      ],
       "react-native-health-connect",
       "./plugins/withHealthConnectPermissionDelegate",
       [

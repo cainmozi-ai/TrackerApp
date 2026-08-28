@@ -20,6 +20,8 @@ export interface UserProfile {
   age: number | null;
   weight: number | null;
   height: number | null;
+  /** 'male' | 'female' | 'other' — used for strength-standard comparisons. */
+  sex: string | null;
   activityLevel: string | null;
   goal: string | null;
   calorieTarget: number;
@@ -136,6 +138,8 @@ export interface Exercise {
   equipment: string;
   description: string;
   tips: string[];
+  /** Smallest weight jump (kg) for progressive overload; null → equipment default. */
+  weightIncrement: number | null;
   isCustom: boolean;
 }
 

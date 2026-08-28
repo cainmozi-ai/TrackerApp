@@ -41,6 +41,7 @@ export default function OnboardingScreen() {
         age: ageN,
         weight: weightN,
         height: heightN,
+        sex,
         activityLevel: activity,
         goal,
         calorieTarget: preview.calories,
@@ -51,7 +52,7 @@ export default function OnboardingScreen() {
         onboarded: true,
       });
     } else {
-      await updateProfile({ name: name.trim() || null, onboarded: true });
+      await updateProfile({ name: name.trim() || null, sex, onboarded: true });
     }
     router.replace('/(tabs)');
   };

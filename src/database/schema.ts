@@ -249,6 +249,15 @@ export async function initializeDatabase(): Promise<void> {
       template_id INTEGER
     );
 
+    CREATE TABLE IF NOT EXISTS reminders (
+      type TEXT PRIMARY KEY,
+      enabled INTEGER DEFAULT 0,
+      hour INTEGER DEFAULT 18,
+      minute INTEGER DEFAULT 0,
+      days_of_week TEXT,
+      notif_ids TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS weight_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       weight REAL NOT NULL,
@@ -269,6 +278,7 @@ export async function initializeDatabase(): Promise<void> {
       equipment TEXT,
       description TEXT,
       tips TEXT,
+      weight_increment REAL,
       is_custom INTEGER DEFAULT 0
     );
 
@@ -462,6 +472,10 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     'ALTER TABLE exercises ADD COLUMN mechanic TEXT',
     'ALTER TABLE exercises ADD COLUMN region TEXT',
     'ALTER TABLE user_profile ADD COLUMN dashboard_config TEXT',
+    // Progressive overload — per-exercise weight increment (smallest usable jump)
+    'ALTER TABLE exercises ADD COLUMN weight_increment REAL',
+    // Biological sex — used for strength-standard comparisons (collected at onboarding)
+    'ALTER TABLE user_profile ADD COLUMN sex TEXT',
   ];
   for (const sql of alters) {
     try {
