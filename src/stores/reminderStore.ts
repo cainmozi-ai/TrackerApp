@@ -49,7 +49,7 @@ export async function initNotifications(): Promise<void> {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Reminders',
         importance: Notifications.AndroidImportance.DEFAULT,
-        lightColor: '#E5322B',
+        lightColor: '#880808',
       });
     }
   } catch {

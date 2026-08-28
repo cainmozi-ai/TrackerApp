@@ -21,9 +21,11 @@ const fontConfig = {
 
 const fonts = configureFonts({ config: fontConfig });
 
-// Single brand accent — Incus: one strong RED on a black / white ground.
-const RED = '#E5322B';
-const RED_DIM = '#C41E14';
+// Single brand accent — Incus: one deep forge-RED (#880808) on a black / white
+// ground. Both light and dark modes use the same red per the brand's 3-colour
+// scheme (white · black · red).
+const RED = '#880808';
+const RED_DIM = '#880808';
 
 // --- Dark palette (the default): near-black + white + red ---
 const darkColors = {
