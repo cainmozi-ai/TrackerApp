@@ -37,6 +37,8 @@ export default function HealthScreen() {
           subtitle="Adaptive expenditure & target recommendations" onPress={() => router.push('/health/coach')} />
         <AppCard index={8} title="Meal Planner" icon="calendar-month" color={moduleColors.nutrition}
           subtitle="Plan meals & generate shopping lists" onPress={() => router.push('/health/meal-planner')} />
+        <AppCard index={9} title="Recovery" icon="spa" color={moduleColors.sleep}
+          subtitle="Sauna, ice bath, mobility & more" onPress={() => router.push('/health/recovery')} />
       </ScrollView>
     </SafeAreaView>
   );

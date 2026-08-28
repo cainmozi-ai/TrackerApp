@@ -15,6 +15,7 @@ import { useWorkoutStore, estimate1RM } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
 import { type LogType, formatSet, formatSetCompact } from '@/utils/workout';
 import { formatMuscles, mechanicLabel, recommendedRest, formatRest } from '@/utils/muscles';
+import { CIRCUITS, type CircuitPreset } from '@/data/circuits';
 import type { Exercise, WorkoutSet } from '@/types';
 
 interface Target { repMin: number; repMax: number }
@@ -41,7 +42,7 @@ export default function ActiveWorkoutScreen() {
   const {
     activeSets, exercises, templates, loadTemplates, loadExercises, startWorkout, getActiveWorkout, discardWorkout, loadActiveSets,
     getTemplateExercises, getLastSets, getProgressionSuggestion, logSet, updateSet, removeSet, finishWorkout,
-    getExerciseBest, getWorkoutDetail,
+    getExerciseBest, getWorkoutDetail, findExercisesByNames,
   } = useWorkoutStore();
   const { reward, profile, loadProfile } = useUserStore();
 
@@ -55,6 +56,7 @@ export default function ActiveWorkoutScreen() {
   const [keypadFor, setKeypadFor] = useState<{ exId: number; name: string; logType: LogType; initial: { weight?: string; reps?: string; durationSeconds?: number; distance?: string; rpe?: number | null; setType?: SetType }; editSetId?: number } | null>(null);
   const [plateFor, setPlateFor] = useState<number | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [circuitVisible, setCircuitVisible] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
   const [restSignal, setRestSignal] = useState(0);
   const [restSeconds, setRestSeconds] = useState(90);
@@ -288,6 +290,31 @@ export default function ActiveWorkoutScreen() {
   const inSuperset = (idx: number) =>
     (displayed[idx] && links[displayed[idx].id]) || (idx > 0 && links[displayed[idx - 1].id]);
 
+  // Label a linked run: 3+ exercises reads as a CIRCUIT, 2 as a SUPERSET.
+  const groupLabel = (idx: number) => {
+    let start = idx;
+    while (start > 0 && links[displayed[start - 1].id]) start--;
+    let end = start;
+    while (end < displayed.length - 1 && links[displayed[end].id]) end++;
+    return end - start + 1 >= 3 ? 'CIRCUIT' : 'SUPERSET';
+  };
+
+  const handleAddCircuit = async (c: CircuitPreset) => {
+    const exs = await findExercisesByNames(c.exercises);
+    const newIds: number[] = [];
+    for (const ex of exs) {
+      const added = await addExerciseToSessionAsync(ex);
+      if (added) newIds.push(ex.id);
+    }
+    setLinks(l => {
+      const nl = { ...l };
+      for (let i = 0; i < newIds.length - 1; i++) nl[newIds[i]] = true;
+      return nl;
+    });
+    setCircuitVisible(false);
+    if (newIds.length) setPrSnack(`Added ${c.name} — ${newIds.length} moves linked as a circuit`);
+  };
+
   const addExerciseToSession = (ex: Exercise) => {
     addExerciseToSessionAsync(ex);
     setPickerVisible(false);
@@ -355,7 +382,7 @@ export default function ActiveWorkoutScreen() {
                     <MaterialCommunityIcons name="information-outline" size={15} color={colors.onSurfaceVariant} />
                     {grouped && (
                       <View style={[styles.supersetBadge, { backgroundColor: withAlpha('#B388FF', 0.2) }]}>
-                        <Text variant="labelSmall" style={{ color: '#B388FF', fontWeight: '700' }}>SUPERSET</Text>
+                        <Text variant="labelSmall" style={{ color: '#B388FF', fontWeight: '700' }}>{groupLabel(idx)}</Text>
                       </View>
                     )}
                   </View>
@@ -465,6 +492,9 @@ export default function ActiveWorkoutScreen() {
         <Button mode="outlined" icon="plus" style={styles.addExBtn} onPress={() => setPickerVisible(true)}>
           {displayed.length === 0 ? 'Or add exercises one by one' : 'Add Exercise'}
         </Button>
+        <Button mode="text" icon="sync" style={styles.addCircuitBtn} onPress={() => setCircuitVisible(true)}>
+          Add a circuit
+        </Button>
       </ScrollView>
 
       <View style={[styles.finishBar, { backgroundColor: colors.surface, borderTopColor: colors.outline }]}>
@@ -512,6 +542,28 @@ export default function ActiveWorkoutScreen() {
             </ScrollView>
           </Dialog.Content>
           <Dialog.Actions><Button onPress={() => setPickerVisible(false)}>Done</Button></Dialog.Actions>
+        </Dialog>
+
+        <Dialog visible={circuitVisible} onDismiss={() => setCircuitVisible(false)} style={styles.pickerDialog}>
+          <Dialog.Title>Add a circuit</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant, marginBottom: spacing.sm }}>
+              Drops a body-part circuit into your session and links the moves — rotate through with no rest.
+            </Text>
+            <ScrollView style={styles.pickerList}>
+              {CIRCUITS.map(c => (
+                <TouchableRipple key={c.name} onPress={() => handleAddCircuit(c)} style={styles.pickerItem}>
+                  <View>
+                    <Text variant="bodyLarge" style={{ color: colors.onSurface }}>{c.name}</Text>
+                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }} numberOfLines={1}>
+                      {c.muscleGroup} · {c.exercises.join(' → ')}
+                    </Text>
+                  </View>
+                </TouchableRipple>
+              ))}
+            </ScrollView>
+          </Dialog.Content>
+          <Dialog.Actions><Button onPress={() => setCircuitVisible(false)}>Done</Button></Dialog.Actions>
         </Dialog>
 
         <Dialog visible={discardVisible} onDismiss={() => setDiscardVisible(false)}>
@@ -567,6 +619,7 @@ const styles = StyleSheet.create({
   suggestChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: shape.pill, marginTop: spacing.xs },
   addSetBtn: { marginTop: spacing.sm, alignSelf: 'flex-start' },
   addExBtn: { marginTop: spacing.sm },
+  addCircuitBtn: { marginTop: spacing.xs },
   quickStart: { marginTop: spacing.sm },
   supersetBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   linkToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: shape.pill, marginBottom: spacing.sm, marginTop: -2 },

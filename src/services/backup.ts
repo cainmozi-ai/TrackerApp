@@ -17,6 +17,7 @@ const BACKUP_TABLES = [
   'saved_meal_items',
   'water_logs',
   'sleep_logs',
+  'recovery_logs',
   'weight_logs',
   'exercises',
   'workout_templates',

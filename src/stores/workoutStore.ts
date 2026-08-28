@@ -128,6 +128,8 @@ interface WorkoutState {
   getProgressionSuggestion: (exerciseId: number, repMax: number) => Promise<{ weight: number; reps: number } | null>;
   getProgressionReport: () => Promise<ProgressionEntry[]>;
   getExerciseHistory: (exerciseId: number) => Promise<{ date: string; maxWeight: number; volume: number }[]>;
+  /** Look up exercises by exact name (case-insensitive), preserving input order. */
+  findExercisesByNames: (names: string[]) => Promise<Exercise[]>;
   getMuscleVolume: (days?: number) => Promise<{ muscleGroup: string; sets: number }[]>;
   getWorkoutDates: () => Promise<string[]>;
 }
@@ -427,6 +429,18 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       if (e > max1RM) max1RM = e;
     }
     return { maxWeight, max1RM };
+  },
+
+  findExercisesByNames: async (names) => {
+    if (!names.length) return [];
+    const db = await getDatabase();
+    const where = names.map(() => 'LOWER(name) = LOWER(?)').join(' OR ');
+    const rows = await db.getAllAsync<Record<string, unknown>>(
+      `SELECT * FROM exercises WHERE ${where}`, names);
+    const byName = new Map(rows.map(r => [(r.name as string).toLowerCase(), mapExercise(r)]));
+    return names
+      .map(n => byName.get(n.toLowerCase()))
+      .filter((e): e is Exercise => !!e);
   },
 
   updateWorkoutDate: async (workoutId, newStartMs) => {
