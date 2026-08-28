@@ -11,6 +11,7 @@ import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, accent, moduleColors, withAlpha } from '@/theme';
 import { useWorkoutStore, type WorkoutPR } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
+import { WorkoutDateDialog } from '@/components/workout/WorkoutDateDialog';
 import { type LogType, formatSetCompact, formatDuration as formatSecs } from '@/utils/workout';
 import type { WorkoutLog, WorkoutSet } from '@/types';
 
@@ -35,28 +36,41 @@ function prText(pr: WorkoutPR, unit: string): string {
 export default function WorkoutSummaryScreen() {
   const { colors } = useAppTheme();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { getWorkoutDetail, detectPRs } = useWorkoutStore();
+  const { getWorkoutDetail, detectPRs, updateWorkoutDate } = useWorkoutStore();
   const { profile } = useUserStore();
   const [workout, setWorkout] = useState<WorkoutLog | null>(null);
   const [sets, setSets] = useState<WorkoutSet[]>([]);
   const [prs, setPrs] = useState<WorkoutPR[]>([]);
   const [snack, setSnack] = useState('');
+  const [dateDlg, setDateDlg] = useState(false);
   const shareCardRef = useRef<View>(null);
 
   const weightUnit = profile?.weightUnit ?? 'kg';
 
-  useEffect(() => {
-    (async () => {
-      const wid = Number(id);
-      if (!wid) return;
-      const detail = await getWorkoutDetail(wid);
-      if (detail) {
-        setWorkout(detail.workout);
-        setSets(detail.sets);
-      }
-      setPrs(await detectPRs(wid));
-    })();
-  }, [id]);
+  const load = async () => {
+    const wid = Number(id);
+    if (!wid) return;
+    const detail = await getWorkoutDetail(wid);
+    if (detail) {
+      setWorkout(detail.workout);
+      setSets(detail.sets);
+    }
+    setPrs(await detectPRs(wid));
+  };
+
+  useEffect(() => { load(); }, [id]);
+
+  const whenLabel = workout
+    ? new Date(workout.startedAt.replace(' ', 'T')).toLocaleString(undefined,
+        { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : '';
+
+  const handleSaveDate = async (ms: number) => {
+    if (!id) return;
+    await updateWorkoutDate(Number(id), ms);
+    await load();
+    setSnack('Workout date updated');
+  };
 
   const exerciseCount = new Set(sets.map(s => s.exerciseId)).size;
   const totalVolume = Math.round(sets.reduce((sum, s) => sum + s.weight * s.reps, 0));
@@ -124,6 +138,9 @@ export default function WorkoutSummaryScreen() {
         <Text variant="bodyMedium" style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
           {workout?.name || 'Workout'} · {workout ? formatDuration(workout.startedAt, workout.finishedAt) : ''}
         </Text>
+        {!!whenLabel && (
+          <Text variant="labelSmall" style={[styles.whenText, { color: colors.onSurfaceVariant }]}>{whenLabel}</Text>
+        )}
 
         <Animated.View entering={FadeInUp.delay(150)} style={[styles.statsCard, { backgroundColor: colors.surface }]}>
           <View style={styles.stat}>
@@ -170,6 +187,10 @@ export default function WorkoutSummaryScreen() {
           {Platform.OS === 'web' ? 'Copy Summary' : 'Share Workout Card'}
         </Button>
 
+        <Button mode="text" icon="calendar-clock" style={styles.changeDateBtn} onPress={() => setDateDlg(true)}>
+          Change date & time
+        </Button>
+
         <Animated.View entering={FadeInUp.delay(500)}>
           <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.onSurface }]}>What you did</Text>
           {Array.from(new Set(sets.map(s => s.exerciseId))).map(exId => {
@@ -192,6 +213,15 @@ export default function WorkoutSummaryScreen() {
         </Button>
       </ScrollView>
 
+      {workout && (
+        <WorkoutDateDialog
+          visible={dateDlg}
+          initial={new Date(workout.startedAt.replace(' ', 'T'))}
+          onDismiss={() => setDateDlg(false)}
+          onSave={handleSaveDate}
+        />
+      )}
+
       <Snackbar visible={!!snack} onDismiss={() => setSnack('')} duration={2500}>{snack}</Snackbar>
     </SafeAreaView>
   );
@@ -203,7 +233,9 @@ const styles = StyleSheet.create({
   heroIcon: { alignItems: 'center', marginTop: spacing.lg },
   iconCircle: { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center' },
   title: { fontWeight: '800', textAlign: 'center', marginTop: spacing.md },
-  subtitle: { textAlign: 'center', marginBottom: spacing.lg },
+  subtitle: { textAlign: 'center', marginBottom: 2 },
+  whenText: { textAlign: 'center', marginBottom: spacing.lg },
+  changeDateBtn: { marginBottom: spacing.sm },
   statsCard: { flexDirection: 'row', justifyContent: 'space-around', padding: spacing.md, borderRadius: shape.lg, marginBottom: spacing.sm },
   stat: { alignItems: 'center' },
   prCard: { padding: spacing.md, borderRadius: shape.lg, borderWidth: 1.5, marginBottom: spacing.sm },

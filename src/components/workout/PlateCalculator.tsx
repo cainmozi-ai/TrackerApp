@@ -51,7 +51,7 @@ export function PlateCalculator({ visible, totalWeight, unit = 'kg', onDismiss }
           {bars.map(b => (
             <Pressable key={b} onPress={() => setBar(b)}
               style={[styles.barChip, { backgroundColor: bar === b ? accent : colors.surfaceVariant }]}>
-              <Text variant="labelMedium" style={{ color: bar === b ? '#06220F' : colors.onSurfaceVariant, fontWeight: '700' }}>{b}{unit}</Text>
+              <Text variant="labelMedium" style={{ color: bar === b ? colors.onPrimary : colors.onSurfaceVariant, fontWeight: '700' }}>{b}{unit}</Text>
             </Pressable>
           ))}
         </View>

@@ -118,6 +118,8 @@ interface WorkoutState {
   detectPRs: (workoutId: number) => Promise<WorkoutPR[]>;
   getWorkoutDetail: (workoutId: number) => Promise<{ workout: WorkoutLog; sets: WorkoutSet[] } | null>;
   deleteWorkout: (workoutId: number) => Promise<void>;
+  /** Move a workout to a new start time (ms epoch), preserving its duration. */
+  updateWorkoutDate: (workoutId: number, newStartMs: number) => Promise<void>;
   getWeekWorkoutCount: () => Promise<number>;
   getWeekTrainingStats: (days?: number) => Promise<{ muscles: number; sets: number; exercises: number }>;
   getTopExercises: (limit?: number) => Promise<DashExercise[]>;
@@ -425,6 +427,27 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       if (e > max1RM) max1RM = e;
     }
     return { maxWeight, max1RM };
+  },
+
+  updateWorkoutDate: async (workoutId, newStartMs) => {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<{ started_at: string; finished_at: string | null }>(
+      'SELECT started_at, finished_at FROM workout_logs WHERE id = ?', [workoutId]);
+    if (!row) return;
+    const fmt = (ms: number) => {
+      const d = new Date(ms);
+      const p = (n: number) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+    };
+    let finishedStr = row.finished_at;
+    if (row.finished_at) {
+      const oldStart = new Date(row.started_at.replace(' ', 'T')).getTime();
+      const oldFin = new Date(row.finished_at.replace(' ', 'T')).getTime();
+      finishedStr = fmt(newStartMs + Math.max(0, oldFin - oldStart)); // preserve duration
+    }
+    await db.runAsync('UPDATE workout_logs SET started_at = ?, finished_at = ? WHERE id = ?',
+      [fmt(newStartMs), finishedStr, workoutId]);
+    await get().loadRecentWorkouts();
   },
 
   detectPRs: async (workoutId) => {

@@ -6,7 +6,7 @@ import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, accent, withAlpha } from '@/theme';
 import { type LogType, digitsToTime, digitsToSeconds, digitsSecondsOverflow, secondsToDigits } from '@/utils/workout';
 
-export type SetType = 'normal' | 'warmup' | 'failure' | 'drop';
+export type SetType = 'normal' | 'warmup' | 'failure' | 'drop' | 'assisted' | 'partial' | 'static';
 
 export interface SetEntry {
   weight: number;
@@ -46,6 +46,9 @@ const SET_TYPES: { key: SetType; label: string }[] = [
   { key: 'warmup', label: 'Warm-up' },
   { key: 'failure', label: 'Failure' },
   { key: 'drop', label: 'Drop' },
+  { key: 'assisted', label: 'Assisted' },
+  { key: 'partial', label: 'Partials' },
+  { key: 'static', label: 'Static hold' },
 ];
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'];
@@ -169,7 +172,7 @@ export function SetKeypad({ visible, exerciseName, logType = 'weight_reps', init
             {SET_TYPES.map(t => (
               <Pressable key={t.key} onPress={() => setSetType(t.key)}
                 style={[styles.chip, { backgroundColor: setType === t.key ? accent : colors.surfaceVariant }]}>
-                <Text variant="labelSmall" style={{ color: setType === t.key ? '#06220F' : colors.onSurfaceVariant, fontWeight: '700' }}>
+                <Text variant="labelSmall" style={{ color: setType === t.key ? colors.onPrimary : colors.onSurfaceVariant, fontWeight: '700' }}>
                   {t.label}
                 </Text>
               </Pressable>
@@ -205,8 +208,8 @@ export function SetKeypad({ visible, exerciseName, logType = 'weight_reps', init
 
         <Pressable onPress={confirm} disabled={!valid}
           style={[styles.confirm, { backgroundColor: accent, opacity: valid ? 1 : 0.4 }]}>
-          <MaterialCommunityIcons name="check" size={24} color="#06220F" />
-          <Text variant="titleMedium" style={styles.confirmText}>{confirmLabel}</Text>
+          <MaterialCommunityIcons name="check" size={24} color={colors.onPrimary} />
+          <Text variant="titleMedium" style={[styles.confirmText, { color: colors.onPrimary }]}>{confirmLabel}</Text>
         </Pressable>
       </View>
     </Portal>
@@ -248,5 +251,5 @@ const styles = StyleSheet.create({
   keypad: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between' },
   key: { width: '31%', height: 52, borderRadius: shape.md, justifyContent: 'center', alignItems: 'center' },
   confirm: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, height: 52, borderRadius: shape.pill, marginTop: spacing.xs },
-  confirmText: { color: '#06220F', fontWeight: '800' },
+  confirmText: { fontWeight: '800' },
 });

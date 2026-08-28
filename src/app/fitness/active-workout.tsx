@@ -309,7 +309,13 @@ export default function ActiveWorkoutScreen() {
   };
 
   const typeColor = (t: string) =>
-    t === 'failure' ? colors.error : t === 'warmup' ? '#5AA9E6' : t === 'drop' ? accent : colors.onSurfaceVariant;
+    t === 'failure' ? colors.error
+      : t === 'warmup' ? '#5AA9E6'
+      : t === 'drop' ? accent
+      : t === 'assisted' ? '#66BB6A'
+      : t === 'partial' ? '#FFA726'
+      : t === 'static' ? '#AB47BC'
+      : colors.onSurfaceVariant;
 
   const totalSets = activeSets.length;
   const totalVolume = activeSets.reduce((s, set) => s + set.weight * set.reps, 0);
