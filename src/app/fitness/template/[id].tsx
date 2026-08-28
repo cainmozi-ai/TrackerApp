@@ -8,12 +8,13 @@ import { theme, moduleColors, spacing } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { mechanicLabel } from '@/utils/muscles';
 import type { TemplateExercise, WorkoutLog } from '@/types';
 
 export default function TemplateDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const templateId = Number(id);
-  const { templates, loadTemplates, getTemplateExercises, removeTemplateExercise, deleteTemplate, getActiveWorkout, discardWorkout } = useWorkoutStore();
+  const { templates, loadTemplates, getTemplateExercises, removeTemplateExercise, reorderTemplateExercises, deleteTemplate, getActiveWorkout, discardWorkout } = useWorkoutStore();
   const [exercises, setExercises] = useState<TemplateExercise[]>([]);
   const [existing, setExisting] = useState<WorkoutLog | null>(null);
   const [guard, setGuard] = useState(false);
@@ -35,6 +36,24 @@ export default function TemplateDetailScreen() {
   const handleRemove = async (teId: number) => {
     await removeTemplateExercise(teId);
     refresh();
+  };
+
+  const move = async (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= exercises.length) return;
+    const ids = exercises.map(e => e.id);
+    const tmp = ids[i];
+    ids[i] = ids[j];
+    ids[j] = tmp;
+    // Optimistic reorder so the list updates instantly.
+    setExercises(prev => {
+      const copy = [...prev];
+      const t = copy[i];
+      copy[i] = copy[j];
+      copy[j] = t;
+      return copy;
+    });
+    await reorderTemplateExercises(ids);
   };
 
   const handleStart = async () => {
@@ -78,7 +97,12 @@ export default function TemplateDetailScreen() {
                 <Text variant="bodyLarge">{te.exercise?.name}</Text>
                 <Text variant="bodySmall" style={styles.exMeta}>
                   {te.targetSets} sets × {te.targetReps} reps · {te.exercise?.muscleGroup}
+                  {te.exercise?.mechanic ? ` · ${mechanicLabel(te.exercise.mechanic)}` : ''}
                 </Text>
+              </View>
+              <View style={styles.moveCol}>
+                <IconButton icon="chevron-up" size={16} disabled={i === 0} style={styles.moveBtn} onPress={() => move(i, -1)} />
+                <IconButton icon="chevron-down" size={16} disabled={i === exercises.length - 1} style={styles.moveBtn} onPress={() => move(i, 1)} />
               </View>
               <IconButton icon="close" size={18} onPress={() => handleRemove(te.id)} />
             </Surface>
@@ -140,6 +164,8 @@ const styles = StyleSheet.create({
   },
   exIndex: { color: moduleColors.workout, fontWeight: '700', width: 20 },
   exInfo: { flex: 1 },
+  moveCol: { justifyContent: 'center' },
+  moveBtn: { margin: 0, height: 22 },
   exMeta: { color: theme.colors.onSurfaceVariant },
   addBtn: { marginTop: spacing.sm },
   startBar: { padding: spacing.md, backgroundColor: theme.colors.surface, borderTopColor: theme.colors.outline, borderTopWidth: 1 },

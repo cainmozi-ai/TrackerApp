@@ -69,6 +69,24 @@ export function exerciseType(mechanic: string, region: string): ExerciseType {
   return upper ? 'upper-isolation' : 'lower-isolation';
 }
 
+/** Human label for the compound/isolation classification. */
+export function mechanicLabel(mechanic: string): string {
+  return mechanic === 'isolation' ? 'Isolation' : mechanic === 'compound' ? 'Compound' : '';
+}
+
+/** Recommended rest between sets (seconds), derived from the classification:
+ * heavy compounds need the most recovery, isolation and core the least. */
+export function recommendedRest(mechanic: string, region: string): number {
+  if (region === 'core') return 60;
+  if (mechanic === 'compound') return region === 'lower' ? 180 : 150;
+  return 90; // isolation
+}
+
+/** Format a rest duration in seconds as m:ss (e.g. 150 → "2:30"). */
+export function formatRest(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
 /** Format "Primary, list • Secondary, list" for an exercise row. */
 export function formatMuscles(primary: string[], secondary: string[]): string {
   const p = primary.join(', ');

@@ -14,10 +14,18 @@ import { PlateCalculator } from '@/components/workout/PlateCalculator';
 import { useWorkoutStore, estimate1RM } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
 import { type LogType, formatSet, formatSetCompact } from '@/utils/workout';
-import { formatMuscles } from '@/utils/muscles';
+import { formatMuscles, mechanicLabel, recommendedRest, formatRest } from '@/utils/muscles';
 import type { Exercise, WorkoutSet } from '@/types';
 
 interface Target { repMin: number; repMax: number }
+
+/** Recommended rest for an exercise (seconds) — short breather for timed moves,
+ * otherwise derived from its compound/isolation classification. */
+function restFor(ex: Exercise): number {
+  const lt = ex.logType || 'weight_reps';
+  if (lt === 'cardio' || lt === 'duration') return 60;
+  return recommendedRest(ex.mechanic, ex.region);
+}
 
 /** Sub-label under an exercise name, appropriate to how it's measured. */
 function repTarget(ex: Exercise, tgt?: Target): string {
@@ -48,6 +56,7 @@ export default function ActiveWorkoutScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
   const [restSignal, setRestSignal] = useState(0);
+  const [restSeconds, setRestSeconds] = useState(90);
   const [discardVisible, setDiscardVisible] = useState(false);
   const [myGymOnly, setMyGymOnly] = useState(true);
   const [prSnack, setPrSnack] = useState('');
@@ -249,9 +258,24 @@ export default function ActiveWorkoutScreen() {
       const next = displayed[idx + 1];
       if (!announced && next) setPrSnack(`Superset — straight to ${next.name}, no rest`);
     } else {
+      // Start the rest timer at this exercise's recommended rest.
+      const ex = displayed.find(e => e.id === exId);
+      if (ex) setRestSeconds(restFor(ex));
       setRestSignal(s => s + 1);
     }
     setKeypadFor(null);
+  };
+
+  const moveExercise = (idx: number, dir: -1 | 1) => {
+    setDisplayed(d => {
+      const j = idx + dir;
+      if (j < 0 || j >= d.length) return d;
+      const copy = [...d];
+      const tmp = copy[idx];
+      copy[idx] = copy[j];
+      copy[j] = tmp;
+      return copy;
+    });
   };
 
   const toggleLink = (exId: number) => setLinks(l => ({ ...l, [exId]: !l[exId] }));
@@ -301,7 +325,7 @@ export default function ActiveWorkoutScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <RestTimer defaultSeconds={90} autoStartSignal={restSignal} />
+        <RestTimer defaultSeconds={restSeconds} autoStartSignal={restSignal} />
 
         {displayed.map((ex, idx) => {
           const sets = activeSets.filter(s => s.exerciseId === ex.id);
@@ -327,11 +351,33 @@ export default function ActiveWorkoutScreen() {
                     {ex.muscleGroup}{repTarget(ex, tgt)}
                   </Text>
                 </Pressable>
-                {ex.logType === 'weight_reps' && (
-                  <IconButton icon="calculator-variant" size={20} iconColor={colors.onSurfaceVariant}
-                    onPress={() => setPlateFor(sug?.weight ?? prev[0]?.weight ?? 60)} />
-                )}
+                <View style={styles.exControls}>
+                  <IconButton icon="chevron-up" size={18} disabled={idx === 0} style={styles.moveBtn}
+                    iconColor={colors.onSurfaceVariant} onPress={() => moveExercise(idx, -1)}
+                    accessibilityLabel="Move exercise up" />
+                  <IconButton icon="chevron-down" size={18} disabled={idx === displayed.length - 1} style={styles.moveBtn}
+                    iconColor={colors.onSurfaceVariant} onPress={() => moveExercise(idx, 1)}
+                    accessibilityLabel="Move exercise down" />
+                  {ex.logType === 'weight_reps' && (
+                    <IconButton icon="calculator-variant" size={20} iconColor={colors.onSurfaceVariant} style={styles.moveBtn}
+                      onPress={() => setPlateFor(sug?.weight ?? prev[0]?.weight ?? 60)} />
+                  )}
+                </View>
               </View>
+
+              {!!ex.mechanic && (
+                <View style={styles.classRow}>
+                  <View style={[styles.classChip, { backgroundColor: withAlpha(ex.mechanic === 'compound' ? '#4FC3F7' : '#B388FF', 0.16) }]}>
+                    <Text variant="labelSmall" style={{ color: ex.mechanic === 'compound' ? '#4FC3F7' : '#B388FF', fontWeight: '700' }}>
+                      {mechanicLabel(ex.mechanic)}
+                    </Text>
+                  </View>
+                  <MaterialCommunityIcons name="timer-sand" size={13} color={colors.onSurfaceVariant} />
+                  <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
+                    Rest {formatRest(restFor(ex))} suggested
+                  </Text>
+                </View>
+              )}
 
               <Text variant="labelSmall" style={[styles.prevLine, { color: colors.onSurfaceVariant }]}>
                 {prev.length ? `Last: ${prev.map(p => formatSetCompact(p, (ex.logType || 'weight_reps') as LogType)).join(', ')}` : 'No history yet'}
@@ -440,7 +486,7 @@ export default function ActiveWorkoutScreen() {
                   <View>
                     <Text variant="bodyLarge" style={{ color: colors.onSurface }}>{ex.name}</Text>
                     <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }} numberOfLines={1}>
-                      {ex.primaryMuscles.length ? formatMuscles(ex.primaryMuscles, ex.secondaryMuscles) : ex.muscleGroup} · {ex.equipment}
+                      {ex.primaryMuscles.length ? formatMuscles(ex.primaryMuscles, ex.secondaryMuscles) : ex.muscleGroup} · {ex.equipment}{ex.mechanic ? ` · ${mechanicLabel(ex.mechanic)}` : ''}
                     </Text>
                   </View>
                 </TouchableRipple>
@@ -489,6 +535,10 @@ const styles = StyleSheet.create({
   exTitleWrap: { flex: 1 },
   exNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   exName: { fontWeight: '700' },
+  exControls: { flexDirection: 'row', alignItems: 'center' },
+  moveBtn: { margin: 0 },
+  classRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  classChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   gymToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: shape.pill, marginBottom: spacing.sm },
   prevLine: { marginTop: 2, marginBottom: spacing.xs },
   setRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2 },

@@ -105,6 +105,7 @@ interface WorkoutState {
   getTemplateExercises: (templateId: number) => Promise<TemplateExercise[]>;
   addExerciseToTemplate: (templateId: number, exerciseId: number, sets: number, reps: number, weight: number) => Promise<void>;
   removeTemplateExercise: (id: number) => Promise<void>;
+  reorderTemplateExercises: (orderedIds: number[]) => Promise<void>;
   startWorkout: (templateId?: number, name?: string) => Promise<number>;
   getActiveWorkout: () => Promise<WorkoutLog | null>;
   discardWorkout: (workoutId: number) => Promise<void>;
@@ -280,7 +281,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   getTemplateExercises: async (templateId) => {
     const db = await getDatabase();
     const rows = await db.getAllAsync<Record<string, unknown>>(
-      `SELECT te.*, e.name, e.muscle_group, e.target, e.log_type, e.equipment, e.description, e.is_custom
+      `SELECT te.*, e.name, e.muscle_group, e.target, e.log_type, e.equipment, e.description, e.is_custom,
+              e.mechanic, e.region, e.primary_muscles, e.secondary_muscles
        FROM template_exercises te JOIN exercises e ON te.exercise_id = e.id
        WHERE te.template_id = ? ORDER BY te.sort_order`,
       [templateId]
@@ -302,10 +304,10 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         equipment: r.equipment as string,
         description: r.description as string,
         target: (r.target as string | null) ?? '',
-        primaryMuscles: [],
-        secondaryMuscles: [],
-        mechanic: 'compound',
-        region: 'upper',
+        primaryMuscles: parseStrArray(r.primary_muscles),
+        secondaryMuscles: parseStrArray(r.secondary_muscles),
+        mechanic: (r.mechanic as string | null) ?? 'compound',
+        region: (r.region as string | null) ?? 'upper',
         logType: (r.log_type as string | null) ?? 'weight_reps',
         tips: [],
         isCustom: (r.is_custom as number) === 1,
@@ -328,6 +330,13 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   removeTemplateExercise: async (id) => {
     const db = await getDatabase();
     await db.runAsync('DELETE FROM template_exercises WHERE id = ?', [id]);
+  },
+
+  reorderTemplateExercises: async (orderedIds) => {
+    const db = await getDatabase();
+    for (let i = 0; i < orderedIds.length; i++) {
+      await db.runAsync('UPDATE template_exercises SET sort_order = ? WHERE id = ?', [i, orderedIds[i]]);
+    }
   },
 
   startWorkout: async (templateId, name) => {
