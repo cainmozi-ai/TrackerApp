@@ -136,24 +136,18 @@ export default function NutritionScreen() {
           {dateLabel(currentDate)}
         </Text>
         <MotionCard style={styles.hero} noEnter>
-          <View style={styles.heroRow}>
+          <View style={styles.calRingWrap}>
             <ProgressRing
               progress={todayCalories / calorieTarget}
-              size={104}
+              size={112}
               strokeWidth={11}
               color={moduleColors.nutrition}
               value={String(todayCalories)}
               label="eaten"
             />
-            <View style={styles.macroColumn}>
-              <View style={styles.remainingRow}>
-                <Text variant="headlineSmall" style={[styles.remaining, { color: colors.onSurface }]}>{Math.abs(diff)}</Text>
-                <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}> {over ? 'kcal over' : 'kcal left'}</Text>
-              </View>
-              <MacroBar label="Protein" current={todayProtein} target={proteinTarget} color="#A83232" />
-              <MacroBar label="Carbs" current={todayCarbs} target={carbsTarget} color="#A83232" />
-              <MacroBar label="Fat" current={todayFat} target={fatTarget} color="#A83232" />
-            </View>
+            <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant, marginTop: 2 }}>
+              {Math.abs(diff)} {over ? 'kcal over' : 'kcal left'}
+            </Text>
           </View>
           <View style={styles.microRow}>
             <View style={styles.microItem}>
@@ -162,10 +156,11 @@ export default function NutritionScreen() {
             <View style={styles.microItem}>
               <MacroBar label="Sugar" current={todaySugar} target={sugarTarget} color="#A83232" />
             </View>
-            <View style={styles.microItem}>
-              <MacroBar label="Sodium" current={todaySodium} target={sodiumTarget} color="#A83232" unit="mg" />
-            </View>
           </View>
+          <MacroBar label="Protein" current={todayProtein} target={proteinTarget} color="#A83232" />
+          <MacroBar label="Carbs" current={todayCarbs} target={carbsTarget} color="#A83232" />
+          <MacroBar label="Fat" current={todayFat} target={fatTarget} color="#A83232" />
+          <MacroBar label="Sodium" current={todaySodium} target={sodiumTarget} color="#A83232" unit="mg" />
         </MotionCard>
 
         <View style={styles.actionRow}>
@@ -306,8 +301,9 @@ const styles = StyleSheet.create({
   dayPill: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: shape.pill, borderWidth: 1.5 },
   dateKicker: { letterSpacing: 1.5, fontWeight: '700', marginBottom: spacing.xs },
   hero: { marginBottom: spacing.sm },
+  calRingWrap: { alignItems: 'center', marginBottom: spacing.md },
   heroRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  microRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
+  microRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.sm },
   microItem: { flex: 1 },
   quickRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.md },
   macroColumn: { flex: 1, gap: spacing.xs },
@@ -322,7 +318,7 @@ const styles = StyleSheet.create({
   empty: { fontStyle: 'italic', marginTop: spacing.xs },
   foodRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2, marginTop: 4 },
   foodInfo: { flex: 1 },
-  macroBar: {},
+  macroBar: { marginBottom: spacing.sm },
   macroLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
   macroTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
   macroFill: { height: '100%', borderRadius: 3 },
