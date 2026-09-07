@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, moduleColors, withAlpha } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
@@ -64,7 +64,7 @@ export default function MicronutrientsScreen() {
           {CATEGORIES.map((cat, i) => {
             const pct = categoryPercent(todayMicros, cat.key);
             return (
-              <MotionCard key={cat.key} index={i} style={styles.catCard}>
+              <MotionCard key={cat.key} index={i} style={styles.catCard} onPress={() => router.push(`/health/wellness/${cat.key}`)}>
                 <Text style={styles.catIcon}>{cat.icon}</Text>
                 <Text variant="labelMedium" style={[styles.catLabel, { color: colors.onSurface }]} numberOfLines={2}>
                   {cat.label}

@@ -58,9 +58,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="life"
         options={{
-          title: 'Life',
+          title: 'Learn',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calendar-check" size={size} color={color} />
+            <MaterialCommunityIcons name="school" size={size} color={color} />
           ),
         }}
       />
