@@ -367,11 +367,12 @@ export default function ActiveWorkoutScreen() {
 
   const totalSets = activeSets.length;
   const totalVolume = activeSets.reduce((s, set) => s + set.weight * set.reps, 0);
+  const workoutName = (templateId && templates.find(t => t.id === templateId)?.name) || 'Active Workout';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader
-        title="Active Workout"
+        title={workoutName}
         right={(wid !== null || totalSets > 0)
           ? <IconButton icon="trash-can-outline" iconColor={colors.onSurfaceVariant} onPress={() => setDiscardVisible(true)} />
           : undefined}
@@ -427,8 +428,8 @@ export default function ActiveWorkoutScreen() {
 
               {!!ex.mechanic && (
                 <View style={styles.classRow}>
-                  <View style={[styles.classChip, { backgroundColor: withAlpha(ex.mechanic === 'compound' ? '#4FC3F7' : '#B388FF', 0.16) }]}>
-                    <Text variant="labelSmall" style={{ color: ex.mechanic === 'compound' ? '#4FC3F7' : '#B388FF', fontWeight: '700' }}>
+                  <View style={[styles.classChip, { backgroundColor: colors.surfaceVariant }]}>
+                    <Text variant="labelSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>
                       {mechanicLabel(ex.mechanic)}
                     </Text>
                   </View>

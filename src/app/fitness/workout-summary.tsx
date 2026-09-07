@@ -8,7 +8,7 @@ import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { spacing, shape, accent, moduleColors, withAlpha } from '@/theme';
+import { spacing, shape, accent, withAlpha } from '@/theme';
 import { useWorkoutStore, type WorkoutPR } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
 import { WorkoutDateDialog } from '@/components/workout/WorkoutDateDialog';
@@ -168,13 +168,13 @@ export default function WorkoutSummaryScreen() {
         </Animated.View>
 
         {prs.length > 0 && (
-          <Animated.View entering={FadeInUp.delay(300)} style={[styles.prCard, { backgroundColor: withAlpha(moduleColors.gamification, 0.12), borderColor: moduleColors.gamification }]}>
+          <Animated.View entering={FadeInUp.delay(300)} style={[styles.prCard, { backgroundColor: withAlpha(accent, 0.12), borderColor: accent }]}>
             <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '800', marginBottom: spacing.xs }}>
               🏆 {prs.length} Personal Record{prs.length > 1 ? 's' : ''}!
             </Text>
             {prs.map((pr, i) => (
               <View key={i} style={styles.prRow}>
-                <MaterialCommunityIcons name="medal" size={18} color={moduleColors.gamification} />
+                <MaterialCommunityIcons name="medal" size={18} color={accent} />
                 <Text variant="bodyMedium" style={{ color: colors.onSurface, flex: 1 }}>
                   {pr.exerciseName}: {prText(pr, weightUnit)}
                 </Text>
@@ -184,7 +184,7 @@ export default function WorkoutSummaryScreen() {
         )}
 
         <Animated.View entering={FadeInUp.delay(400)} style={[styles.xpCard, { backgroundColor: colors.surface }]}>
-          <MaterialCommunityIcons name="star-four-points" size={22} color={moduleColors.gamification} />
+          <MaterialCommunityIcons name="star-four-points" size={22} color={accent} />
           <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>+50 XP earned</Text>
         </Animated.View>
 

@@ -4,7 +4,7 @@ import { Text, IconButton, Button } from 'react-native-paper';
 import { useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { moduleColors, spacing, shape, withAlpha } from '@/theme';
+import { spacing, shape, accent } from '@/theme';
 
 interface RestTimerProps {
   defaultSeconds?: number;
@@ -92,7 +92,7 @@ export function RestTimer({ defaultSeconds = 90, autoStartSignal = 0 }: RestTime
       <View style={styles.row}>
         <IconButton icon="minus" size={20} onPress={() => adjust(-15)} />
         <View style={styles.timeBlock}>
-          <Text variant="headlineMedium" style={[styles.time, { color: isDone ? moduleColors.habits : moduleColors.workout }]}>
+          <Text variant="headlineMedium" style={[styles.time, { color: accent }]}>
             {fmt(remaining)}
           </Text>
           <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
@@ -103,7 +103,8 @@ export function RestTimer({ defaultSeconds = 90, autoStartSignal = 0 }: RestTime
       </View>
       <View style={styles.controls}>
         <Button mode={running ? 'contained-tonal' : 'contained'} icon={running ? 'pause' : 'play'}
-          onPress={() => setRunning(r => !r)} compact style={styles.controlBtn} buttonColor={running ? undefined : moduleColors.workout}>
+          onPress={() => setRunning(r => !r)} compact style={styles.controlBtn}
+          buttonColor={running ? undefined : accent} textColor={running ? undefined : '#FFFFFF'}>
           {running ? 'Pause' : 'Start'}
         </Button>
         <Button mode="outlined" icon="restart" onPress={() => reset(defaultSeconds)} compact style={styles.controlBtn}>
@@ -113,7 +114,7 @@ export function RestTimer({ defaultSeconds = 90, autoStartSignal = 0 }: RestTime
           icon={muted ? 'volume-off' : 'volume-high'}
           size={20}
           mode="outlined"
-          iconColor={muted ? colors.onSurfaceVariant : moduleColors.workout}
+          iconColor={muted ? colors.onSurfaceVariant : accent}
           onPress={() => setMuted(m => !m)}
           accessibilityLabel={muted ? 'Unmute timer sound' : 'Mute timer sound'}
         />
@@ -121,7 +122,7 @@ export function RestTimer({ defaultSeconds = 90, autoStartSignal = 0 }: RestTime
       <View style={styles.presets}>
         {[60, 90, 120, 180].map(s => (
           <Button key={s} mode="text" compact onPress={() => reset(s)} labelStyle={styles.presetLabel}
-            textColor={withAlpha(moduleColors.workout, 1)}>
+            textColor={accent}>
             {s < 120 ? `${s}s` : `${s / 60}m`}
           </Button>
         ))}
