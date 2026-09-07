@@ -10,7 +10,7 @@ import { useTaskStore } from '@/stores/taskStore';
 import { useUserStore } from '@/stores/userStore';
 import type { Task } from '@/types';
 
-const PRIORITY_COLORS = { high: '#FF5252', medium: '#880808', low: '#880808' };
+const PRIORITY_COLORS = { high: '#FF5252', medium: '#FFB74D', low: '#81C784' };
 
 export default function TasksScreen() {
   const { tasks, loadTasks, toggleComplete, deleteTask } = useTaskStore();

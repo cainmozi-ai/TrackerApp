@@ -21,17 +21,17 @@ export default function HealthScreen() {
 
         <AppCard index={0} title="Nutrition" icon="food-apple" color={moduleColors.nutrition}
           subtitle="Track calories, macros & meals" onPress={() => router.push('/health/nutrition')} />
-        <AppCard index={1} title="Micronutrients" icon="pill" color="#880808"
+        <AppCard index={1} title="Micronutrients" icon="pill" color="#7ED957"
           subtitle="Vitamins & minerals vs daily targets" onPress={() => router.push('/health/micronutrients')} />
         <AppCard index={2} title="Water Intake" icon="cup-water" color={moduleColors.water}
           subtitle="Stay hydrated throughout the day" onPress={() => router.push('/health/water')} />
         <AppCard index={3} title="Sleep Log" icon="moon-waning-crescent" color={moduleColors.sleep}
           subtitle="Track your sleep patterns" onPress={() => router.push('/health/sleep')} />
-        <AppCard index={4} title="Steps" icon="shoe-print" color="#880808"
+        <AppCard index={4} title="Steps" icon="shoe-print" color="#FF8A65"
           subtitle="Sync daily steps via Health Connect" onPress={() => router.push('/health/steps')} />
         <AppCard index={5} title="Weight" icon="scale-bathroom" color={accent}
           subtitle="Log weight & see your smoothed trend" onPress={() => router.push('/health/weight')} />
-        <AppCard index={6} title="Body Tracker" icon="tape-measure" color="#880808"
+        <AppCard index={6} title="Body Tracker" icon="tape-measure" color="#7E57C2"
           subtitle="Measurements & progress photos" onPress={() => router.push('/health/measurements')} />
         <AppCard index={7} title="Coach" icon="chart-bell-curve-cumulative" color={accent}
           subtitle="Adaptive expenditure & target recommendations" onPress={() => router.push('/health/coach')} />

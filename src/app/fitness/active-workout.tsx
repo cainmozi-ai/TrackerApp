@@ -358,11 +358,11 @@ export default function ActiveWorkoutScreen() {
 
   const typeColor = (t: string) =>
     t === 'failure' ? colors.error
-      : t === 'warmup' ? '#880808'
+      : t === 'warmup' ? '#5AA9E6'
       : t === 'drop' ? accent
-      : t === 'assisted' ? '#880808'
-      : t === 'partial' ? '#880808'
-      : t === 'static' ? '#880808'
+      : t === 'assisted' ? '#66BB6A'
+      : t === 'partial' ? '#FFA726'
+      : t === 'static' ? '#AB47BC'
       : colors.onSurfaceVariant;
 
   const totalSets = activeSets.length;
@@ -396,15 +396,15 @@ export default function ActiveWorkoutScreen() {
           const grouped = inSuperset(idx);
           return (
             <MotionCard key={ex.id} index={idx}
-              style={[styles.exCard, grouped && { borderLeftWidth: 3, borderLeftColor: '#880808', marginBottom: links[ex.id] ? 2 : spacing.sm }]}>
+              style={[styles.exCard, grouped && { borderLeftWidth: 3, borderLeftColor: '#B388FF', marginBottom: links[ex.id] ? 2 : spacing.sm }]}>
               <View style={styles.exHead}>
                 <Pressable style={styles.exTitleWrap} onPress={() => router.push(`/fitness/exercise-detail?id=${ex.id}`)}>
                   <View style={styles.exNameRow}>
                     <Text variant="titleMedium" style={[styles.exName, { color: colors.onSurface }]}>{ex.name}</Text>
                     <MaterialCommunityIcons name="information-outline" size={15} color={colors.onSurfaceVariant} />
                     {grouped && (
-                      <View style={[styles.supersetBadge, { backgroundColor: withAlpha('#880808', 0.2) }]}>
-                        <Text variant="labelSmall" style={{ color: '#880808', fontWeight: '700' }}>{groupLabel(idx)}</Text>
+                      <View style={[styles.supersetBadge, { backgroundColor: withAlpha('#B388FF', 0.2) }]}>
+                        <Text variant="labelSmall" style={{ color: '#B388FF', fontWeight: '700' }}>{groupLabel(idx)}</Text>
                       </View>
                     )}
                   </View>
@@ -493,10 +493,10 @@ export default function ActiveWorkoutScreen() {
           const exId = displayed[idx].id;
           return [card, (
             <Pressable key={`link-${exId}`} onPress={() => toggleLink(exId)}
-              style={[styles.linkToggle, links[exId] && { backgroundColor: withAlpha('#880808', 0.16) }]}>
+              style={[styles.linkToggle, links[exId] && { backgroundColor: withAlpha('#B388FF', 0.16) }]}>
               <MaterialCommunityIcons name={links[exId] ? 'link-variant' : 'link-variant-plus'}
-                size={14} color={links[exId] ? '#880808' : colors.onSurfaceVariant} />
-              <Text variant="labelSmall" style={{ color: links[exId] ? '#880808' : colors.onSurfaceVariant }}>
+                size={14} color={links[exId] ? '#B388FF' : colors.onSurfaceVariant} />
+              <Text variant="labelSmall" style={{ color: links[exId] ? '#B388FF' : colors.onSurfaceVariant }}>
                 {links[exId] ? 'Superset linked' : 'Link as superset'}
               </Text>
             </Pressable>

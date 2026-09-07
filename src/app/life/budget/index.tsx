@@ -13,7 +13,7 @@ import { useBudgetStore } from '@/stores/budgetStore';
 import { useUserStore } from '@/stores/userStore';
 
 const screenWidth = Dimensions.get('window').width;
-const FALLBACK_COLORS = ['#880808', '#880808', '#880808', '#880808', '#880808', '#880808', '#880808'];
+const FALLBACK_COLORS = ['#FF6584', '#4FC3F7', '#B388FF', '#FF8A65', '#81C784', '#FFB74D', '#90A4AE'];
 
 export default function BudgetScreen() {
   const { transactions, monthlyIncome, monthlyExpenses, categories, loadTransactions, loadCategories, deleteTransaction, getCategoryTotals } = useBudgetStore();

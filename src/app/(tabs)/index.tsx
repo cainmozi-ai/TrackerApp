@@ -26,8 +26,8 @@ import { DEFAULT_DASHBOARD } from '@/utils/dashboard';
 import type { WorkoutLog } from '@/types';
 
 const GROUP_COLORS: Record<string, string> = {
-  Chest: '#880808', Back: '#880808', Shoulders: '#880808', Arms: '#880808',
-  Legs: '#880808', Glutes: '#880808', Core: '#880808', Cardio: '#880808',
+  Chest: '#FF6584', Back: '#4FC3F7', Shoulders: '#FFB74D', Arms: '#B388FF',
+  Legs: '#81C784', Glutes: '#F06292', Core: '#4DD0E1', Cardio: '#FF8A65',
 };
 
 function greeting(): string {
@@ -125,9 +125,9 @@ export default function HomeScreen() {
             <SectionTitle title="Weekly Workouts" onSeeAll={() => router.push('/fitness/progress')} />
             <MotionCard style={styles.weeklyCard}>
               <View style={styles.ringRow}>
-                <Ring value={weekStats.muscles} target={cfg.targets.muscles} label="Muscles" color="#880808" />
-                <Ring value={weekStats.sets} target={cfg.targets.sets} label="Sets" color="#880808" />
-                <Ring value={weekStats.exercises} target={cfg.targets.exercises} label="Exercises" color="#880808" />
+                <Ring value={weekStats.muscles} target={cfg.targets.muscles} label="Muscles" color="#4FC3F7" />
+                <Ring value={weekStats.sets} target={cfg.targets.sets} label="Sets" color="#FF8A65" />
+                <Ring value={weekStats.exercises} target={cfg.targets.exercises} label="Exercises" color="#7ED957" />
               </View>
             </MotionCard>
           </View>
@@ -155,13 +155,13 @@ export default function HomeScreen() {
               <Card onPress={() => router.push('/fitness/progress')}>
                 <Text variant="titleSmall" style={{ color: colors.onSurface }}>Workouts</Text>
                 <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>Last 7 workouts</Text>
-                <View style={styles.cardChart}>{workoutSetBars.length ? <MiniBars values={workoutSetBars} color="#880808" /> : <Dash />}</View>
+                <View style={styles.cardChart}>{workoutSetBars.length ? <MiniBars values={workoutSetBars} color="#FF8A65" /> : <Dash />}</View>
                 <Text variant="titleMedium" style={[styles.cardValue, { color: colors.onSurface }]}>{workoutSetBars.reduce((a, b) => a + b, 0)} <Text style={styles.unit}>sets</Text></Text>
               </Card>
               <Card onPress={() => router.push('/health/weight')}>
                 <Text variant="titleSmall" style={{ color: colors.onSurface }}>Weight Trend</Text>
                 <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>Last 14 days</Text>
-                <View style={styles.cardChart}>{trend.length > 1 ? <MiniLine values={trend} color="#880808" /> : <Dash />}</View>
+                <View style={styles.cardChart}>{trend.length > 1 ? <MiniLine values={trend} color="#B388FF" /> : <Dash />}</View>
                 <Text variant="titleMedium" style={[styles.cardValue, { color: colors.onSurface }]}>{latestWeight != null ? `${latestWeight} ` : '— '}<Text style={styles.unit}>{unit}</Text></Text>
               </Card>
             </View>
@@ -175,7 +175,7 @@ export default function HomeScreen() {
               <Card onPress={() => router.push('/health/weight')}>
                 <Text variant="titleSmall" style={{ color: colors.onSurface }}>Weigh-In</Text>
                 <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>Last 4 weeks</Text>
-                <View style={styles.cardChart}><ConsistencyGrid days={weighDays} color="#880808" /></View>
+                <View style={styles.cardChart}><ConsistencyGrid days={weighDays} color="#7ED957" /></View>
               </Card>
               <Card onPress={() => router.push('/fitness/progress')}>
                 <Text variant="titleSmall" style={{ color: colors.onSurface }}>Workouts</Text>
@@ -193,13 +193,13 @@ export default function HomeScreen() {
               <Card onPress={() => router.push('/health/weight')}>
                 <Text variant="titleSmall" style={{ color: colors.onSurface }}>Scale Weight</Text>
                 <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>Last 14 days</Text>
-                <View style={styles.cardChart}>{trend.length > 1 ? <MiniLine values={trend} color="#880808" /> : <Dash />}</View>
+                <View style={styles.cardChart}>{trend.length > 1 ? <MiniLine values={trend} color="#7ED957" /> : <Dash />}</View>
                 <Text variant="titleMedium" style={[styles.cardValue, { color: colors.onSurface }]}>{latestWeight != null ? `${latestWeight} ` : '— '}<Text style={styles.unit}>{unit}</Text></Text>
               </Card>
               <Card onPress={() => router.push('/health/measurements')}>
                 <Text variant="titleSmall" style={{ color: colors.onSurface }}>Measurements</Text>
                 <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>Tape & photos</Text>
-                <View style={styles.cardChart}><MaterialCommunityIcons name="tape-measure" size={32} color="#880808" /></View>
+                <View style={styles.cardChart}><MaterialCommunityIcons name="tape-measure" size={32} color="#7E57C2" /></View>
                 <Text variant="labelMedium" style={{ color: colors.primary }}>Open tracker →</Text>
               </Card>
             </View>
@@ -258,7 +258,7 @@ export default function HomeScreen() {
             <SectionTitle title="Steps" onSeeAll={() => router.push('/health/steps')} />
             <MotionCard style={styles.fullCard} onPress={() => router.push('/health/steps')}>
               <View style={styles.stepsRow}>
-                <MaterialCommunityIcons name="shoe-print" size={26} color="#880808" />
+                <MaterialCommunityIcons name="shoe-print" size={26} color="#FF8A65" />
                 <View style={{ flex: 1 }}>
                   <Text variant="titleSmall" style={{ color: colors.onSurface }}>Daily Steps</Text>
                   <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>Connect Health to sync your step count</Text>

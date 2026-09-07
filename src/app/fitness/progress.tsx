@@ -15,18 +15,18 @@ import type { Exercise } from '@/types';
 const screenWidth = Dimensions.get('window').width;
 
 const VOL_STATUS_COLOR: Record<VolumeStatus, string> = {
-  under: '#FF6B6B', low: '#880808', optimal: '#880808', high: '#880808', over: '#880808',
+  under: '#FF6B6B', low: '#FFA726', optimal: '#66BB6A', high: '#66BB6A', over: '#B388FF',
 };
 
 /** Set-type legend + segment colours for the per-muscle breakdown. */
 const SET_TYPE_META: { key: string; label: string; color: string }[] = [
-  { key: 'warmup', label: 'Warm-up', color: '#880808' },
+  { key: 'warmup', label: 'Warm-up', color: '#5AA9E6' },
   { key: 'normal', label: 'Normal', color: '#9A9AA0' },
   { key: 'failure', label: 'Failure', color: '#FF6B6B' },
-  { key: 'drop', label: 'Drop', color: '#880808' },
-  { key: 'assisted', label: 'Assisted', color: '#880808' },
-  { key: 'partial', label: 'Partials', color: '#880808' },
-  { key: 'static', label: 'Static', color: '#880808' },
+  { key: 'drop', label: 'Drop', color: '#B388FF' },
+  { key: 'assisted', label: 'Assisted', color: '#66BB6A' },
+  { key: 'partial', label: 'Partials', color: '#FFA726' },
+  { key: 'static', label: 'Static', color: '#AB47BC' },
 ];
 
 export default function ProgressScreen() {
@@ -152,7 +152,7 @@ export default function ProgressScreen() {
                   <MaterialCommunityIcons
                     name={p.status === 'increase' ? 'arrow-up-bold-circle' : 'repeat'}
                     size={22}
-                    color={p.status === 'increase' ? accent : '#880808'}
+                    color={p.status === 'increase' ? accent : '#4FC3F7'}
                   />
                   <View style={styles.workoutInfo}>
                     <Text variant="bodyMedium">{p.exercise.name}</Text>
