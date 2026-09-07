@@ -44,7 +44,7 @@ const MEAL_ICONS: Record<MealType, keyof typeof MaterialCommunityIcons.glyphMap>
   snack: 'cookie',
 };
 
-export default function NutritionScreen() {
+export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
   const { colors } = useAppTheme();
   const {
     currentDate, todayLogs, todayCalories, todayProtein, todayCarbs, todayFat,
@@ -108,7 +108,7 @@ export default function NutritionScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <ScreenHeader title="Nutrition" />
+      <ScreenHeader title="Nutrition" showBack={!asTab} />
 
       <View style={styles.dayStrip}>
         {lastSevenDays().map(day => {
@@ -135,7 +135,7 @@ export default function NutritionScreen() {
         <Text variant="labelSmall" style={[styles.dateKicker, { color: colors.onSurfaceVariant }]}>
           {dateLabel(currentDate)}
         </Text>
-        <MotionCard style={styles.hero} noEnter>
+        <MotionCard style={styles.hero} noEnter onPress={() => router.push('/health/micronutrients')}>
           <View style={styles.heroTop}>
             <View style={styles.sideCol}>
               <MacroBar label="Fiber" current={todayFiber} target={fiberTarget} color="#A83232" />
@@ -319,3 +319,8 @@ const styles = StyleSheet.create({
   macroFill: { height: '100%', borderRadius: 3 },
   fab: { position: 'absolute', right: 16, bottom: 24, borderRadius: shape.pill },
 });
+
+/** Route wrapper — pushed from Home/deep links, so it keeps the back button. */
+export default function NutritionRoute() {
+  return <NutritionScreen />;
+}
