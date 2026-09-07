@@ -136,7 +136,10 @@ export default function NutritionScreen() {
           {dateLabel(currentDate)}
         </Text>
         <MotionCard style={styles.hero} noEnter>
-          <View style={styles.calRingWrap}>
+          <View style={styles.heroTop}>
+            <View style={styles.sideCol}>
+              <MacroBar label="Fiber" current={todayFiber} target={fiberTarget} color="#A83232" />
+            </View>
             <ProgressRing
               progress={todayCalories / calorieTarget}
               size={112}
@@ -145,22 +148,13 @@ export default function NutritionScreen() {
               value={String(todayCalories)}
               label="eaten"
             />
-            <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant, marginTop: 2 }}>
-              {Math.abs(diff)} {over ? 'kcal over' : 'kcal left'}
-            </Text>
-          </View>
-          <View style={styles.microRow}>
-            <View style={styles.microItem}>
-              <MacroBar label="Fiber" current={todayFiber} target={fiberTarget} color="#A83232" />
-            </View>
-            <View style={styles.microItem}>
+            <View style={styles.sideCol}>
               <MacroBar label="Sugar" current={todaySugar} target={sugarTarget} color="#A83232" />
             </View>
           </View>
           <MacroBar label="Protein" current={todayProtein} target={proteinTarget} color="#A83232" />
           <MacroBar label="Carbs" current={todayCarbs} target={carbsTarget} color="#A83232" />
           <MacroBar label="Fat" current={todayFat} target={fatTarget} color="#A83232" />
-          <MacroBar label="Sodium" current={todaySodium} target={sodiumTarget} color="#A83232" unit="mg" />
         </MotionCard>
 
         <View style={styles.actionRow}>
@@ -301,7 +295,8 @@ const styles = StyleSheet.create({
   dayPill: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: shape.pill, borderWidth: 1.5 },
   dateKicker: { letterSpacing: 1.5, fontWeight: '700', marginBottom: spacing.xs },
   hero: { marginBottom: spacing.sm },
-  calRingWrap: { alignItems: 'center', marginBottom: spacing.md },
+  heroTop: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginBottom: spacing.md },
+  sideCol: { flex: 1 },
   heroRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   microRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.sm },
   microItem: { flex: 1 },
