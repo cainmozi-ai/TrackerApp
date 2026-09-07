@@ -21,31 +21,31 @@ const fontConfig = {
 
 const fonts = configureFonts({ config: fontConfig });
 
-// Single brand accent — MacroFactor-style: one strong colour on a monochrome ground.
-const GREEN = '#34D27A';
-const GREEN_DIM = '#1F8A50';
+// Single brand accent — the design's red (#A83232) on a dark ground.
+const GREEN = '#A83232';
+const GREEN_DIM = '#8A2828';
 
 // --- Dark palette (the default / showcase): charcoal + green ---
 const darkColors = {
   ...MD3DarkTheme.colors,
   primary: GREEN,
-  primaryContainer: '#103D24',
+  primaryContainer: '#3A1210',
   secondary: '#9AA0A6',
   secondaryContainer: '#2A2A2C',
   tertiary: GREEN,
-  tertiaryContainer: '#103D24',
+  tertiaryContainer: '#3A1210',
   background: '#121212',
   surface: '#1C1C1E',
   surfaceVariant: '#2A2A2C',
   surfaceDisabled: '#1C1C1E',
   error: '#FF6B6B',
   errorContainer: '#3A1A1A',
-  onPrimary: '#06220F',
-  onPrimaryContainer: '#B8F5D0',
+  onPrimary: '#FFFFFF',
+  onPrimaryContainer: '#F3D0D0',
   onSecondary: '#FFFFFF',
   onSecondaryContainer: '#E3E3E6',
-  onTertiary: '#06220F',
-  onTertiaryContainer: '#B8F5D0',
+  onTertiary: '#FFFFFF',
+  onTertiaryContainer: '#F3D0D0',
   onBackground: '#F2F2F4',
   onSurface: '#F2F2F4',
   onSurfaceVariant: '#9A9AA0',
@@ -65,22 +65,22 @@ const darkColors = {
 const lightColors = {
   ...MD3LightTheme.colors,
   primary: GREEN_DIM,
-  primaryContainer: '#CFF3DE',
+  primaryContainer: '#F5D6D6',
   secondary: '#5F6368',
   secondaryContainer: '#ECEDEF',
   tertiary: GREEN_DIM,
-  tertiaryContainer: '#CFF3DE',
+  tertiaryContainer: '#F5D6D6',
   background: '#FAFAFA',
   surface: '#FFFFFF',
   surfaceVariant: '#F0F1F2',
   error: '#D7373F',
   errorContainer: '#FFDAD6',
   onPrimary: '#FFFFFF',
-  onPrimaryContainer: '#04210F',
+  onPrimaryContainer: '#3A0A0A',
   onSecondary: '#FFFFFF',
   onSecondaryContainer: '#1A1C1E',
   onTertiary: '#FFFFFF',
-  onTertiaryContainer: '#04210F',
+  onTertiaryContainer: '#3A0A0A',
   onBackground: '#17181A',
   onSurface: '#17181A',
   onSurfaceVariant: '#5F6368',

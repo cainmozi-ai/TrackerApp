@@ -44,7 +44,7 @@
       [
         "expo-notifications",
         {
-          "color": "#34D27A"
+          "color": "#A83232"
         }
       ],
       "react-native-health-connect",
