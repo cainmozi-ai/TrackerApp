@@ -15,7 +15,7 @@ import {
   type DailySteps, type StepsState,
 } from '@/services/healthConnect';
 
-const STEP_COLOR = '#FF8A65';
+const STEP_COLOR = '#A83232';
 const HEALTH_CONNECT_PKG = 'com.google.android.apps.healthdata';
 const RANGES: { value: string; label: string; days: number }[] = [
   { value: '1W', label: '1W', days: 7 },

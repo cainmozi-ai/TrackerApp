@@ -136,11 +136,11 @@ export default function ExerciseDetailScreen() {
             <>
               {isWeight && (
                 <>
-                  <View style={[styles.verdict, { backgroundColor: withAlpha(readyToProgress ? accent : '#4FC3F7', 0.14) }]}>
+                  <View style={[styles.verdict, { backgroundColor: withAlpha(readyToProgress ? accent : '#A83232', 0.14) }]}>
                     <MaterialCommunityIcons
                       name={readyToProgress ? 'arrow-up-bold-circle' : 'repeat'}
                       size={22}
-                      color={readyToProgress ? accent : '#4FC3F7'}
+                      color={readyToProgress ? accent : '#A83232'}
                     />
                     <View style={styles.verdictText}>
                       <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>

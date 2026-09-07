@@ -108,14 +108,14 @@ export const theme = darkTheme;
 // these stay desaturated so the UI reads calm + data-first, while still giving
 // just enough differentiation for legends/markers. ---
 export const moduleColors = {
-  nutrition: '#B7ADA6',
-  water: '#90A4AE',
-  sleep: '#A29CB0',
-  workout: '#B3A595',
-  tasks: '#AEA98F',
+  nutrition: '#A83232',
+  water: '#A83232',
+  sleep: '#A83232',
+  workout: '#A83232',
+  tasks: '#A83232',
   habits: GREEN,
-  budget: '#8FAAA2',
-  gamification: '#C2B488',
+  budget: '#A83232',
+  gamification: '#A83232',
 };
 
 export type ModuleKey = keyof typeof moduleColors;

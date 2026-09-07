@@ -17,7 +17,7 @@ import { groupPercent } from '@/utils/micronutrients';
 import { VOLUME_LANDMARKS, volumeStatus, type VolumeStatus } from '@/data/volumeLandmarks';
 
 const VOL_COLOR: Record<VolumeStatus, string> = {
-  under: '#FF6B6B', low: '#FFA726', optimal: '#66BB6A', high: '#66BB6A', over: '#B388FF',
+  under: '#FF6B6B', low: '#FFA726', optimal: '#66BB6A', high: '#66BB6A', over: '#A83232',
 };
 
 const LEARN_FACTS = [

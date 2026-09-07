@@ -117,9 +117,9 @@ export default function OnboardingScreen() {
             </Text>
             <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>calories / day</Text>
             <View style={styles.macroRow}>
-              <Macro label="Protein" value={`${preview.protein}g`} color="#FF6584" />
-              <Macro label="Carbs" value={`${preview.carbs}g`} color="#4FC3F7" />
-              <Macro label="Fat" value={`${preview.fat}g`} color="#FFB74D" />
+              <Macro label="Protein" value={`${preview.protein}g`} color="#A83232" />
+              <Macro label="Carbs" value={`${preview.carbs}g`} color="#A83232" />
+              <Macro label="Fat" value={`${preview.fat}g`} color="#A83232" />
               <Macro label="Water" value={`${preview.water}`} color={moduleColors.water} />
             </View>
           </Animated.View>

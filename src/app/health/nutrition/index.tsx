@@ -150,20 +150,20 @@ export default function NutritionScreen() {
                 <Text variant="headlineSmall" style={[styles.remaining, { color: colors.onSurface }]}>{Math.abs(diff)}</Text>
                 <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}> {over ? 'kcal over' : 'kcal left'}</Text>
               </View>
-              <MacroBar label="Protein" current={todayProtein} target={proteinTarget} color="#FF6584" />
-              <MacroBar label="Carbs" current={todayCarbs} target={carbsTarget} color="#4FC3F7" />
-              <MacroBar label="Fat" current={todayFat} target={fatTarget} color="#FFB74D" />
+              <MacroBar label="Protein" current={todayProtein} target={proteinTarget} color="#A83232" />
+              <MacroBar label="Carbs" current={todayCarbs} target={carbsTarget} color="#A83232" />
+              <MacroBar label="Fat" current={todayFat} target={fatTarget} color="#A83232" />
             </View>
           </View>
           <View style={styles.microRow}>
             <View style={styles.microItem}>
-              <MacroBar label="Fiber" current={todayFiber} target={fiberTarget} color="#81C784" />
+              <MacroBar label="Fiber" current={todayFiber} target={fiberTarget} color="#A83232" />
             </View>
             <View style={styles.microItem}>
-              <MacroBar label="Sugar" current={todaySugar} target={sugarTarget} color="#B388FF" />
+              <MacroBar label="Sugar" current={todaySugar} target={sugarTarget} color="#A83232" />
             </View>
             <View style={styles.microItem}>
-              <MacroBar label="Sodium" current={todaySodium} target={sodiumTarget} color="#FF8A65" unit="mg" />
+              <MacroBar label="Sodium" current={todaySodium} target={sodiumTarget} color="#A83232" unit="mg" />
             </View>
           </View>
         </MotionCard>

@@ -112,7 +112,7 @@ export default function WeightScreen() {
                     {d !== null && (
                       <View style={styles.changeTag}>
                         <MaterialCommunityIcons name={down ? 'trending-down' : d > 0 ? 'trending-up' : 'trending-neutral'} size={16}
-                          color={down ? '#4FC3F7' : d > 0 ? '#FF8A65' : colors.onSurfaceVariant} />
+                          color={down ? '#A83232' : d > 0 ? '#A83232' : colors.onSurfaceVariant} />
                         <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
                           {down ? 'Decrease' : d > 0 ? 'Increase' : 'Steady'}
                         </Text>

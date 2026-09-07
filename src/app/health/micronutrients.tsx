@@ -15,9 +15,9 @@ import {
 
 /** Fill colour shifts from low (blue) → on-track (green) → over (amber). */
 function fillColor(pct: number): string {
-  if (pct >= 100) return '#FFB74D';
-  if (pct >= 70) return '#7ED957';
-  if (pct >= 40) return '#4FC3F7';
+  if (pct >= 100) return '#A83232';
+  if (pct >= 70) return '#A83232';
+  if (pct >= 40) return '#A83232';
   return '#9E9E9E';
 }
 
@@ -39,12 +39,12 @@ export default function MicronutrientsScreen() {
         <View style={styles.ringRow}>
           <MotionCard style={styles.ringCard} noEnter>
             <ProgressRing progress={vitaminPct / 100} size={96} strokeWidth={10}
-              color="#7ED957" value={`${vitaminPct}%`} />
+              color="#A83232" value={`${vitaminPct}%`} />
             <Text variant="titleSmall" style={[styles.ringTitle, { color: colors.onSurface }]}>Vitamins</Text>
           </MotionCard>
           <MotionCard style={styles.ringCard} noEnter>
             <ProgressRing progress={mineralPct / 100} size={96} strokeWidth={10}
-              color="#4FC3F7" value={`${mineralPct}%`} />
+              color="#A83232" value={`${mineralPct}%`} />
             <Text variant="titleSmall" style={[styles.ringTitle, { color: colors.onSurface }]}>Minerals</Text>
           </MotionCard>
         </View>

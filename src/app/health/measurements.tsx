@@ -139,7 +139,7 @@ export default function MeasurementsScreen() {
                         <Text variant="bodyMedium" style={{ color: colors.onSurface, fontWeight: '600' }}>
                           {entry.values[f]} {unit}
                           {delta != null && delta !== 0 && (
-                            <Text variant="labelSmall" style={{ color: delta < 0 ? '#4FC3F7' : accent }}>
+                            <Text variant="labelSmall" style={{ color: delta < 0 ? '#A83232' : accent }}>
                               {'  '}{delta > 0 ? '+' : ''}{delta}
                             </Text>
                           )}

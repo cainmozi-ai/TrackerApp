@@ -507,13 +507,13 @@ async function seedDefaultData(db: SQLite.SQLiteDatabase): Promise<void> {
   if (!categoriesExist || categoriesExist.count === 0) {
     await db.execAsync(`
       INSERT INTO budget_categories (name, icon, color, is_custom) VALUES
-        ('Food', 'food', '#FF6584', 0),
-        ('Transport', 'car', '#4FC3F7', 0),
-        ('Entertainment', 'movie', '#B388FF', 0),
-        ('Bills', 'file-document', '#FF8A65', 0),
-        ('Health', 'heart-pulse', '#81C784', 0),
-        ('Shopping', 'cart', '#FFB74D', 0),
-        ('Other', 'dots-horizontal', '#90A4AE', 0);
+        ('Food', 'food', '#A83232', 0),
+        ('Transport', 'car', '#A83232', 0),
+        ('Entertainment', 'movie', '#A83232', 0),
+        ('Bills', 'file-document', '#A83232', 0),
+        ('Health', 'heart-pulse', '#A83232', 0),
+        ('Shopping', 'cart', '#A83232', 0),
+        ('Other', 'dots-horizontal', '#A83232', 0);
     `);
   }
 

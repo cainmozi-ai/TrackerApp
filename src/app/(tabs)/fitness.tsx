@@ -90,15 +90,15 @@ export default function FitnessScreen() {
           subtitle="Leveled routines: beginner → advanced" onPress={() => router.push('/fitness/programs')} />
         <AppCard index={2} title="My Routines" icon="clipboard-list" color={moduleColors.workout}
           subtitle="Create and manage workout templates" onPress={() => router.push('/fitness/template-builder')} />
-        <AppCard index={3} title="Exercise Library" icon="book-open-variant" color="#7E57C2"
+        <AppCard index={3} title="Exercise Library" icon="book-open-variant" color="#A83232"
           subtitle="Browse 90+ exercises by muscle group" onPress={() => router.push('/fitness/exercise-library')} />
         <AppCard index={4} title="Progress" icon="chart-line" color={moduleColors.habits}
           subtitle="View your strength and volume trends" onPress={() => router.push('/fitness/progress')} />
         <AppCard index={5} title="Weekly Split" icon="calendar-week" color={accent}
           subtitle="Plan a routine for each day" onPress={() => router.push('/fitness/weekly-split')} />
-        <AppCard index={6} title="Cardio" icon="heart-pulse" color="#FF8A65"
+        <AppCard index={6} title="Cardio" icon="heart-pulse" color="#A83232"
           subtitle="Log runs, rides, rows & more" onPress={() => router.push('/fitness/cardio')} />
-        <AppCard index={7} title="Records" icon="trophy" color="#F5B301"
+        <AppCard index={7} title="Records" icon="trophy" color="#A83232"
           subtitle="Personal bests & strength standards" onPress={() => router.push('/fitness/records')} />
       </ScrollView>
 
