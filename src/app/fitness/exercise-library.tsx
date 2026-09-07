@@ -12,8 +12,8 @@ import { useUserStore } from '@/stores/userStore';
 import { MUSCLES, EXERCISE_TYPES, exerciseType, formatMuscles, type ExerciseType } from '@/utils/muscles';
 
 const GROUP_COLORS: Record<string, string> = {
-  Chest: '#FF6584', Back: '#4FC3F7', Shoulders: '#FFB74D', Arms: '#B388FF',
-  Legs: '#81C784', Glutes: '#F06292', Core: '#4DD0E1', Cardio: '#FF8A65',
+  Chest: '#880808', Back: '#880808', Shoulders: '#880808', Arms: '#880808',
+  Legs: '#880808', Glutes: '#880808', Core: '#880808', Cardio: '#880808',
 };
 const CUSTOM_GROUPS = ['Chest', 'Back', 'Shoulders', 'Legs', 'Glutes', 'Arms', 'Core', 'Cardio'];
 

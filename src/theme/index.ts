@@ -105,18 +105,17 @@ export const darkTheme = { ...MD3DarkTheme, colors: darkColors, fonts };
  * importing `theme` directly inherit dark; migrated screens use `useAppTheme()`. */
 export const theme = darkTheme;
 
-// --- Module accents: muted neutral tones on the black/white ground. RED is
-// the one true brand accent (see RED/primary); these stay desaturated so the
-// UI reads calm + data-first, with just enough differentiation for legends. ---
+// --- Module accents: unified to the single brand RED (white · black · red).
+// Every module reads in the one accent rather than per-module tints. ---
 export const moduleColors = {
-  nutrition: '#B7ADA6',
-  water: '#90A4AE',
-  sleep: '#A29CB0',
-  workout: '#B3A595',
-  tasks: '#AEA98F',
+  nutrition: '#880808',
+  water: '#880808',
+  sleep: '#880808',
+  workout: '#880808',
+  tasks: '#880808',
   habits: RED,
-  budget: '#8FAAA2',
-  gamification: '#C2B488',
+  budget: '#880808',
+  gamification: '#880808',
 };
 
 export type ModuleKey = keyof typeof moduleColors;

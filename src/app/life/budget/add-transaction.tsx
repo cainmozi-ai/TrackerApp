@@ -11,7 +11,7 @@ import { useBudgetStore } from '@/stores/budgetStore';
 import { useUserStore } from '@/stores/userStore';
 import type { TransactionType } from '@/types';
 
-const FALLBACK_COLORS = ['#FF6584', '#4FC3F7', '#B388FF', '#FF8A65', '#81C784', '#FFB74D', '#90A4AE'];
+const FALLBACK_COLORS = ['#880808', '#880808', '#880808', '#880808', '#880808', '#880808', '#880808'];
 
 export default function AddTransactionScreen() {
   const { colors } = useAppTheme();

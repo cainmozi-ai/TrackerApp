@@ -44,7 +44,7 @@ export default function HabitDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.statsRow}>
           <Surface style={styles.statCard} elevation={1}>
-            <MaterialCommunityIcons name="fire" size={28} color="#FF7043" />
+            <MaterialCommunityIcons name="fire" size={28} color="#880808" />
             <Text variant="headlineSmall" style={styles.statValue}>{streak}</Text>
             <Text variant="labelSmall" style={styles.statLabel}>day streak</Text>
           </Surface>
