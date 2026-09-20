@@ -4,17 +4,17 @@ import { Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { spacing, shape, withAlpha } from '@/theme';
+import { spacing, shape, accent } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
 import { MICROS, CATEGORIES, percentOf } from '@/utils/micronutrients';
 
-// % → status colour (kept semantic, like the design's bars).
-function pctColor(pct: number): string {
-  if (pct >= 100) return '#66BB6A';
-  if (pct >= 60) return '#FFA726';
-  return '#FF6B6B';
+// The design draws every wellness bar in the brand accent regardless of how
+// close the nutrient is to its RDA — the number carries the meaning here, not
+// the colour. (Home and Progress keep semantic colours; those frames use them.)
+function pctColor(_pct: number): string {
+  return accent;
 }
 
 export default function WellnessCategory() {

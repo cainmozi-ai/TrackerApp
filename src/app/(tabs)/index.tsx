@@ -12,6 +12,7 @@ import { useNutritionStore } from '@/stores/nutritionStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useWeightStore } from '@/stores/weightStore';
 import { useSleepStore } from '@/stores/sleepStore';
+import { useWaterStore } from '@/stores/waterStore';
 import { useUserStore } from '@/stores/userStore';
 import { groupPercent } from '@/utils/micronutrients';
 import { VOLUME_LANDMARKS, volumeStatus, type VolumeStatus } from '@/data/volumeLandmarks';
@@ -43,6 +44,7 @@ export default function HomeScreen() {
   const { getMuscleVolume } = useWorkoutStore();
   const { getTrendSeries } = useWeightStore();
   const { todayLog: sleep, loadTodayLog: loadSleep } = useSleepStore();
+  const { todayTotal: fluidMl, loadTodayLogs: loadWater } = useWaterStore();
   const { profile, loadProfile } = useUserStore();
 
   const [muscleVol, setMuscleVol] = useState<Record<string, number>>({});
@@ -50,7 +52,7 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadTodayLogs(); loadProfile(); loadSleep();
+      loadTodayLogs(); loadProfile(); loadSleep(); loadWater();
       getMuscleVolume(7).then(rows => setMuscleVol(Object.fromEntries(rows.map(r => [r.muscleGroup, r.sets]))));
       getTrendSeries(14).then(pts => setLatestWeight(pts.length ? pts[pts.length - 1].trend : null));
     }, [])
@@ -61,7 +63,12 @@ export default function HomeScreen() {
   const eaten = todayCalories;
   const left = Math.max(0, calTarget - eaten);
   const unit = p?.weightUnit ?? 'kg';
-  const sleepHrs = sleep ? `${Math.floor(sleep.durationMinutes / 60)}h ${sleep.durationMinutes % 60}m` : '—';
+  // Health Analytics rings — the design shows Sleep, Fluid, Vitamins, Minerals.
+  const sleepMins = sleep?.durationMinutes ?? 0;
+  const sleepHours = sleepMins / 60;
+  const sleepRingValue = sleepMins ? `${Number(sleepHours.toFixed(sleepHours % 1 ? 1 : 0))} Hrs` : '—';
+  const fluidTargetMl = (p?.waterTarget || 8) * 250;
+  const fluidRingValue = `${Number((fluidMl / 1000).toFixed(1))} L`;
   const vitPct = Math.round(groupPercent(todayMicros, 'vitamin'));
   const minPct = Math.round(groupPercent(todayMicros, 'mineral'));
   const dateStr = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
@@ -143,12 +150,24 @@ export default function HomeScreen() {
         {/* Health Analytics */}
         <SectionTitle title="Health Analytics" colors={colors} />
         <View style={styles.grid}>
-          <StatCard label="Weight" value={latestWeight != null ? `${latestWeight}` : '—'} unit={unit}
-            icon="scale-bathroom" colors={colors} onPress={() => router.push('/health/weight')} />
-          <StatCard label="Sleep" value={sleepHrs} icon="moon-waning-crescent" colors={colors} onPress={() => router.push('/health/sleep')} />
-          <RingCard label="Vitamins" pct={vitPct} colors={colors} onPress={() => router.push('/health/micronutrients')} />
-          <RingCard label="Minerals" pct={minPct} colors={colors} onPress={() => router.push('/health/micronutrients')} />
+          <RingCard label="Sleep" value={sleepRingValue} progress={sleepMins / (8 * 60)}
+            colors={colors} onPress={() => router.push('/health/sleep')} />
+          <RingCard label="Fluid" value={fluidRingValue} progress={fluidTargetMl ? fluidMl / fluidTargetMl : 0}
+            colors={colors} onPress={() => router.push('/health/water')} />
+          <RingCard label="Vitamins" value={`${vitPct}%`} progress={vitPct / 100}
+            colors={colors} onPress={() => router.push('/health/micronutrients')} />
+          <RingCard label="Minerals" value={`${minPct}%`} progress={minPct / 100}
+            colors={colors} onPress={() => router.push('/health/micronutrients')} />
         </View>
+        {/* The design has no weight card; keep the screen reachable from here. */}
+        <Pressable onPress={() => router.push('/health/weight')} style={[styles.weightLink, { backgroundColor: colors.surface }]}>
+          <MaterialCommunityIcons name="scale-bathroom" size={18} color={accent} />
+          <Text variant="bodyMedium" style={{ color: colors.onSurface, flex: 1 }}>Weight</Text>
+          <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
+            {latestWeight != null ? `${latestWeight} ${unit}` : '—'}
+          </Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.onSurfaceVariant} />
+        </Pressable>
 
         {/* Learn */}
         <SectionTitle title="Learn" colors={colors} />
@@ -226,22 +245,11 @@ function MicroCol({ label, val, target, min = null, max = null, colors }: { labe
   );
 }
 
-function StatCard({ label, value, unit, icon, colors, onPress }: { label: string; value: string; unit?: string; icon: string; colors: C; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={[styles.gridCard, { backgroundColor: colors.surface }]}>
-      <MaterialCommunityIcons name={icon as never} size={22} color={accent} />
-      <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '800', marginTop: 6 }}>
-        {value}{unit && value !== '—' ? <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}> {unit}</Text> : null}
-      </Text>
-      <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-    </Pressable>
-  );
-}
 
-function RingCard({ label, pct, colors, onPress }: { label: string; pct: number; colors: C; onPress: () => void }) {
+function RingCard({ label, value, progress, colors, onPress }: { label: string; value: string; progress: number; colors: C; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={[styles.gridCard, styles.ringCard, { backgroundColor: colors.surface }]}>
-      <ProgressRing progress={pct / 100} size={96} strokeWidth={9} color={accent} value={`${pct}%`} />
+      <ProgressRing progress={Math.min(1, progress || 0)} size={96} strokeWidth={9} color={accent} value={value} />
       <Text variant="labelLarge" style={{ color: colors.onSurface, fontWeight: '600', marginTop: 4 }}>{label}</Text>
     </Pressable>
   );
@@ -256,6 +264,7 @@ const styles = StyleSheet.create({
   avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
   customizeButton: { width: 36, height: 44, justifyContent: 'center', alignItems: 'flex-end' },
   card: { borderRadius: shape.lg, padding: spacing.md, marginBottom: spacing.xs },
+  weightLink: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: shape.lg, paddingHorizontal: spacing.md, paddingVertical: 12, marginTop: spacing.sm },
   calRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   calCenter: { position: 'absolute', width: 118, height: 118, justifyContent: 'center', alignItems: 'center' },
   macroCol: { flex: 1, gap: 6 },

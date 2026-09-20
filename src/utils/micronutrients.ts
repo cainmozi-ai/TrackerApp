@@ -51,12 +51,12 @@ export const MICRO_BY_KEY: Record<string, MicroDef> = Object.fromEntries(MICROS.
 
 export const CATEGORIES: { key: CategoryKey; label: string; icon: string }[] = [
   { key: 'brain', label: 'Brainpower', icon: '🧠' },
-  { key: 'muscle', label: 'Muscle & Performance', icon: '💪' },
+  { key: 'muscle', label: 'Muscles', icon: '💪' },
   { key: 'skin', label: 'Skin, Hair & Nails', icon: '✨' },
   { key: 'sleep', label: 'Sleep & Recovery', icon: '😴' },
   { key: 'energy', label: 'Energy', icon: '⚡' },
   { key: 'bone', label: 'Bone Health', icon: '🦴' },
-  { key: 'immune', label: 'Immune Function', icon: '🛡️' },
+  { key: 'immune', label: 'Immune System', icon: '🛡️' },
   { key: 'hormones', label: 'Hormones & Libido', icon: '❤️' },
 ];
 

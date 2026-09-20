@@ -4,7 +4,7 @@ import { Button, Dialog, Portal, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { shape, spacing } from '@/theme';
+import { shape, spacing, accent } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { ProgressRing } from '@/components/common/ProgressRing';
 import { useUserStore } from '@/stores/userStore';
@@ -41,10 +41,10 @@ export default function WaterScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <ScreenHeader title="Water Intake" />
+      <ScreenHeader title="Fluid Intake" />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={[styles.hero, { backgroundColor: colors.surface }]}>
-          <ProgressRing progress={todayTotal / targetMl} size={170} strokeWidth={16} color="#A9BBC4" value={String(glasses)} label={`of ${profile?.waterTarget ?? 8} glasses`} />
+          <ProgressRing progress={todayTotal / targetMl} size={170} strokeWidth={16} color={accent} value={String(glasses)} label={`of ${profile?.waterTarget ?? 8} glasses`} />
           <Text variant="bodyMedium" style={{ color: colors.onSurface, marginTop: spacing.sm }}>
             {todayTotal}ml / {targetMl}ml
           </Text>
@@ -62,7 +62,7 @@ export default function WaterScreen() {
         <Text variant="titleSmall" style={[styles.section, { color: colors.onSurface }]}>Today&apos;s Log</Text>
         <View style={styles.logList}>
           {todayLogs.length === 0 ? (
-            <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>No water logged yet.</Text>
+            <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>No fluid logged yet.</Text>
           ) : todayLogs.map(log => (
             <View key={log.id} style={[styles.logRow, { backgroundColor: colors.surface }]}>
               <View style={styles.dot} />
@@ -74,7 +74,7 @@ export default function WaterScreen() {
       </ScrollView>
       <Portal>
         <Dialog visible={customOpen} onDismiss={() => setCustomOpen(false)}>
-          <Dialog.Title>Add water</Dialog.Title>
+          <Dialog.Title>Add fluid</Dialog.Title>
           <Dialog.Content>
             <TextInput label="Millilitres" value={customAmount} onChangeText={setCustomAmount} keyboardType="numeric" mode="outlined" />
           </Dialog.Content>
@@ -99,6 +99,6 @@ const styles = StyleSheet.create({
   section: { marginTop: spacing.lg, marginBottom: spacing.sm },
   logList: { gap: spacing.sm },
   logRow: { height: 44, borderRadius: shape.md, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md },
-  dot: { width: 14, height: 14, borderRadius: 7, backgroundColor: '#A9BBC4', marginRight: spacing.sm },
+  dot: { width: 14, height: 14, borderRadius: 7, backgroundColor: accent, marginRight: spacing.sm },
   logAmount: { flex: 1 },
 });
