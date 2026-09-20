@@ -1,126 +1,86 @@
-import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, Button, IconButton, Portal, Dialog, TextInput } from 'react-native-paper';
+import { useCallback, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Button, Dialog, Portal, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { moduleColors, spacing, shape } from '@/theme';
+import { shape, spacing } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
-import { MotionCard } from '@/components/common/MotionCard';
 import { ProgressRing } from '@/components/common/ProgressRing';
-import { useWaterStore } from '@/stores/waterStore';
 import { useUserStore } from '@/stores/userStore';
+import { useWaterStore } from '@/stores/waterStore';
 
-const QUICK_ADD = [
-  { label: '+1 Glass', ml: 250, icon: 'cup' },
-  { label: '+250ml', ml: 250, icon: 'cup-water' },
-  { label: '+500ml', ml: 500, icon: 'bottle-soda' },
-  { label: '+1L', ml: 1000, icon: 'bottle-soda-classic' },
+const QUICK_ADDS = [
+  { label: '+1 Glass', amount: 250 },
+  { label: '+250ml', amount: 250 },
+  { label: '+500ml', amount: 500 },
+  { label: '+1L', amount: 1000 },
 ];
 
 export default function WaterScreen() {
   const { colors } = useAppTheme();
-  const { todayLogs, todayTotal, loadTodayLogs, addWater, removeLog } = useWaterStore();
-  const { profile, loadProfile, reward } = useUserStore();
-  const [customVisible, setCustomVisible] = useState(false);
-  const [customMl, setCustomMl] = useState('');
+  const { profile, loadProfile } = useUserStore();
+  const { todayLogs, todayTotal, loadTodayLogs, addWater } = useWaterStore();
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customAmount, setCustomAmount] = useState('');
 
-  useEffect(() => {
-    loadTodayLogs();
+  useFocusEffect(useCallback(() => {
     loadProfile();
-  }, []);
+    loadTodayLogs();
+  }, []));
 
-  const target = (profile?.waterTarget || 8) * 250;
-  const glasses = Math.floor(todayTotal / 250);
-  const targetGlasses = profile?.waterTarget || 8;
-
-  const handleAdd = async (ml: number) => {
-    await addWater(ml);
-    const total = useWaterStore.getState().todayTotal;
-    if (total >= target && total - ml < target) {
-      await reward(15, 'water', 'Hit daily water goal', 'water_goal');
-    } else {
-      await reward(2, 'water', 'Logged water', 'first_water');
-    }
+  const targetMl = (profile?.waterTarget ?? 8) * 250;
+  const glasses = Math.round((todayTotal / 250) * 10) / 10;
+  const add = async (amount: number) => { await addWater(amount); };
+  const saveCustom = async () => {
+    const amount = Number(customAmount);
+    if (amount > 0) await add(amount);
+    setCustomAmount('');
+    setCustomOpen(false);
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="Water Intake" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <MotionCard style={styles.ringCard} noEnter>
-          <ProgressRing
-            progress={todayTotal / target}
-            size={170}
-            strokeWidth={16}
-            color={moduleColors.water}
-            value={`${glasses}`}
-            label={`of ${targetGlasses} glasses`}
-          />
-          <Text variant="bodyMedium" style={[styles.mlText, { color: colors.onSurfaceVariant }]}>
-            {todayTotal}ml / {target}ml
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={[styles.hero, { backgroundColor: colors.surface }]}>
+          <ProgressRing progress={todayTotal / targetMl} size={170} strokeWidth={16} color="#A9BBC4" value={String(glasses)} label={`of ${profile?.waterTarget ?? 8} glasses`} />
+          <Text variant="bodyMedium" style={{ color: colors.onSurface, marginTop: spacing.sm }}>
+            {todayTotal}ml / {targetMl}ml
           </Text>
-        </MotionCard>
+        </View>
 
-        <View style={styles.quickActions}>
-          {QUICK_ADD.map(item => (
-            <Button key={item.label} mode="contained-tonal" icon={item.icon}
-              onPress={() => handleAdd(item.ml)} style={styles.quickBtn}>
+        <View style={styles.quickGrid}>
+          {QUICK_ADDS.map(item => (
+            <Button key={item.label} mode="contained-tonal" style={styles.quickButton} contentStyle={styles.quickContent} onPress={() => add(item.amount)}>
               {item.label}
             </Button>
           ))}
-          <Button mode="outlined" icon="pencil-plus" onPress={() => setCustomVisible(true)} style={styles.quickBtn}>
-            Custom
-          </Button>
         </View>
+        <Button mode="outlined" style={styles.customButton} contentStyle={styles.quickContent} onPress={() => setCustomOpen(true)}>Custom</Button>
 
-        {todayLogs.length > 0 && (
-          <View style={styles.logSection}>
-            <Text variant="titleSmall" style={[styles.logTitle, { color: colors.onBackground }]}>Today's Log</Text>
-            {todayLogs.map(log => (
-              <View key={log.id} style={[styles.logRow, { backgroundColor: colors.surface }]}>
-                <MaterialCommunityIcons name="water" size={20} color={moduleColors.water} />
-                <Text variant="bodyMedium" style={{ color: colors.onSurface, flex: 1 }}>{log.amountMl}ml</Text>
-                <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>{log.logTime?.slice(0, 5)}</Text>
-                <IconButton icon="close" size={16} onPress={() => removeLog(log.id)} />
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-
-      <Portal>
-        <Dialog visible={customVisible} onDismiss={() => setCustomVisible(false)}>
-          <Dialog.Title>Custom amount</Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              label="Amount (ml)"
-              value={customMl}
-              onChangeText={setCustomMl}
-              mode="outlined"
-              keyboardType="numeric"
-              autoFocus
-              placeholder="e.g. 330"
-            />
-            <View style={styles.customQuick}>
-              {[150, 330, 750].map(ml => (
-                <Button key={ml} compact mode="text" onPress={() => setCustomMl(String(ml))}>{ml}ml</Button>
-              ))}
+        <Text variant="titleSmall" style={[styles.section, { color: colors.onSurface }]}>Today&apos;s Log</Text>
+        <View style={styles.logList}>
+          {todayLogs.length === 0 ? (
+            <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>No water logged yet.</Text>
+          ) : todayLogs.map(log => (
+            <View key={log.id} style={[styles.logRow, { backgroundColor: colors.surface }]}>
+              <View style={styles.dot} />
+              <Text variant="bodyMedium" style={[styles.logAmount, { color: colors.onSurface }]}>{log.amountMl}ml</Text>
+              <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>{log.logTime.slice(0, 5)}</Text>
             </View>
+          ))}
+        </View>
+      </ScrollView>
+      <Portal>
+        <Dialog visible={customOpen} onDismiss={() => setCustomOpen(false)}>
+          <Dialog.Title>Add water</Dialog.Title>
+          <Dialog.Content>
+            <TextInput label="Millilitres" value={customAmount} onChangeText={setCustomAmount} keyboardType="numeric" mode="outlined" />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setCustomVisible(false)}>Cancel</Button>
-            <Button
-              disabled={!(parseInt(customMl) > 0)}
-              onPress={async () => {
-                const ml = parseInt(customMl);
-                setCustomVisible(false);
-                setCustomMl('');
-                await handleAdd(ml);
-              }}
-            >
-              Add
-            </Button>
+            <Button onPress={() => setCustomOpen(false)}>Cancel</Button>
+            <Button onPress={saveCustom} disabled={!(Number(customAmount) > 0)}>Add</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -128,20 +88,17 @@ export default function WaterScreen() {
   );
 }
 
-function MaterialIconDrop({ color }: { color: string }) {
-  const { MaterialCommunityIcons } = require('@expo/vector-icons');
-  return <MaterialCommunityIcons name="water" size={20} color={color} />;
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: spacing.md, alignItems: 'center' },
-  ringCard: { alignItems: 'center', alignSelf: 'stretch', paddingVertical: spacing.xl, gap: spacing.sm, marginBottom: spacing.lg },
-  mlText: {},
-  quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'center', marginBottom: spacing.xl },
-  quickBtn: { minWidth: 110 },
-  logSection: { alignSelf: 'stretch' },
-  logTitle: { fontWeight: '700', marginBottom: spacing.sm },
-  logRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.xs, paddingLeft: spacing.md, borderRadius: shape.sm, marginBottom: spacing.xs, gap: spacing.sm },
-  customQuick: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xs },
+  content: { padding: spacing.md, paddingBottom: spacing.xl },
+  hero: { height: 250, borderRadius: shape.lg, justifyContent: 'center', alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.md },
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  quickButton: { width: '48.8%', borderRadius: shape.md },
+  quickContent: { height: 44 },
+  customButton: { marginTop: spacing.sm, borderRadius: shape.md },
+  section: { marginTop: spacing.lg, marginBottom: spacing.sm },
+  logList: { gap: spacing.sm },
+  logRow: { height: 44, borderRadius: shape.md, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md },
+  dot: { width: 14, height: 14, borderRadius: 7, backgroundColor: '#A9BBC4', marginRight: spacing.sm },
+  logAmount: { flex: 1 },
 });

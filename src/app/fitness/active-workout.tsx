@@ -373,9 +373,8 @@ export default function ActiveWorkoutScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader
         title={workoutName}
-        right={(wid !== null || totalSets > 0)
-          ? <IconButton icon="trash-can-outline" iconColor={colors.onSurfaceVariant} onPress={() => setDiscardVisible(true)} />
-          : undefined}
+        subtitle={elapsed || '00:00:00'}
+        right={<Button mode="contained" compact buttonColor="#B83232" textColor="#FFFFFF" onPress={handleFinish} disabled={totalSets === 0}>Finish</Button>}
       />
 
       <View style={[styles.statsRow, { backgroundColor: colors.surface }]}>
@@ -450,15 +449,21 @@ export default function ActiveWorkoutScreen() {
                 </Text>
               )}
 
+              <View style={styles.tableHeader}>
+                <Text variant="labelSmall" style={[styles.tableSet, { color: colors.onSurfaceVariant }]}>SET</Text>
+                <Text variant="labelSmall" style={[styles.tablePrev, { color: colors.onSurfaceVariant }]}>PREV</Text>
+                <Text variant="labelSmall" style={[styles.tableKg, { color: colors.onSurfaceVariant }]}>{weightUnit.toUpperCase()}</Text>
+                <Text variant="labelSmall" style={[styles.tableReps, { color: colors.onSurfaceVariant }]}>REPS</Text>
+                <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>✓</Text>
+              </View>
+
               {sets.map((s, i) => (
                 <Pressable key={s.id} style={styles.setRow} onPress={() => openEditSet(s, ex)}>
-                  <View style={[styles.typeDot, { backgroundColor: typeColor(s.setType) }]} />
-                  <Text variant="bodyMedium" style={[styles.setNum, { color: colors.onSurfaceVariant }]}>Set {i + 1}</Text>
-                  <Text variant="bodyMedium" style={[styles.setData, { color: colors.onSurface }]}>
-                    {formatSet(s, (ex.logType || 'weight_reps') as LogType, weightUnit)}{s.rpe != null ? ` · ${s.rpe} RIR` : ''}
-                  </Text>
-                  <MaterialCommunityIcons name="pencil-outline" size={14} color={colors.onSurfaceVariant} />
-                  <IconButton icon="close" size={16} onPress={() => wid && removeSet(s.id, wid)} />
+                  <Text variant="bodyMedium" style={[styles.tableSet, { color: colors.onSurfaceVariant }]}>{i + 1}</Text>
+                  <Text variant="bodySmall" style={[styles.tablePrev, { color: colors.onSurfaceVariant }]} numberOfLines={1}>{previous[ex.id]?.[i] ? formatSetCompact(previous[ex.id][i], (ex.logType || 'weight_reps') as LogType) : '—'}</Text>
+                  <Text variant="bodyMedium" style={[styles.tableKg, { color: colors.onSurface }]}>{s.weight || '—'}</Text>
+                  <Text variant="bodyMedium" style={[styles.tableReps, { color: colors.onSurface }]}>{s.reps || '—'}</Text>
+                  <View style={[styles.setCheck, { backgroundColor: typeColor(s.setType) }]}><MaterialCommunityIcons name="check" size={14} color="#FFFFFF" /></View>
                 </Pressable>
               ))}
 
@@ -522,15 +527,15 @@ export default function ActiveWorkoutScreen() {
           </View>
         )}
 
-        <Button mode="outlined" icon="plus" style={styles.addExBtn} onPress={() => setPickerVisible(true)}>
+        <Button mode="outlined" icon="plus" style={styles.addExBtn} contentStyle={styles.outlineAction} onPress={() => setPickerVisible(true)}>
           {displayed.length === 0 ? 'Or add exercises one by one' : 'Add Exercise'}
         </Button>
-        <Button mode="text" icon="sync" style={styles.addCircuitBtn} onPress={() => setCircuitVisible(true)}>
+        <Button mode="outlined" icon="sync" style={styles.addCircuitBtn} contentStyle={styles.outlineAction} onPress={() => setCircuitVisible(true)}>
           Add a circuit
         </Button>
       </ScrollView>
 
-      <View style={[styles.finishBar, { backgroundColor: colors.surface, borderTopColor: colors.outline }]}>
+      <View style={[styles.finishBar, { backgroundColor: colors.background, borderTopColor: colors.outline }]}> 
         <Button mode="contained" icon="check" onPress={handleFinish} style={styles.finishBtn} buttonColor={accent} disabled={totalSets === 0}>
           Finish Workout
         </Button>
@@ -645,16 +650,20 @@ const styles = StyleSheet.create({
   gymToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: shape.pill, marginBottom: spacing.sm },
   prevLine: { marginTop: 2 },
   bestLine: { marginBottom: spacing.xs, fontWeight: '700' },
-  setRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2 },
-  typeDot: { width: 8, height: 8, borderRadius: 4, marginRight: spacing.sm },
-  setNum: { width: 52 },
-  setData: { flex: 1, fontWeight: '600' },
+  tableHeader: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.sm, paddingBottom: 3 },
+  tableSet: { width: 40 },
+  tablePrev: { width: 110 },
+  tableKg: { width: 72, textAlign: 'center' },
+  tableReps: { width: 58, textAlign: 'center' },
+  setRow: { flexDirection: 'row', alignItems: 'center', minHeight: 28 },
+  setCheck: { width: 20, height: 20, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   suggestChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: shape.pill, marginTop: spacing.xs },
   suggestRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
   applyChip: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: shape.pill, borderWidth: 1, marginTop: spacing.xs },
   addSetBtn: { marginTop: spacing.sm, alignSelf: 'flex-start' },
-  addExBtn: { marginTop: spacing.sm },
-  addCircuitBtn: { marginTop: spacing.xs },
+  addExBtn: { marginTop: spacing.sm, borderRadius: shape.md },
+  addCircuitBtn: { marginTop: spacing.sm, borderRadius: shape.md, borderColor: accent },
+  outlineAction: { height: 44 },
   quickStart: { marginTop: spacing.sm },
   supersetBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   linkToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: shape.pill, marginBottom: spacing.sm, marginTop: -2 },

@@ -476,6 +476,17 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     'ALTER TABLE exercises ADD COLUMN weight_increment REAL',
     // Biological sex — used for strength-standard comparisons (collected at onboarding)
     'ALTER TABLE user_profile ADD COLUMN sex TEXT',
+    // Macro ranges — null values preserve the existing single-target behavior.
+    'ALTER TABLE user_profile ADD COLUMN protein_target_min INTEGER',
+    'ALTER TABLE user_profile ADD COLUMN protein_target_max INTEGER',
+    'ALTER TABLE user_profile ADD COLUMN carbs_target_min INTEGER',
+    'ALTER TABLE user_profile ADD COLUMN carbs_target_max INTEGER',
+    'ALTER TABLE user_profile ADD COLUMN fat_target_min INTEGER',
+    'ALTER TABLE user_profile ADD COLUMN fat_target_max INTEGER',
+    'ALTER TABLE user_profile ADD COLUMN fiber_target_min INTEGER',
+    'ALTER TABLE user_profile ADD COLUMN fiber_target_max INTEGER',
+    'ALTER TABLE user_profile ADD COLUMN sugar_target_min INTEGER',
+    'ALTER TABLE user_profile ADD COLUMN sugar_target_max INTEGER',
   ];
   for (const sql of alters) {
     try {

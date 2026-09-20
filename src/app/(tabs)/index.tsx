@@ -68,13 +68,13 @@ export default function HomeScreen() {
   const fact = LEARN_FACTS[new Date().getDate() % LEARN_FACTS.length];
 
   const macros = [
-    { label: 'Protein', val: todayProtein, target: p?.proteinTarget || 150 },
-    { label: 'Carbs', val: todayCarbs, target: p?.carbsTarget || 250 },
-    { label: 'Fat', val: todayFat, target: p?.fatTarget || 65 },
+    { label: 'Protein', val: todayProtein, target: p?.proteinTarget || 150, min: p?.proteinTargetMin ?? null, max: p?.proteinTargetMax ?? null },
+    { label: 'Carbs', val: todayCarbs, target: p?.carbsTarget || 250, min: p?.carbsTargetMin ?? null, max: p?.carbsTargetMax ?? null },
+    { label: 'Fat', val: todayFat, target: p?.fatTarget || 65, min: p?.fatTargetMin ?? null, max: p?.fatTargetMax ?? null },
   ];
   const micros = [
-    { label: 'Fiber', val: todayFiber, target: p?.fiberTarget || 30 },
-    { label: 'Sugar', val: todaySugar, target: p?.sugarTarget || 50 },
+    { label: 'Fiber', val: todayFiber, target: p?.fiberTarget || 30, min: p?.fiberTargetMin ?? null, max: p?.fiberTargetMax ?? null },
+    { label: 'Sugar', val: todaySugar, target: p?.sugarTarget || 50, min: p?.sugarTargetMin ?? null, max: p?.sugarTargetMax ?? null },
     { label: 'Sodium', val: todaySodium, target: p?.sodiumTarget || 2300 },
   ];
   const muscleOrder = Object.keys(VOLUME_LANDMARKS);
@@ -92,6 +92,9 @@ export default function HomeScreen() {
             <Text variant="titleMedium" style={{ color: colors.onPrimary, fontWeight: '800' }}>
               {(p?.name?.trim()?.[0] || 'Y').toUpperCase()}
             </Text>
+          </Pressable>
+          <Pressable onPress={() => router.push('/dashboard-customize')} style={styles.customizeButton} accessibilityLabel="Customize dashboard">
+            <MaterialCommunityIcons name="tune-variant" size={21} color={colors.onSurfaceVariant} />
           </Pressable>
         </View>
 
@@ -187,29 +190,37 @@ function CalRing({ eaten, target, colors }: { eaten: number; target: number; col
   );
 }
 
-function MacroRow({ label, val, target, colors }: { label: string; val: number; target: number; colors: C }) {
+function MacroRow({ label, val, target, min = null, max = null, colors }: { label: string; val: number; target: number; min?: number | null; max?: number | null; colors: C }) {
+  const hasRange = min !== null && max !== null && max >= min;
+  const scale = Math.max(target, max ?? 0, val, 1);
+  const status = hasRange ? val < min! ? '#FF6B6B' : val > max! ? '#FFA726' : '#66BB6A' : val > target ? '#FFA726' : '#66BB6A';
   return (
     <View style={styles.macroRow}>
       <View style={styles.macroLabels}>
         <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-        <Text variant="labelSmall" style={{ color: colors.onSurface }}>{val}/{target}g</Text>
+        <Text variant="labelSmall" style={{ color: colors.onSurface }}>{val}/{hasRange ? `${min}-${max}` : target}g</Text>
       </View>
       <View style={[styles.macroTrack, { backgroundColor: colors.surfaceVariant }]}>
-        <View style={[styles.macroFill, { width: `${Math.min(100, (val / target) * 100)}%`, backgroundColor: accent }]} />
+        {hasRange && <View style={[styles.targetBand, { left: `${(min! / scale) * 100}%`, width: `${((max! - min!) / scale) * 100}%` }]} />}
+        <View style={[styles.macroFill, { width: `${Math.min(100, (val / scale) * 100)}%`, backgroundColor: status }]} />
       </View>
     </View>
   );
 }
 
-function MicroCol({ label, val, target, colors }: { label: string; val: number; target: number; colors: C }) {
+function MicroCol({ label, val, target, min = null, max = null, colors }: { label: string; val: number; target: number; min?: number | null; max?: number | null; colors: C }) {
+  const hasRange = min !== null && max !== null && max >= min;
+  const scale = Math.max(target, max ?? 0, val, 1);
+  const status = hasRange ? val < min! ? '#FF6B6B' : val > max! ? '#FFA726' : '#66BB6A' : val > target ? '#FFA726' : '#66BB6A';
   return (
     <View style={styles.microCol}>
       <View style={styles.macroLabels}>
         <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-        <Text variant="labelSmall" style={{ color: colors.onSurface }}>{val}/{target}</Text>
+        <Text variant="labelSmall" style={{ color: colors.onSurface }}>{val}/{hasRange ? `${min}-${max}` : target}</Text>
       </View>
       <View style={[styles.macroTrack, { backgroundColor: colors.surfaceVariant }]}>
-        <View style={[styles.macroFill, { width: `${Math.min(100, (val / target) * 100)}%`, backgroundColor: accent }]} />
+        {hasRange && <View style={[styles.targetBand, { left: `${(min! / scale) * 100}%`, width: `${((max! - min!) / scale) * 100}%` }]} />}
+        <View style={[styles.macroFill, { width: `${Math.min(100, (val / scale) * 100)}%`, backgroundColor: status }]} />
       </View>
     </View>
   );
@@ -243,6 +254,7 @@ const styles = StyleSheet.create({
   dateKicker: { letterSpacing: 1.5, fontWeight: '700', marginBottom: 2 },
   greeting: { fontWeight: '800' },
   avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  customizeButton: { width: 36, height: 44, justifyContent: 'center', alignItems: 'flex-end' },
   card: { borderRadius: shape.lg, padding: spacing.md, marginBottom: spacing.xs },
   calRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   calCenter: { position: 'absolute', width: 118, height: 118, justifyContent: 'center', alignItems: 'center' },
@@ -250,6 +262,7 @@ const styles = StyleSheet.create({
   macroRow: { gap: 3 },
   macroLabels: { flexDirection: 'row', justifyContent: 'space-between' },
   macroTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  targetBand: { position: 'absolute', top: 0, bottom: 0, backgroundColor: withAlpha('#66BB6A', 0.3) },
   macroFill: { height: '100%', borderRadius: 3 },
   microRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
   microCol: { flex: 1, gap: 3 },

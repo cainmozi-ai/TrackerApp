@@ -1,29 +1,16 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, TextInput, Button, Chip, Snackbar } from 'react-native-paper';
+import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
+import { Text, TextInput, Button, Snackbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
-import { spacing, moduleColors } from '@/theme';
+import { router } from 'expo-router';
+import { spacing, shape } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useNutritionStore } from '@/stores/nutritionStore';
-import { useUserStore } from '@/stores/userStore';
 import { VITAMINS, MINERALS } from '@/utils/micronutrients';
-import type { MealType } from '@/types';
-
-const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
-
-// Weight, volume and count units a food label might use.
-export const SERVING_UNITS = [
-  'g', 'kg', 'mg', 'oz', 'lb',
-  'ml', 'L', 'fl oz', 'cup', 'tbsp', 'tsp', 'pint', 'quart', 'gallon',
-  'piece', 'slice', 'serving', 'scoop', 'bar', 'can', 'bottle', 'packet', 'egg',
-];
 
 export default function AddCustomFoodScreen() {
-  const { meal, date } = useLocalSearchParams<{ meal?: string; date?: string }>();
   const [name, setName] = useState('');
-  const [brand, setBrand] = useState('');
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
@@ -33,15 +20,12 @@ export default function AddCustomFoodScreen() {
   const [sodium, setSodium] = useState('');
   const [servingSize, setServingSize] = useState('100');
   const [servingUnit, setServingUnit] = useState('g');
-  const [selectedMeal, setSelectedMeal] = useState<MealType>(
-    MEALS.includes(meal as MealType) ? (meal as MealType) : 'lunch'
-  );
+  const [isLiquid, setIsLiquid] = useState(false);
   const [saving, setSaving] = useState(false);
   const [snack, setSnack] = useState('');
   const [showMicros, setShowMicros] = useState(false);
   const [micros, setMicros] = useState<Record<string, string>>({});
-  const { addCustomFood, logFood } = useNutritionStore();
-  const { reward } = useUserStore();
+  const { addCustomFood } = useNutritionStore();
 
   // Sodium is captured as a macro field above, so exclude it from the micro grid.
   const microMinerals = MINERALS.filter(m => m.key !== 'sodium');
@@ -58,7 +42,7 @@ export default function AddCustomFoodScreen() {
   const saveFood = async () => {
     return await addCustomFood({
       name: name.trim(),
-      brand: brand.trim() || null,
+      brand: null,
       barcode: null,
       calories: parseFloat(calories) || 0,
       protein: parseFloat(protein) || 0,
@@ -74,31 +58,12 @@ export default function AddCustomFoodScreen() {
     });
   };
 
-  const handleSaveAndLog = async () => {
-    if (!name.trim() || saving) return;
-    setSaving(true);
-    try {
-      const foodId = await saveFood();
-      await logFood(foodId, selectedMeal, 1, date);
-      await reward(10, 'meal', 'Logged a meal', 'first_meal');
-      // Pop add-custom AND the search screen so the user lands back on the
-      // nutrition log where the new food is now visible.
-      try {
-        router.dismiss(2);
-      } catch {
-        router.back();
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleSaveOnly = async () => {
     if (!name.trim() || saving) return;
     setSaving(true);
     try {
       await saveFood();
-      setSnack(`Saved "${name.trim()}" — find it anytime by searching its name`);
+      setSnack(`Saved "${name.trim()}" to your custom library`);
       setTimeout(() => router.back(), 1200);
     } finally {
       setSaving(false);
@@ -111,29 +76,14 @@ export default function AddCustomFoodScreen() {
       <ScreenHeader title="Add Custom Food" />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <TextInput label="Food Name *" value={name} onChangeText={setName} style={styles.input} mode="outlined" />
-        <TextInput label="Brand (optional)" value={brand} onChangeText={setBrand} style={styles.input} mode="outlined" />
+        <TextInput label="Food name" value={name} onChangeText={setName} style={styles.input} mode="outlined" />
 
-        <TextInput label="Serving Size" value={servingSize} onChangeText={setServingSize} style={styles.input} mode="outlined" keyboardType="numeric" />
-
-        <Text variant="titleSmall" style={styles.sectionTitle}>Serving Unit</Text>
-        <View style={styles.unitWrap}>
-          {SERVING_UNITS.map(unit => (
-            <Chip
-              key={unit}
-              selected={servingUnit === unit}
-              onPress={() => setServingUnit(unit)}
-              style={styles.unitChip}
-              selectedColor={moduleColors.nutrition}
-              showSelectedOverlay
-              compact
-            >
-              {unit}
-            </Chip>
-          ))}
+        <View style={styles.twoCol}>
+          <TextInput label="Serving size" value={servingSize} onChangeText={setServingSize} style={styles.halfInput} mode="outlined" keyboardType="numeric" />
+          <TextInput label="Unit" value={servingUnit} onChangeText={setServingUnit} style={styles.halfInput} mode="outlined" autoCapitalize="none" />
         </View>
 
-        <Text variant="titleSmall" style={styles.sectionTitle}>
+        <Text variant="labelMedium" style={styles.sectionTitle}>
           Nutrition (per {servingSize || '1'} {servingUnit})
         </Text>
 
@@ -149,10 +99,13 @@ export default function AddCustomFoodScreen() {
           <TextInput label="Sodium (mg)" value={sodium} onChangeText={setSodium} style={styles.thirdInput} mode="outlined" keyboardType="numeric" />
         </View>
 
-        <Button mode="text" compact icon={showMicros ? 'chevron-up' : 'chevron-down'}
-          onPress={() => setShowMicros(s => !s)} style={styles.microToggle}>
-          {showMicros ? 'Hide vitamins & minerals' : 'Add vitamins & minerals (optional)'}
-        </Button>
+        <Pressable
+          onPress={() => setShowMicros(s => !s)}
+          style={[styles.microToggle, { backgroundColor: colors.surface }]}
+        >
+          <Text variant="bodyMedium" style={{ color: colors.onSurface }}>＋ {showMicros ? 'Hide vitamins & minerals' : 'Add vitamins & minerals'}</Text>
+          <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>{showMicros ? '⌃' : '⌄'}</Text>
+        </Pressable>
         {showMicros && (
           <>
             <Text variant="titleSmall" style={styles.sectionTitle}>Vitamins (per serving)</Text>
@@ -174,27 +127,15 @@ export default function AddCustomFoodScreen() {
           </>
         )}
 
-        <Text variant="titleSmall" style={styles.sectionTitle}>Log To</Text>
-        <View style={styles.mealChips}>
-          {MEALS.map(m => (
-            <Chip
-              key={m}
-              selected={selectedMeal === m}
-              onPress={() => setSelectedMeal(m)}
-              selectedColor={moduleColors.nutrition}
-              showSelectedOverlay
-            >
-              {m.charAt(0).toUpperCase() + m.slice(1)}
-            </Chip>
-          ))}
+        <Text variant="labelMedium" style={styles.sectionTitle}>LIQUID?</Text>
+        <View style={styles.liquidRow}>
+          <ToggleButton label="Solid (g)" selected={!isLiquid} onPress={() => { setIsLiquid(false); setServingUnit('g'); }} />
+          <ToggleButton label="Liquid (ml)" selected={isLiquid} onPress={() => { setIsLiquid(true); setServingUnit('ml'); }} />
         </View>
 
-        <Button mode="contained" onPress={handleSaveAndLog} style={styles.saveBtn}
+        <Button mode="contained-tonal" onPress={handleSaveOnly} style={styles.saveBtn}
           disabled={!name.trim() || saving} loading={saving}>
-          Save & Log to {selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1)}
-        </Button>
-        <Button mode="outlined" onPress={handleSaveOnly} style={styles.saveOnlyBtn} disabled={!name.trim() || saving}>
-          Save Without Logging
+          Save Food
         </Button>
       </ScrollView>
 
@@ -203,19 +144,28 @@ export default function AddCustomFoodScreen() {
   );
 }
 
+function ToggleButton({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const { colors } = useAppTheme();
+  return (
+    <Pressable onPress={onPress} style={[styles.toggle, { borderColor: colors.outline }, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+      <Text variant="bodyMedium" style={{ color: selected ? colors.onPrimary : colors.onSurface }}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   input: { marginBottom: spacing.sm },
+  twoCol: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  halfInput: { flex: 1 },
   row: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   thirdInput: { flex: 1 },
-  sectionTitle: { fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.sm },
-  unitWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
-  unitChip: {},
-  microToggle: { alignSelf: 'flex-start', marginTop: spacing.xs },
+  sectionTitle: { fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.sm },
+  microToggle: { height: 52, borderRadius: shape.md, marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md },
   microWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   microInput: { width: '47.5%' },
-  mealChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
-  saveBtn: { marginTop: spacing.lg },
-  saveOnlyBtn: { marginTop: spacing.sm },
+  liquidRow: { flexDirection: 'row', gap: spacing.sm },
+  toggle: { flex: 1, height: 40, borderWidth: 1, borderRadius: shape.md, justifyContent: 'center', alignItems: 'center' },
+  saveBtn: { marginTop: spacing.lg, borderRadius: shape.md },
 });

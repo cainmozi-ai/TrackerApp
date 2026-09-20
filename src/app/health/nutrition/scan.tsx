@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing } from '@/theme';
+import { theme, moduleColors, spacing, shape } from '@/theme';
 import { lookupBarcode } from '@/services/openFoodFacts';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
@@ -119,9 +119,15 @@ export default function ScanScreen() {
             onBarcodeScanned={scanned ? undefined : handleScan}
           />
           <View style={styles.overlay}>
-            <View style={styles.scanFrame} />
+            <View style={styles.scanTarget}>
+              <View style={[styles.corner, styles.topLeft]} />
+              <View style={[styles.corner, styles.topRight]} />
+              <View style={[styles.corner, styles.bottomLeft]} />
+              <View style={[styles.corner, styles.bottomRight]} />
+              <View style={styles.scanLine} />
+            </View>
             <Text variant="bodyMedium" style={styles.scanHint}>
-              {loading ? 'Looking up product...' : 'Point at a barcode'}
+              {loading ? 'Looking up product...' : 'Align the barcode within the frame'}
             </Text>
             {loading && <ActivityIndicator color="#fff" style={styles.loader} />}
           </View>
@@ -249,14 +255,20 @@ const styles = StyleSheet.create({
   permTitle: { fontWeight: '700', marginTop: spacing.sm },
   permText: { color: theme.colors.onSurfaceVariant, textAlign: 'center' },
   permBtn: { marginTop: spacing.md },
-  cameraWrap: { flex: 1, margin: spacing.md, borderRadius: 16, overflow: 'hidden' },
+  cameraWrap: { flex: 1, margin: spacing.md, borderRadius: shape.lg, overflow: 'hidden' },
   camera: { flex: 1 },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' },
-  scanFrame: { width: 240, height: 140, borderWidth: 3, borderColor: '#fff', borderRadius: 16, backgroundColor: 'transparent' },
-  scanHint: { color: '#fff', marginTop: spacing.md, fontWeight: '600', backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
+  scanTarget: { width: 300, height: 170, position: 'relative' },
+  corner: { position: 'absolute', width: 40, height: 40, borderColor: '#A83232' },
+  topLeft: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 4 },
+  topRight: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 4 },
+  bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 4 },
+  bottomRight: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 4 },
+  scanLine: { position: 'absolute', height: 3, backgroundColor: '#A83232', left: 10, right: 10, top: '50%' },
+  scanHint: { color: '#fff', marginTop: spacing.md, fontWeight: '400' },
   loader: { marginTop: spacing.sm },
-  resultWrap: { flexGrow: 1, justifyContent: 'center', padding: spacing.md },
-  resultCard: { padding: spacing.lg, borderRadius: 20, backgroundColor: theme.colors.surface },
+  resultWrap: { flexGrow: 1, justifyContent: 'flex-end' },
+  resultCard: { padding: spacing.lg, borderTopLeftRadius: shape.xl, borderTopRightRadius: shape.xl, backgroundColor: theme.colors.surface },
   resultName: { fontWeight: '700' },
   resultBrand: { color: theme.colors.onSurfaceVariant },
   macroRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: spacing.md },

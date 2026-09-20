@@ -68,10 +68,15 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
 
   const calorieTarget = profile?.calorieTarget || 2000;
   const proteinTarget = profile?.proteinTarget || 150;
+  const proteinRange = { min: profile?.proteinTargetMin ?? null, max: profile?.proteinTargetMax ?? null };
   const carbsTarget = profile?.carbsTarget || 250;
+  const carbsRange = { min: profile?.carbsTargetMin ?? null, max: profile?.carbsTargetMax ?? null };
   const fatTarget = profile?.fatTarget || 65;
+  const fatRange = { min: profile?.fatTargetMin ?? null, max: profile?.fatTargetMax ?? null };
   const fiberTarget = profile?.fiberTarget || 30;
+  const fiberRange = { min: profile?.fiberTargetMin ?? null, max: profile?.fiberTargetMax ?? null };
   const sugarTarget = profile?.sugarTarget || 50;
+  const sugarRange = { min: profile?.sugarTargetMin ?? null, max: profile?.sugarTargetMax ?? null };
   const sodiumTarget = profile?.sodiumTarget || 2300;
   const diff = calorieTarget - todayCalories;
   const over = diff < 0;
@@ -138,7 +143,7 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
         <MotionCard style={styles.hero} noEnter onPress={() => router.push('/health/micronutrients')}>
           <View style={styles.heroTop}>
             <View style={styles.sideCol}>
-              <MacroBar label="Fiber" current={todayFiber} target={fiberTarget} color="#A83232" />
+              <MacroBar label="Fiber" current={todayFiber} target={fiberTarget} range={fiberRange} />
             </View>
             <ProgressRing
               progress={todayCalories / calorieTarget}
@@ -149,12 +154,12 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
               label="eaten"
             />
             <View style={styles.sideCol}>
-              <MacroBar label="Sugar" current={todaySugar} target={sugarTarget} color="#A83232" />
+              <MacroBar label="Sugar" current={todaySugar} target={sugarTarget} range={sugarRange} />
             </View>
           </View>
-          <MacroBar label="Protein" current={todayProtein} target={proteinTarget} color="#A83232" />
-          <MacroBar label="Carbs" current={todayCarbs} target={carbsTarget} color="#A83232" />
-          <MacroBar label="Fat" current={todayFat} target={fatTarget} color="#A83232" />
+          <MacroBar label="Protein" current={todayProtein} target={proteinTarget} range={proteinRange} />
+          <MacroBar label="Carbs" current={todayCarbs} target={carbsTarget} range={carbsRange} />
+          <MacroBar label="Fat" current={todayFat} target={fatTarget} range={fatRange} />
         </MotionCard>
 
         <View style={styles.actionRow}>
@@ -272,17 +277,35 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
   );
 }
 
-function MacroBar({ label, current, target, color, unit = 'g' }: { label: string; current: number; target: number; color: string; unit?: string }) {
+function MacroBar({
+  label, current, target, range, unit = 'g',
+}: {
+  label: string;
+  current: number;
+  target: number;
+  range: { min: number | null; max: number | null };
+  unit?: string;
+}) {
   const { colors } = useAppTheme();
-  const pct = Math.min(current / target, 1);
+  const hasRange = range.min !== null && range.max !== null && range.max >= range.min;
+  const scale = Math.max(target, range.max ?? 0, current, 1);
+  const pct = Math.min(current / scale, 1);
+  const bandStart = hasRange ? Math.min((range.min! / scale) * 100, 100) : 0;
+  const bandWidth = hasRange ? Math.min(((range.max! - range.min!) / scale) * 100, 100 - bandStart) : 0;
+  const status = hasRange
+    ? current < range.min! ? '#FF6B6B' : current > range.max! ? '#FFA726' : '#66BB6A'
+    : current > target ? '#FFA726' : '#66BB6A';
   return (
     <View style={styles.macroBar}>
       <View style={styles.macroLabelRow}>
         <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-        <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{Math.round(current)}/{target}{unit}</Text>
+        <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
+          {Math.round(current)}/{hasRange ? `${range.min}-${range.max}` : target}{unit}
+        </Text>
       </View>
-      <View style={[styles.macroTrack, { backgroundColor: withAlpha(color, 0.18) }]}>
-        <View style={[styles.macroFill, { width: `${pct * 100}%`, backgroundColor: color }]} />
+      <View style={[styles.macroTrack, { backgroundColor: colors.surfaceVariant }]}> 
+        {hasRange && <View style={[styles.macroBand, { left: `${bandStart}%`, width: `${bandWidth}%`, backgroundColor: withAlpha('#66BB6A', 0.28) }]} />}
+        <View style={[styles.macroFill, { width: `${pct * 100}%`, backgroundColor: status }]} />
       </View>
     </View>
   );
@@ -294,7 +317,7 @@ const styles = StyleSheet.create({
   dayStrip: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.md, marginBottom: spacing.xs, gap: spacing.xs },
   dayPill: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: shape.pill, borderWidth: 1.5 },
   dateKicker: { letterSpacing: 1.5, fontWeight: '700', marginBottom: spacing.xs },
-  hero: { marginBottom: spacing.sm },
+  hero: { marginBottom: spacing.sm, padding: spacing.md },
   heroTop: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginBottom: spacing.md },
   sideCol: { flex: 1 },
   heroRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
@@ -315,7 +338,8 @@ const styles = StyleSheet.create({
   foodInfo: { flex: 1 },
   macroBar: { marginBottom: spacing.sm },
   macroLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
-  macroTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  macroTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  macroBand: { position: 'absolute', top: 0, bottom: 0, borderRadius: 4 },
   macroFill: { height: '100%', borderRadius: 3 },
   fab: { position: 'absolute', right: 16, bottom: 24, borderRadius: shape.pill },
 });

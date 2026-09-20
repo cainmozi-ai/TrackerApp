@@ -25,7 +25,7 @@ export default function FoodSearchScreen() {
   const [selectedMeal, setSelectedMeal] = useState<MealType>(
     MEALS.includes(meal as MealType) ? (meal as MealType) : 'lunch'
   );
-  const [tab, setTab] = useState<'recent' | 'favorites' | 'saved'>('recent');
+  const [tab, setTab] = useState<'all' | 'recent' | 'saved' | 'custom'>('all');
   // Portion dialog state
   const [pendingFood, setPendingFood] = useState<Food | null>(null);
   const [portionMode, setPortionMode] = useState<'servings' | 'amount'>('servings');
@@ -34,8 +34,8 @@ export default function FoodSearchScreen() {
   const [amountText, setAmountText] = useState('100');
   const [logging, setLogging] = useState(false);
   const {
-    recents, favorites, savedMeals,
-    loadRecents, loadFavorites, loadSavedMeals,
+    allFoods, recents, savedMeals,
+    loadAllFoods, loadRecents, loadSavedMeals,
     logFood, addCustomFood, logSavedMeal,
   } = useNutritionStore();
   const { reward } = useUserStore();
@@ -43,8 +43,8 @@ export default function FoodSearchScreen() {
   // Refresh on focus so foods added on the custom-food screen show up on return.
   useFocusEffect(
     useCallback(() => {
+      loadAllFoods();
       loadRecents();
-      loadFavorites();
       loadSavedMeals();
     }, [])
   );
@@ -102,7 +102,7 @@ export default function FoodSearchScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <ScreenHeader title="Add Food" />
+      <ScreenHeader title={`Add to ${selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1)}`} />
 
       <Searchbar
         placeholder="Search foods..."
@@ -113,48 +113,34 @@ export default function FoodSearchScreen() {
         loading={loading}
       />
 
-      <View style={styles.mealChips}>
-        {MEALS.map(meal => (
-          <Chip
-            key={meal}
-            selected={selectedMeal === meal}
-            onPress={() => setSelectedMeal(meal)}
-            style={styles.chip}
-            selectedColor={moduleColors.nutrition}
-            showSelectedOverlay
+      <View style={styles.tabRow}>
+        {([
+          ['all', 'All'], ['recent', 'Recent'], ['saved', 'My Meals'], ['custom', 'Custom'],
+        ] as const).map(([value, label]) => (
+          <Pressable
+            key={value}
+            onPress={() => setTab(value)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: tab === value }}
+            style={[styles.tab, { backgroundColor: tab === value ? moduleColors.nutrition : colors.surfaceVariant }]}
           >
-            {meal.charAt(0).toUpperCase() + meal.slice(1)}
-          </Chip>
+            <Text variant="labelMedium" style={{ color: tab === value ? colors.onPrimary : colors.onSurface }}>{label}</Text>
+          </Pressable>
         ))}
       </View>
 
       <View style={styles.methodRow}>
         <Button mode="contained-tonal" icon="barcode-scan" compact style={styles.methodBtn}
           onPress={() => router.push(`/health/nutrition/scan?meal=${selectedMeal}${date ? `&date=${date}` : ''}`)}>
-          Scan
-        </Button>
-        <Button mode="contained-tonal" icon="camera-iris" compact style={styles.methodBtn} onPress={() => router.push('/health/nutrition/ai-photo')}>
-          AI Photo
+          Scan Barcode
         </Button>
         <Button mode="contained-tonal" icon="plus" compact style={styles.methodBtn} onPress={() => router.push(`/health/nutrition/add-custom?meal=${selectedMeal}${date ? `&date=${date}` : ''}`)}>
-          Custom
+          Create Food
         </Button>
       </View>
 
-      {!searching && (
-        <SegmentedButtons
-          value={tab}
-          onValueChange={v => setTab(v as typeof tab)}
-          buttons={[
-            { value: 'recent', label: 'Recent', icon: 'history' },
-            { value: 'favorites', label: 'Favorites', icon: 'star' },
-            { value: 'saved', label: 'Meals', icon: 'silverware-fork-knife' },
-          ]}
-          style={styles.tabs}
-        />
-      )}
-
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <Text variant="labelSmall" style={[styles.resultsLabel, { color: colors.onSurfaceVariant }]}>RESULTS</Text>
         {searching ? (
           loading ? (
             <ActivityIndicator color={colors.primary} style={styles.loader} />
@@ -166,6 +152,8 @@ export default function FoodSearchScreen() {
               <FoodRow key={`${food.barcode || food.name}-${i}`} food={food} onAdd={() => openPortionDialog(food)} />
             ))
           )
+        ) : tab === 'all' ? (
+          allFoods.map(food => <FoodRow key={food.id} food={food} onAdd={() => openPortionDialog(food)} />)
         ) : tab === 'recent' ? (
           recents.length === 0 ? (
             <EmptyState icon="history" color={moduleColors.nutrition} title="No recent foods yet"
@@ -173,17 +161,10 @@ export default function FoodSearchScreen() {
           ) : (
             recents.map(food => <FoodRow key={food.id} food={food} onAdd={() => openPortionDialog(food)} />)
           )
-        ) : tab === 'favorites' ? (
-          favorites.length === 0 ? (
-            <EmptyState icon="star-outline" color={moduleColors.nutrition} title="No favorites yet"
-              body="Star foods you eat often to log them in a tap." />
-          ) : (
-            favorites.map(food => <FoodRow key={food.id} food={food} onAdd={() => openPortionDialog(food)} />)
-          )
-        ) : savedMeals.length === 0 ? (
+        ) : tab === 'saved' && savedMeals.length === 0 ? (
           <EmptyState icon="silverware-fork-knife" color={moduleColors.nutrition} title="No saved meals"
             body="On your daily log, tap 'Save as meal' to store a whole day's foods as a combo." />
-        ) : (
+        ) : tab === 'saved' ? (
           savedMeals.map(meal => (
             <Pressable key={meal.id} onPress={() => handleLogSaved(meal)} style={[styles.row, { backgroundColor: colors.surface }]}>
               <View style={[styles.iconChip, { backgroundColor: withAlpha(moduleColors.nutrition, 0.16) }]}>
@@ -196,6 +177,13 @@ export default function FoodSearchScreen() {
               <MaterialCommunityIcons name="plus-circle" size={24} color={moduleColors.nutrition} />
             </Pressable>
           ))
+        ) : (
+          allFoods.filter(food => food.isCustom).length === 0 ? (
+            <EmptyState icon="food-variant" color={moduleColors.nutrition} title="No custom foods"
+              body="Create a food to add it to your personal library." />
+          ) : (
+            allFoods.filter(food => food.isCustom).map(food => <FoodRow key={food.id} food={food} onAdd={() => openPortionDialog(food)} />)
+          )
         )}
       </ScrollView>
 
@@ -282,12 +270,12 @@ function FoodRow({ food, onAdd }: { food: Food; onAdd: () => void }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   searchbar: { marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: shape.md },
-  mealChips: { flexDirection: 'row', paddingHorizontal: spacing.md, gap: spacing.xs, marginBottom: spacing.sm },
-  chip: {},
-  methodRow: { flexDirection: 'row', paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.sm },
+  tabRow: { flexDirection: 'row', paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.md },
+  tab: { minWidth: 52, height: 32, paddingHorizontal: spacing.md, borderRadius: shape.pill, justifyContent: 'center', alignItems: 'center' },
+  methodRow: { flexDirection: 'row', paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.md },
   methodBtn: { flex: 1 },
-  tabs: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
   scrollContent: { padding: spacing.md, paddingTop: 0, paddingBottom: 40 },
+  resultsLabel: { fontWeight: '700', marginBottom: spacing.md },
   loader: { marginTop: spacing.xl },
   row: {
     flexDirection: 'row',

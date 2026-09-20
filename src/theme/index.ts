@@ -22,17 +22,17 @@ const fontConfig = {
 const fonts = configureFonts({ config: fontConfig });
 
 // Single brand accent — the design's red (#A83232) on a dark ground.
-const GREEN = '#A83232';
-const GREEN_DIM = '#8A2828';
+export const BRAND = '#A83232';
+export const BRAND_DIM = '#8A2828';
 
-// --- Dark palette (the default / showcase): charcoal + green ---
+// --- Dark palette (the default / showcase): charcoal + brand red ---
 const darkColors = {
   ...MD3DarkTheme.colors,
-  primary: GREEN,
+  primary: BRAND,
   primaryContainer: '#3A1210',
   secondary: '#9AA0A6',
   secondaryContainer: '#2A2A2C',
-  tertiary: GREEN,
+  tertiary: BRAND,
   tertiaryContainer: '#3A1210',
   background: '#121212',
   surface: '#1C1C1E',
@@ -61,14 +61,14 @@ const darkColors = {
   },
 };
 
-// --- Light palette (refined alternate — minimal, same green accent) ---
+// --- Light palette (refined alternate — minimal, same brand accent) ---
 const lightColors = {
   ...MD3LightTheme.colors,
-  primary: GREEN_DIM,
+  primary: BRAND_DIM,
   primaryContainer: '#F5D6D6',
   secondary: '#5F6368',
   secondaryContainer: '#ECEDEF',
-  tertiary: GREEN_DIM,
+  tertiary: BRAND_DIM,
   tertiaryContainer: '#F5D6D6',
   background: '#FAFAFA',
   surface: '#FFFFFF',
@@ -104,7 +104,7 @@ export const darkTheme = { ...MD3DarkTheme, colors: darkColors, fonts };
 export const theme = darkTheme;
 
 // --- Module accents: flattened to muted, near-grayscale tones (MacroFactor
-// keeps things monochrome). Green is the one true accent (see GREEN/primary);
+// keeps things monochrome). Brand red is the one true accent (see BRAND/primary);
 // these stay desaturated so the UI reads calm + data-first, while still giving
 // just enough differentiation for legends/markers. ---
 export const moduleColors = {
@@ -113,7 +113,7 @@ export const moduleColors = {
   sleep: '#A83232',
   workout: '#A83232',
   tasks: '#A83232',
-  habits: GREEN,
+  habits: BRAND,
   budget: '#A83232',
   gamification: '#A83232',
 };
@@ -121,7 +121,7 @@ export const moduleColors = {
 export type ModuleKey = keyof typeof moduleColors;
 
 /** The single brand accent, for code that wants it explicitly. */
-export const accent = GREEN;
+export const accent = BRAND;
 
 // --- Spacing ---
 export const spacing = {

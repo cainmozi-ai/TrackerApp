@@ -5,9 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { moduleColors, spacing, shape, accent, withAlpha } from '@/theme';
-import { AppCard } from '@/components/common/AppCard';
-import { SectionHeader } from '@/components/common/SectionHeader';
+import { spacing, shape, accent, withAlpha } from '@/theme';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import type { WorkoutLog } from '@/types';
 
@@ -82,24 +80,19 @@ export default function FitnessScreen() {
           </Pressable>
         )}
 
-        <SectionHeader title="Modules" />
+        <Text variant="labelSmall" style={[styles.kicker, { color: colors.onSurfaceVariant }]}>MODULES</Text>
+        <ModuleRow title="Start Workout" subtitle="Begin a new workout session" icon="play" color={accent} onPress={onStartPress} />
+        <ModuleRow title="Programs" subtitle="Leveled routines: beginner to advanced" icon="podium" color={accent} onPress={() => router.push('/fitness/programs')} />
+        <ModuleRow title="My Routines" subtitle="Create and manage workout templates" icon="clipboard-list" color="#C7B8A5" onPress={() => router.push('/fitness/template-builder')} />
+        <ModuleRow title="Exercise Library" subtitle="Browse 190 exercises by muscle group" icon="book-open-variant" color="#8C62D9" onPress={() => router.push('/fitness/exercise-library')} />
 
-        <AppCard index={0} title="Start Workout" icon="play-circle" color={colors.primary}
-          subtitle="Begin a new workout session" onPress={onStartPress} />
-        <AppCard index={1} title="Programs" icon="podium" color={accent}
-          subtitle="Leveled routines: beginner → advanced" onPress={() => router.push('/fitness/programs')} />
-        <AppCard index={2} title="My Routines" icon="clipboard-list" color={moduleColors.workout}
-          subtitle="Create and manage workout templates" onPress={() => router.push('/fitness/template-builder')} />
-        <AppCard index={3} title="Exercise Library" icon="book-open-variant" color="#A83232"
-          subtitle="Browse 90+ exercises by muscle group" onPress={() => router.push('/fitness/exercise-library')} />
-        <AppCard index={4} title="Progress" icon="chart-line" color={moduleColors.habits}
-          subtitle="View your strength and volume trends" onPress={() => router.push('/fitness/progress')} />
-        <AppCard index={5} title="Weekly Split" icon="calendar-week" color={accent}
-          subtitle="Plan a routine for each day" onPress={() => router.push('/fitness/weekly-split')} />
-        <AppCard index={6} title="Cardio" icon="heart-pulse" color="#A83232"
-          subtitle="Log runs, rides, rows & more" onPress={() => router.push('/fitness/cardio')} />
-        <AppCard index={7} title="Records" icon="trophy" color="#A83232"
-          subtitle="Personal bests & strength standards" onPress={() => router.push('/fitness/records')} />
+        <Text variant="labelSmall" style={[styles.kicker, styles.moreKicker, { color: colors.onSurfaceVariant }]}>MORE TRAINING</Text>
+        <View style={styles.moreGrid}>
+          <MiniLink icon="chart-line" label="Progress" onPress={() => router.push('/fitness/progress')} />
+          <MiniLink icon="calendar-week" label="Weekly Split" onPress={() => router.push('/fitness/weekly-split')} />
+          <MiniLink icon="heart-pulse" label="Cardio" onPress={() => router.push('/fitness/cardio')} />
+          <MiniLink icon="trophy" label="Records" onPress={() => router.push('/fitness/records')} />
+        </View>
       </ScrollView>
 
       <Portal>
@@ -120,11 +113,40 @@ export default function FitnessScreen() {
   );
 }
 
+function ModuleRow({ title, subtitle, icon, color, onPress }: {
+  title: string; subtitle: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; color: string; onPress: () => void;
+}) {
+  const { colors } = useAppTheme();
+  return (
+    <Pressable onPress={onPress} style={[styles.moduleRow, { backgroundColor: colors.surface }]}>
+      <View style={[styles.moduleIcon, { backgroundColor: withAlpha(color, 0.16) }]}>
+        <MaterialCommunityIcons name={icon} size={22} color={color} />
+      </View>
+      <View style={styles.moduleCopy}>
+        <Text variant="titleMedium" style={{ color: colors.onSurface }}>{title}</Text>
+        <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>{subtitle}</Text>
+      </View>
+      <MaterialCommunityIcons name="chevron-right" size={20} color={colors.onSurfaceVariant} />
+    </Pressable>
+  );
+}
+
+function MiniLink({ icon, label, onPress }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string; onPress: () => void }) {
+  const { colors } = useAppTheme();
+  return (
+    <Pressable onPress={onPress} style={[styles.miniLink, { backgroundColor: colors.surface }]}> 
+      <MaterialCommunityIcons name={icon} size={20} color={colors.primary} />
+      <Text variant="labelMedium" style={{ color: colors.onSurface }}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: spacing.xxl },
-  title: { fontWeight: '800' },
-  subtitle: { marginTop: 2, marginBottom: spacing.md },
+  title: { fontWeight: '400' },
+  subtitle: { marginTop: 2, marginBottom: spacing.lg },
+  kicker: { fontWeight: '700', marginBottom: spacing.sm },
   resumeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -135,4 +157,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   resumeText: { flex: 1 },
+  moduleRow: { height: 72, borderRadius: shape.lg, marginBottom: 12, flexDirection: 'row', alignItems: 'center', padding: spacing.md, gap: 14 },
+  moduleIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  moduleCopy: { flex: 1, gap: 2 },
+  moreKicker: { marginTop: spacing.lg },
+  moreGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  miniLink: { width: '48%', height: 52, borderRadius: shape.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md },
 });
