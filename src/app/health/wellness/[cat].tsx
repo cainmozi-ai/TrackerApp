@@ -4,39 +4,51 @@ import { Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { spacing, shape, withAlpha } from '@/theme';
+import { spacing, shape, accent } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
-import { MICROS, CATEGORIES, percentOf } from '@/utils/micronutrients';
+import {
+  CATEGORIES, CATEGORY_ROWS, MICRO_BY_KEY, percentOf, type CategoryKey,
+} from '@/utils/micronutrients';
 
-// % → status colour (kept semantic, like the design's bars).
-function pctColor(pct: number): string {
-  if (pct >= 100) return '#66BB6A';
-  if (pct >= 60) return '#FFA726';
-  return '#FF6B6B';
+// The design draws every wellness bar in the brand accent regardless of how
+// close the nutrient is to its RDA — the number carries the meaning here, not
+// the colour. (Home and Progress keep semantic colours; those frames use them.)
+function pctColor(_pct: number): string {
+  return accent;
 }
 
 export default function WellnessCategory() {
   const { colors } = useAppTheme();
   const { cat } = useLocalSearchParams<{ cat: string }>();
-  const { todayMicros, todayCalories, loadTodayLogs } = useNutritionStore();
+  const { todayMicros, todayCalories, todayProtein, todayFat, loadTodayLogs } = useNutritionStore();
   const { profile, loadProfile } = useUserStore();
 
   useFocusEffect(useCallback(() => { loadTodayLogs(); loadProfile(); }, []));
 
   const category = CATEGORIES.find(c => c.key === cat);
-  const nutrients = MICROS.filter(m => m.cats.includes(cat as never));
+  const rows: Row[] = [];
   const calTarget = profile?.calorieTarget || 2000;
+  const proteinTarget = profile?.proteinTarget || 150;
 
   type Row = { label: string; amount: number; target: number; unit: string; pct: number };
-  const rows: Row[] = [];
-  if (cat === 'energy') {
-    rows.push({ label: 'Calories', amount: todayCalories, target: calTarget, unit: 'kcal', pct: Math.round((todayCalories / calTarget) * 100) });
-  }
-  for (const m of nutrients) {
-    const amt = Math.round((todayMicros[m.key] || 0) * 10) / 10;
-    rows.push({ label: m.label, amount: amt, target: m.rda, unit: m.unit, pct: Math.round(percentOf(m.key, todayMicros[m.key] || 0)) });
+  const pct = (amount: number, target: number) => (target > 0 ? Math.round((amount / target) * 100) : 0);
+
+  for (const row of CATEGORY_ROWS[cat as CategoryKey] ?? []) {
+    if (row.kind === 'calories') {
+      rows.push({ label: 'Calories', amount: todayCalories, target: calTarget, unit: 'kcal', pct: pct(todayCalories, calTarget) });
+    } else if (row.kind === 'fat') {
+      const fatTarget = profile?.fatTarget || 65;
+      rows.push({ label: 'Fat', amount: Math.round(todayFat), target: fatTarget, unit: 'g', pct: pct(todayFat, fatTarget) });
+    } else if (row.kind === 'protein') {
+      rows.push({ label: 'Protein', amount: Math.round(todayProtein), target: proteinTarget, unit: 'g', pct: pct(todayProtein, proteinTarget) });
+    } else {
+      const def = MICRO_BY_KEY[row.key];
+      if (!def) continue;
+      const amt = Math.round((todayMicros[def.key] || 0) * 10) / 10;
+      rows.push({ label: def.label, amount: amt, target: def.rda, unit: def.unit, pct: Math.round(percentOf(def.key, todayMicros[def.key] || 0)) });
+    }
   }
 
   return (

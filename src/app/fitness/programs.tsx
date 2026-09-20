@@ -9,6 +9,13 @@ import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { MotionCard } from '@/components/common/MotionCard';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useWorkoutStore, type Program } from '@/stores/workoutStore';
+import programsData from '@/data/programs.json';
+
+/** Weeks + stripe colour live with the seed data, not in the database. */
+const PROGRAM_META: Record<string, { weeks: number; stripe: string; blurb: string }> = Object.fromEntries(
+  (programsData as { name: string; weeks: number; stripe: string; description: string }[])
+    .map(p => [p.name, { weeks: p.weeks, stripe: p.stripe, blurb: p.description }])
+);
 
 const LEVELS = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
@@ -43,36 +50,26 @@ export default function ProgramsScreen() {
             body="Try a different experience level." />
         ) : (
           programs.map((p, i) => {
-            const muscles = Array.from(new Set(p.days.flatMap(d => d.muscles))).slice(0, 6);
+            const meta = PROGRAM_META[p.programName] ?? { weeks: 8, stripe: accent, blurb: p.split };
             return (
               <MotionCard key={p.programName} index={i} style={styles.card}>
-                <View style={styles.cardHead}>
-                  <View style={styles.titleWrap}>
-                    <Text variant="titleMedium" style={[styles.name, { color: colors.onSurface }]}>{p.programName}</Text>
-                    <Text variant="labelMedium" style={{ color: accent }}>
-                      {p.level} · {p.daysPerWeek} days/week · {p.split}
-                    </Text>
+                <View style={[styles.stripe, { backgroundColor: meta.stripe }]} />
+                <View style={styles.cardBody}>
+                  <Text variant="titleMedium" style={[styles.name, { color: colors.onSurface }]}>{p.programName}</Text>
+                  <View style={[styles.levelChip, { backgroundColor: withAlpha(meta.stripe, 0.18) }]}>
+                    <Text variant="labelSmall" style={{ color: meta.stripe, fontWeight: '700' }}>{p.level}</Text>
                   </View>
-                  <MaterialCommunityIcons name="dumbbell" size={22} color={colors.onSurfaceVariant} />
-                </View>
-
-                <View style={styles.dayRow}>
-                  {p.days.map(d => (
-                    <Chip key={d.templateId} compact style={[styles.dayChip, { backgroundColor: colors.surfaceVariant }]} textStyle={styles.dayChipText}>
-                      {d.label}
-                    </Chip>
-                  ))}
-                </View>
-
-                {muscles.length > 0 && (
-                  <Text variant="bodySmall" style={[styles.muscles, { color: colors.onSurfaceVariant }]}>
-                    {muscles.join(' · ')}
+                  <Text variant="bodySmall" style={[styles.schedule, { color: colors.onSurfaceVariant }]}>
+                    {p.daysPerWeek} days/week · {meta.weeks} weeks
                   </Text>
-                )}
-
-                <Button mode="contained" icon="plus" onPress={() => handleAdd(p)} style={styles.addBtn} buttonColor={accent}>
-                  Add to My Routines
-                </Button>
+                  <View style={styles.bottomRow}>
+                    <Text variant="bodyMedium" style={[styles.blurb, { color: colors.onSurface }]}>{meta.blurb || p.split}</Text>
+                    <Button mode="outlined" compact onPress={() => handleAdd(p)}
+                      textColor={meta.stripe} style={[styles.startBtn, { borderColor: meta.stripe }]}>
+                      Start →
+                    </Button>
+                  </View>
+                </View>
               </MotionCard>
             );
           })
@@ -87,13 +84,14 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   segmented: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
-  card: { marginBottom: spacing.md },
-  cardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  titleWrap: { flex: 1 },
+  // padding 0 so the stripe runs flush to the card edge; the body re-adds it
+  card: { marginBottom: spacing.md, overflow: 'hidden', padding: 0, flexDirection: 'row' },
+  stripe: { width: 4, alignSelf: 'stretch' },
+  cardBody: { flex: 1, padding: spacing.md, gap: 6 },
   name: { fontWeight: '700' },
-  dayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.sm },
-  dayChip: {},
-  dayChipText: { fontSize: 11 },
-  muscles: { marginTop: spacing.sm },
-  addBtn: { marginTop: spacing.md, borderRadius: shape.pill },
+  levelChip: { alignSelf: 'flex-start', borderRadius: shape.pill, paddingHorizontal: 10, paddingVertical: 3 },
+  schedule: {},
+  bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginTop: 2 },
+  blurb: { flex: 1 },
+  startBtn: { borderRadius: shape.pill },
 });

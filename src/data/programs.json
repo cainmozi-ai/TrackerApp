@@ -9,34 +9,111 @@
       {
         "label": "Full Body A",
         "exercises": [
-          { "name": "Back Squat", "sets": 3, "repMin": 5, "repMax": 8 },
-          { "name": "Barbell Bench Press", "sets": 3, "repMin": 5, "repMax": 8 },
-          { "name": "Seated Cable Row", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Lateral Raise", "sets": 2, "repMin": 12, "repMax": 15 },
-          { "name": "Plank", "sets": 3, "repMin": 1, "repMax": 1 }
+          {
+            "name": "Back Squat",
+            "sets": 3,
+            "repMin": 5,
+            "repMax": 8
+          },
+          {
+            "name": "Barbell Bench Press",
+            "sets": 3,
+            "repMin": 5,
+            "repMax": 8
+          },
+          {
+            "name": "Seated Cable Row",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Lateral Raise",
+            "sets": 2,
+            "repMin": 12,
+            "repMax": 15
+          },
+          {
+            "name": "Plank",
+            "sets": 3,
+            "repMin": 1,
+            "repMax": 1
+          }
         ]
       },
       {
         "label": "Full Body B",
         "exercises": [
-          { "name": "Romanian Deadlift", "sets": 3, "repMin": 6, "repMax": 10 },
-          { "name": "Overhead Press", "sets": 3, "repMin": 5, "repMax": 8 },
-          { "name": "Lat Pulldown", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Leg Press", "sets": 3, "repMin": 10, "repMax": 15 },
-          { "name": "Barbell Curl", "sets": 2, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Romanian Deadlift",
+            "sets": 3,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Overhead Press",
+            "sets": 3,
+            "repMin": 5,
+            "repMax": 8
+          },
+          {
+            "name": "Lat Pulldown",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Leg Press",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Barbell Curl",
+            "sets": 2,
+            "repMin": 10,
+            "repMax": 15
+          }
         ]
       },
       {
         "label": "Full Body C",
         "exercises": [
-          { "name": "Goblet Squat", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Incline Dumbbell Press", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Barbell Row", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Calf Raise", "sets": 3, "repMin": 10, "repMax": 15 },
-          { "name": "Tricep Pushdown", "sets": 2, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Goblet Squat",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Incline Dumbbell Press",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Barbell Row",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Calf Raise",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Tricep Pushdown",
+            "sets": 2,
+            "repMin": 10,
+            "repMax": 15
+          }
         ]
       }
-    ]
+    ],
+    "weeks": 8,
+    "stripe": "#A83232"
   },
   {
     "name": "Minimalist",
@@ -48,22 +125,64 @@
       {
         "label": "Day A",
         "exercises": [
-          { "name": "Back Squat", "sets": 3, "repMin": 6, "repMax": 10 },
-          { "name": "Barbell Bench Press", "sets": 3, "repMin": 6, "repMax": 10 },
-          { "name": "Dumbbell Row", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Hanging Leg Raise", "sets": 3, "repMin": 8, "repMax": 15 }
+          {
+            "name": "Back Squat",
+            "sets": 3,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Barbell Bench Press",
+            "sets": 3,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Dumbbell Row",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Hanging Leg Raise",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 15
+          }
         ]
       },
       {
         "label": "Day B",
         "exercises": [
-          { "name": "Deadlift", "sets": 3, "repMin": 4, "repMax": 6 },
-          { "name": "Overhead Press", "sets": 3, "repMin": 6, "repMax": 10 },
-          { "name": "Lat Pulldown", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Leg Press", "sets": 3, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Deadlift",
+            "sets": 3,
+            "repMin": 4,
+            "repMax": 6
+          },
+          {
+            "name": "Overhead Press",
+            "sets": 3,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Lat Pulldown",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Leg Press",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          }
         ]
       }
-    ]
+    ],
+    "weeks": 6,
+    "stripe": "#C7B8A5"
   },
   {
     "name": "Upper / Lower Builder",
@@ -75,46 +194,158 @@
       {
         "label": "Upper A",
         "exercises": [
-          { "name": "Barbell Bench Press", "sets": 4, "repMin": 5, "repMax": 8 },
-          { "name": "Barbell Row", "sets": 4, "repMin": 6, "repMax": 10 },
-          { "name": "Seated Dumbbell Press", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Lat Pulldown", "sets": 3, "repMin": 10, "repMax": 12 },
-          { "name": "Barbell Curl", "sets": 3, "repMin": 10, "repMax": 15 },
-          { "name": "Tricep Pushdown", "sets": 3, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Barbell Bench Press",
+            "sets": 4,
+            "repMin": 5,
+            "repMax": 8
+          },
+          {
+            "name": "Barbell Row",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Seated Dumbbell Press",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Lat Pulldown",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 12
+          },
+          {
+            "name": "Barbell Curl",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Tricep Pushdown",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          }
         ]
       },
       {
         "label": "Lower A",
         "exercises": [
-          { "name": "Back Squat", "sets": 4, "repMin": 5, "repMax": 8 },
-          { "name": "Romanian Deadlift", "sets": 3, "repMin": 6, "repMax": 10 },
-          { "name": "Leg Press", "sets": 3, "repMin": 10, "repMax": 15 },
-          { "name": "Leg Curl", "sets": 3, "repMin": 10, "repMax": 15 },
-          { "name": "Calf Raise", "sets": 4, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Back Squat",
+            "sets": 4,
+            "repMin": 5,
+            "repMax": 8
+          },
+          {
+            "name": "Romanian Deadlift",
+            "sets": 3,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Leg Press",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Leg Curl",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Calf Raise",
+            "sets": 4,
+            "repMin": 10,
+            "repMax": 15
+          }
         ]
       },
       {
         "label": "Upper B",
         "exercises": [
-          { "name": "Incline Barbell Bench Press", "sets": 4, "repMin": 6, "repMax": 10 },
-          { "name": "Pull-Up", "sets": 4, "repMin": 6, "repMax": 10 },
-          { "name": "Cable Crossover", "sets": 3, "repMin": 12, "repMax": 15 },
-          { "name": "Seated Cable Row", "sets": 3, "repMin": 10, "repMax": 12 },
-          { "name": "Hammer Curl", "sets": 3, "repMin": 10, "repMax": 15 },
-          { "name": "Overhead Tricep Extension", "sets": 3, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Incline Barbell Bench Press",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Pull-Up",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Cable Crossover",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 15
+          },
+          {
+            "name": "Seated Cable Row",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 12
+          },
+          {
+            "name": "Hammer Curl",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Overhead Tricep Extension",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          }
         ]
       },
       {
         "label": "Lower B",
         "exercises": [
-          { "name": "Front Squat", "sets": 4, "repMin": 6, "repMax": 10 },
-          { "name": "Hip Thrust", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Bulgarian Split Squat", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Leg Extension", "sets": 3, "repMin": 12, "repMax": 15 },
-          { "name": "Calf Raise", "sets": 4, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Front Squat",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Hip Thrust",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Bulgarian Split Squat",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Leg Extension",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 15
+          },
+          {
+            "name": "Calf Raise",
+            "sets": 4,
+            "repMin": 10,
+            "repMax": 15
+          }
         ]
       }
-    ]
+    ],
+    "weeks": 10,
+    "stripe": "#D98246"
   },
   {
     "name": "Push / Pull / Legs",
@@ -126,65 +357,730 @@
       {
         "label": "Push A",
         "exercises": [
-          { "name": "Barbell Bench Press", "sets": 4, "repMin": 5, "repMax": 8 },
-          { "name": "Seated Dumbbell Press", "sets": 4, "repMin": 8, "repMax": 12 },
-          { "name": "Incline Dumbbell Press", "sets": 3, "repMin": 10, "repMax": 12 },
-          { "name": "Lateral Raise", "sets": 4, "repMin": 12, "repMax": 20 },
-          { "name": "Tricep Pushdown", "sets": 3, "repMin": 10, "repMax": 15 },
-          { "name": "Overhead Tricep Extension", "sets": 3, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Barbell Bench Press",
+            "sets": 4,
+            "repMin": 5,
+            "repMax": 8
+          },
+          {
+            "name": "Seated Dumbbell Press",
+            "sets": 4,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Incline Dumbbell Press",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 12
+          },
+          {
+            "name": "Lateral Raise",
+            "sets": 4,
+            "repMin": 12,
+            "repMax": 20
+          },
+          {
+            "name": "Tricep Pushdown",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Overhead Tricep Extension",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          }
         ]
       },
       {
         "label": "Pull A",
         "exercises": [
-          { "name": "Deadlift", "sets": 3, "repMin": 3, "repMax": 5 },
-          { "name": "Pull-Up", "sets": 4, "repMin": 6, "repMax": 10 },
-          { "name": "Barbell Row", "sets": 4, "repMin": 8, "repMax": 12 },
-          { "name": "Face Pull", "sets": 3, "repMin": 15, "repMax": 20 },
-          { "name": "Barbell Curl", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Hammer Curl", "sets": 3, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Deadlift",
+            "sets": 3,
+            "repMin": 3,
+            "repMax": 5
+          },
+          {
+            "name": "Pull-Up",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Barbell Row",
+            "sets": 4,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Face Pull",
+            "sets": 3,
+            "repMin": 15,
+            "repMax": 20
+          },
+          {
+            "name": "Barbell Curl",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Hammer Curl",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          }
         ]
       },
       {
         "label": "Legs A",
         "exercises": [
-          { "name": "Back Squat", "sets": 4, "repMin": 5, "repMax": 8 },
-          { "name": "Romanian Deadlift", "sets": 4, "repMin": 6, "repMax": 10 },
-          { "name": "Leg Press", "sets": 3, "repMin": 10, "repMax": 15 },
-          { "name": "Leg Curl", "sets": 4, "repMin": 10, "repMax": 15 },
-          { "name": "Calf Raise", "sets": 5, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Back Squat",
+            "sets": 4,
+            "repMin": 5,
+            "repMax": 8
+          },
+          {
+            "name": "Romanian Deadlift",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Leg Press",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Leg Curl",
+            "sets": 4,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Calf Raise",
+            "sets": 5,
+            "repMin": 10,
+            "repMax": 15
+          }
         ]
       },
       {
         "label": "Push B",
         "exercises": [
-          { "name": "Incline Barbell Bench Press", "sets": 4, "repMin": 6, "repMax": 10 },
-          { "name": "Overhead Press", "sets": 4, "repMin": 6, "repMax": 10 },
-          { "name": "Cable Crossover", "sets": 3, "repMin": 12, "repMax": 15 },
-          { "name": "Lateral Raise", "sets": 4, "repMin": 12, "repMax": 20 },
-          { "name": "Close-Grip Bench Press", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Skull Crusher", "sets": 3, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Incline Barbell Bench Press",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Overhead Press",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Cable Crossover",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 15
+          },
+          {
+            "name": "Lateral Raise",
+            "sets": 4,
+            "repMin": 12,
+            "repMax": 20
+          },
+          {
+            "name": "Close-Grip Bench Press",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Skull Crusher",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          }
         ]
       },
       {
         "label": "Pull B",
         "exercises": [
-          { "name": "T-Bar Row", "sets": 4, "repMin": 8, "repMax": 12 },
-          { "name": "Lat Pulldown", "sets": 4, "repMin": 10, "repMax": 12 },
-          { "name": "Seated Cable Row", "sets": 3, "repMin": 10, "repMax": 12 },
-          { "name": "Rear Delt Fly", "sets": 3, "repMin": 15, "repMax": 20 },
-          { "name": "Preacher Curl", "sets": 3, "repMin": 10, "repMax": 15 },
-          { "name": "Concentration Curl", "sets": 3, "repMin": 12, "repMax": 15 }
+          {
+            "name": "T-Bar Row",
+            "sets": 4,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Lat Pulldown",
+            "sets": 4,
+            "repMin": 10,
+            "repMax": 12
+          },
+          {
+            "name": "Seated Cable Row",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 12
+          },
+          {
+            "name": "Rear Delt Fly",
+            "sets": 3,
+            "repMin": 15,
+            "repMax": 20
+          },
+          {
+            "name": "Preacher Curl",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Concentration Curl",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 15
+          }
         ]
       },
       {
         "label": "Legs B",
         "exercises": [
-          { "name": "Front Squat", "sets": 4, "repMin": 6, "repMax": 10 },
-          { "name": "Hip Thrust", "sets": 4, "repMin": 8, "repMax": 12 },
-          { "name": "Bulgarian Split Squat", "sets": 3, "repMin": 8, "repMax": 12 },
-          { "name": "Leg Extension", "sets": 3, "repMin": 12, "repMax": 20 },
-          { "name": "Calf Raise", "sets": 5, "repMin": 10, "repMax": 15 }
+          {
+            "name": "Front Squat",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Hip Thrust",
+            "sets": 4,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Bulgarian Split Squat",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Leg Extension",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 20
+          },
+          {
+            "name": "Calf Raise",
+            "sets": 5,
+            "repMin": 10,
+            "repMax": 15
+          }
+        ]
+      }
+    ],
+    "weeks": 12,
+    "stripe": "#A83232"
+  },
+  {
+    "name": "StrongStart 5x5",
+    "level": "Beginner",
+    "daysPerWeek": 3,
+    "weeks": 8,
+    "stripe": "#A83232",
+    "split": "Full-body barbell foundations",
+    "description": "Full-body barbell foundations",
+    "days": [
+      {
+        "label": "Workout A",
+        "exercises": [
+          {
+            "name": "Back Squat",
+            "sets": 5,
+            "repMin": 5,
+            "repMax": 5
+          },
+          {
+            "name": "Barbell Bench Press",
+            "sets": 5,
+            "repMin": 5,
+            "repMax": 5
+          },
+          {
+            "name": "Barbell Row",
+            "sets": 5,
+            "repMin": 5,
+            "repMax": 5
+          },
+          {
+            "name": "Plank",
+            "sets": 3,
+            "repMin": 1,
+            "repMax": 1
+          }
+        ]
+      },
+      {
+        "label": "Workout B",
+        "exercises": [
+          {
+            "name": "Back Squat",
+            "sets": 5,
+            "repMin": 5,
+            "repMax": 5
+          },
+          {
+            "name": "Overhead Press",
+            "sets": 5,
+            "repMin": 5,
+            "repMax": 5
+          },
+          {
+            "name": "Deadlift",
+            "sets": 1,
+            "repMin": 5,
+            "repMax": 5
+          },
+          {
+            "name": "Hanging Leg Raise",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "PPL Hypertrophy",
+    "level": "Intermediate",
+    "daysPerWeek": 6,
+    "weeks": 12,
+    "stripe": "#C7B8A5",
+    "split": "Push / Pull / Legs split",
+    "description": "Push / Pull / Legs split",
+    "days": [
+      {
+        "label": "Push",
+        "exercises": [
+          {
+            "name": "Barbell Bench Press",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Seated Dumbbell Press",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Incline Dumbbell Press",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Lateral Raise",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 15
+          },
+          {
+            "name": "Tricep Pushdown",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Skull Crusher",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          }
+        ]
+      },
+      {
+        "label": "Pull",
+        "exercises": [
+          {
+            "name": "Pull-Up",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Barbell Row",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Lat Pulldown",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Seated Cable Row",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Face Pull",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 20
+          },
+          {
+            "name": "Barbell Curl",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          }
+        ]
+      },
+      {
+        "label": "Legs",
+        "exercises": [
+          {
+            "name": "Back Squat",
+            "sets": 4,
+            "repMin": 6,
+            "repMax": 10
+          },
+          {
+            "name": "Romanian Deadlift",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Leg Press",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Leg Curl",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Leg Extension",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 15
+          },
+          {
+            "name": "Calf Raise",
+            "sets": 4,
+            "repMin": 12,
+            "repMax": 20
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "PHUL Power",
+    "level": "Advanced",
+    "daysPerWeek": 4,
+    "weeks": 10,
+    "stripe": "#D98246",
+    "split": "Power + hypertrophy upper/lower",
+    "description": "Power + hypertrophy upper/lower",
+    "days": [
+      {
+        "label": "Upper Power",
+        "exercises": [
+          {
+            "name": "Barbell Bench Press",
+            "sets": 4,
+            "repMin": 3,
+            "repMax": 5
+          },
+          {
+            "name": "Barbell Row",
+            "sets": 4,
+            "repMin": 3,
+            "repMax": 5
+          },
+          {
+            "name": "Overhead Press",
+            "sets": 3,
+            "repMin": 5,
+            "repMax": 8
+          },
+          {
+            "name": "Pull-Up",
+            "sets": 3,
+            "repMin": 5,
+            "repMax": 8
+          },
+          {
+            "name": "Close-Grip Bench Press",
+            "sets": 3,
+            "repMin": 6,
+            "repMax": 8
+          },
+          {
+            "name": "Barbell Curl",
+            "sets": 3,
+            "repMin": 6,
+            "repMax": 8
+          }
+        ]
+      },
+      {
+        "label": "Lower Power",
+        "exercises": [
+          {
+            "name": "Back Squat",
+            "sets": 4,
+            "repMin": 3,
+            "repMax": 5
+          },
+          {
+            "name": "Deadlift",
+            "sets": 3,
+            "repMin": 3,
+            "repMax": 5
+          },
+          {
+            "name": "Leg Press",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 10
+          },
+          {
+            "name": "Leg Curl",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 10
+          },
+          {
+            "name": "Calf Raise",
+            "sets": 4,
+            "repMin": 8,
+            "repMax": 12
+          }
+        ]
+      },
+      {
+        "label": "Upper Hypertrophy",
+        "exercises": [
+          {
+            "name": "Incline Dumbbell Press",
+            "sets": 4,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Seated Cable Row",
+            "sets": 4,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Dumbbell Fly",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Lat Pulldown",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Lateral Raise",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 20
+          },
+          {
+            "name": "Hammer Curl",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          }
+        ]
+      },
+      {
+        "label": "Lower Hypertrophy",
+        "exercises": [
+          {
+            "name": "Front Squat",
+            "sets": 4,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Romanian Deadlift",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 12
+          },
+          {
+            "name": "Bulgarian Split Squat",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 12
+          },
+          {
+            "name": "Leg Extension",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 15
+          },
+          {
+            "name": "Calf Raise",
+            "sets": 4,
+            "repMin": 15,
+            "repMax": 20
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Dumbbell Only",
+    "level": "Beginner",
+    "daysPerWeek": 4,
+    "weeks": 6,
+    "stripe": "#A83232",
+    "split": "Home-friendly, minimal kit",
+    "description": "Home-friendly, minimal kit",
+    "days": [
+      {
+        "label": "Upper A",
+        "exercises": [
+          {
+            "name": "Dumbbell Bench Press",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Dumbbell Row",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Seated Dumbbell Press",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Dumbbell Curl",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          }
+        ]
+      },
+      {
+        "label": "Lower A",
+        "exercises": [
+          {
+            "name": "Goblet Squat",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Dumbbell Romanian Deadlift",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 12
+          },
+          {
+            "name": "Bulgarian Split Squat",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 12
+          },
+          {
+            "name": "Calf Raise",
+            "sets": 3,
+            "repMin": 15,
+            "repMax": 20
+          }
+        ]
+      },
+      {
+        "label": "Upper B",
+        "exercises": [
+          {
+            "name": "Incline Dumbbell Press",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          },
+          {
+            "name": "Dumbbell Fly",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          },
+          {
+            "name": "Dumbbell Row",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 12
+          },
+          {
+            "name": "Incline Dumbbell Curl",
+            "sets": 3,
+            "repMin": 10,
+            "repMax": 15
+          }
+        ]
+      },
+      {
+        "label": "Lower B",
+        "exercises": [
+          {
+            "name": "Goblet Squat",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 15
+          },
+          {
+            "name": "Dumbbell Romanian Deadlift",
+            "sets": 3,
+            "repMin": 12,
+            "repMax": 15
+          },
+          {
+            "name": "Plank",
+            "sets": 3,
+            "repMin": 1,
+            "repMax": 1
+          },
+          {
+            "name": "Hanging Leg Raise",
+            "sets": 3,
+            "repMin": 8,
+            "repMax": 12
+          }
         ]
       }
     ]

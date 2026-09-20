@@ -9,6 +9,7 @@ interface NutritionState {
   currentDate: string;
   todayLogs: FoodLog[];
   favorites: Food[];
+  allFoods: Food[];
   recents: Food[];
   savedMeals: SavedMeal[];
   todayCalories: number;
@@ -23,6 +24,8 @@ interface NutritionState {
 
   loadTodayLogs: (date?: string) => Promise<void>;
   loadFavorites: () => Promise<void>;
+  /** Every food in the library — powers the "All" tab so nothing falls out of reach. */
+  loadAllFoods: () => Promise<void>;
   loadRecents: () => Promise<void>;
   loadSavedMeals: () => Promise<void>;
   logFood: (foodId: number, mealType: MealType, servings: number, date?: string) => Promise<void>;
@@ -53,6 +56,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   currentDate: getToday(),
   todayLogs: [],
   favorites: [],
+  allFoods: [],
   recents: [],
   savedMeals: [],
   todayCalories: 0,
@@ -135,6 +139,12 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       todaySodium: Math.round(sod),
       todayMicros: micros,
     });
+  },
+
+  loadAllFoods: async () => {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<Record<string, unknown>>('SELECT * FROM foods ORDER BY name');
+    set({ allFoods: rows.map(mapFood) });
   },
 
   loadFavorites: async () => {

@@ -148,7 +148,7 @@ export default function WorkoutSummaryScreen() {
           <Text variant="labelSmall" style={[styles.whenText, { color: colors.onSurfaceVariant }]}>{whenLabel}</Text>
         )}
 
-        <Animated.View entering={FadeInUp.delay(150)} style={[styles.statsCard, { backgroundColor: colors.surface }]}>
+        <Animated.View entering={FadeInUp.delay(150)} style={styles.statsGrid}>
           <View style={styles.stat}>
             <Text variant="headlineSmall" style={{ color: accent, fontWeight: '800' }}>{exerciseCount}</Text>
             <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Exercises</Text>
@@ -167,58 +167,22 @@ export default function WorkoutSummaryScreen() {
           </View>
         </Animated.View>
 
-        {prs.length > 0 && (
-          <Animated.View entering={FadeInUp.delay(300)} style={[styles.prCard, { backgroundColor: withAlpha(accent, 0.12), borderColor: accent }]}>
-            <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '800', marginBottom: spacing.xs }}>
-              🏆 {prs.length} Personal Record{prs.length > 1 ? 's' : ''}!
-            </Text>
-            {prs.map((pr, i) => (
-              <View key={i} style={styles.prRow}>
-                <MaterialCommunityIcons name="medal" size={18} color={accent} />
-                <Text variant="bodyMedium" style={{ color: colors.onSurface, flex: 1 }}>
-                  {pr.exerciseName}: {prText(pr, weightUnit)}
-                </Text>
-              </View>
-            ))}
-          </Animated.View>
-        )}
-
-        <Animated.View entering={FadeInUp.delay(400)} style={[styles.xpCard, { backgroundColor: colors.surface }]}>
-          <MaterialCommunityIcons name="star-four-points" size={22} color={accent} />
-          <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>+50 XP earned</Text>
-        </Animated.View>
-
         {Object.keys(setsByGroup).length > 0 && (
-          <Animated.View entering={FadeInUp.delay(450)} style={[styles.mapCard, { backgroundColor: colors.surface }]}>
+          <Animated.View entering={FadeInUp.delay(300)} style={[styles.mapCard, { backgroundColor: colors.surface }]}> 
             <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '800', marginBottom: spacing.xs }}>Muscles worked</Text>
             <MuscleMap setsByGroup={setsByGroup} />
           </Animated.View>
         )}
         </View>
 
-        <Button mode="contained-tonal" icon="share-variant" style={styles.shareBtn} onPress={handleShare}>
-          {Platform.OS === 'web' ? 'Copy Summary' : 'Share Workout Card'}
-        </Button>
-
-        <Button mode="text" icon="calendar-clock" style={styles.changeDateBtn} onPress={() => setDateDlg(true)}>
-          Change date & time
-        </Button>
-
-        <Animated.View entering={FadeInUp.delay(500)}>
-          <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.onSurface }]}>What you did</Text>
-          {Array.from(new Set(sets.map(s => s.exerciseId))).map(exId => {
-            const exSets = sets.filter(s => s.exerciseId === exId);
-            const name = exSets[0]?.exercise?.name || 'Exercise';
-            return (
-              <View key={exId} style={[styles.exRow, { backgroundColor: colors.surface }]}>
-                <Text variant="bodyMedium" style={{ color: colors.onSurface, fontWeight: '600' }}>{name}</Text>
-                <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                  {exSets.map(s => formatSetCompact(s, (exSets[0]?.exercise?.logType || 'weight_reps') as LogType)).join(', ')}
-                </Text>
-              </View>
-            );
-          })}
-        </Animated.View>
+        <View style={styles.summaryActions}>
+          <Button mode="contained-tonal" icon="share-variant" style={styles.shareBtn} onPress={handleShare}>
+            {Platform.OS === 'web' ? 'Copy Summary' : 'Share Workout Card'}
+          </Button>
+          <Button mode="contained-tonal" icon="calendar-clock" style={styles.shareBtn} onPress={() => setDateDlg(true)}>
+            Change date & time
+          </Button>
+        </View>
 
         <Button mode="contained" buttonColor={accent} style={styles.doneBtn}
           onPress={() => router.replace('/(tabs)/fitness')}>
@@ -244,18 +208,19 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   heroIcon: { alignItems: 'center', marginTop: spacing.lg },
-  iconCircle: { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center' },
-  title: { fontWeight: '800', textAlign: 'center', marginTop: spacing.md },
+  iconCircle: { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center' },
+  title: { fontWeight: '400', textAlign: 'center', marginTop: spacing.md },
   subtitle: { textAlign: 'center', marginBottom: 2 },
   whenText: { textAlign: 'center', marginBottom: spacing.lg },
   changeDateBtn: { marginBottom: spacing.sm },
-  statsCard: { flexDirection: 'row', justifyContent: 'space-around', padding: spacing.md, borderRadius: shape.lg, marginBottom: spacing.sm },
-  stat: { alignItems: 'center' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg, marginBottom: spacing.lg },
+  stat: { width: '48.5%', height: 72, borderRadius: shape.lg, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' },
   prCard: { padding: spacing.md, borderRadius: shape.lg, borderWidth: 1.5, marginBottom: spacing.sm },
   prRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4 },
   xpCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: shape.lg, marginBottom: spacing.sm },
   mapCard: { padding: spacing.md, borderRadius: shape.lg, marginBottom: spacing.sm },
-  shareBtn: { marginBottom: spacing.sm, borderRadius: shape.pill },
+  summaryActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
+  shareBtn: { flex: 1, borderRadius: shape.md },
   sectionTitle: { fontWeight: '700', marginTop: spacing.sm, marginBottom: spacing.xs },
   exRow: { padding: spacing.md, borderRadius: shape.md, marginBottom: spacing.xs },
   doneBtn: { marginTop: spacing.lg, borderRadius: shape.pill },

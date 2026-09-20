@@ -5,10 +5,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LineChart } from 'react-native-chart-kit';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing, accent, withAlpha } from '@/theme';
+import { theme, moduleColors, spacing, accent, withAlpha, shape } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
-import { useWorkoutStore, type ProgressionEntry, type WorkoutSummary } from '@/stores/workoutStore';
+import { useWorkoutStore, type ExerciseRecord, type ProgressionEntry, type WorkoutSummary } from '@/stores/workoutStore';
 import { VOLUME_LANDMARKS, volumeStatus, type VolumeStatus } from '@/data/volumeLandmarks';
 import type { Exercise } from '@/types';
 
@@ -30,10 +30,11 @@ const SET_TYPE_META: { key: string; label: string; color: string }[] = [
 ];
 
 export default function ProgressScreen() {
-  const { recentWorkouts, loadRecentWorkouts, exercises, loadExercises, getExerciseHistory, getMuscleVolume, getMuscleSetBreakdown, getProgressionReport, getWorkoutSummaries } = useWorkoutStore();
+  const { recentWorkouts, loadRecentWorkouts, exercises, loadExercises, getExerciseHistory, getAllRecords, getMuscleVolume, getMuscleSetBreakdown, getProgressionReport, getWorkoutSummaries } = useWorkoutStore();
   const [summaries, setSummaries] = useState<WorkoutSummary[]>([]);
   const [selected, setSelected] = useState<Exercise | null>(null);
   const [history, setHistory] = useState<{ date: string; maxWeight: number; volume: number }[]>([]);
+  const [records, setRecords] = useState<ExerciseRecord[]>([]);
   const [muscleVol, setMuscleVol] = useState<{ muscleGroup: string; sets: number }[]>([]);
   const [breakdown, setBreakdown] = useState<{ muscleGroup: string; total: number; byType: Record<string, number> }[]>([]);
   const [progression, setProgression] = useState<ProgressionEntry[]>([]);
@@ -47,6 +48,7 @@ export default function ProgressScreen() {
     getMuscleSetBreakdown(30).then(setBreakdown);
     getProgressionReport().then(setProgression);
     getWorkoutSummaries().then(setSummaries);
+      getAllRecords().then(setRecords);
   }, []);
 
   useEffect(() => {
@@ -180,22 +182,45 @@ export default function ProgressScreen() {
           </Text>
         )}
 
-        {selected && history.length > 0 && (
-          <Surface style={styles.chartCard} elevation={1}>
-            <Text variant="titleSmall" style={styles.chartTitle}>Max Weight (kg)</Text>
-            <LineChart
-              data={{
-                labels: history.map(h => h.date.slice(5)).slice(-6),
-                datasets: [{ data: history.map(h => h.maxWeight).slice(-6) }],
-              }}
-              width={screenWidth - spacing.md * 4}
-              height={200}
-              chartConfig={chartConfig}
-              bezier
-              style={styles.chart}
-            />
-          </Surface>
-        )}
+        {selected && history.length > 0 && (() => {
+          const rec = records.find(r => r.exercise.id === selected.id);
+          const series = history.map(h => h.maxWeight);
+          const delta = series.length > 1 ? series[series.length - 1] - series[0] : 0;
+          return (
+            <>
+              <Surface style={styles.chartCard} elevation={1}>
+                <Text variant="titleSmall" style={styles.chartTitle}>Estimated 1RM</Text>
+                {delta !== 0 && (
+                  <Text variant="labelSmall" style={{ color: accent }}>
+                    {delta > 0 ? '+' : ''}{Math.round(delta * 10) / 10} kg over {history.length} sessions
+                  </Text>
+                )}
+                <LineChart
+                  data={{
+                    labels: history.map(h => h.date.slice(5)).slice(-6),
+                    datasets: [{ data: series.slice(-6) }],
+                  }}
+                  width={screenWidth - spacing.md * 4}
+                  height={200}
+                  chartConfig={chartConfig}
+                  bezier
+                  style={styles.chart}
+                />
+                <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '800' }}>
+                  {rec?.best1RM ?? Math.max(...series)} kg
+                </Text>
+              </Surface>
+
+              <Text variant="titleSmall" style={styles.sectionTitle}>Personal Records</Text>
+              <View style={styles.prGrid}>
+                <PrTile label="1RM" value={`${rec?.best1RM ?? Math.max(...series)} kg`} colors={colors} />
+                <PrTile label="Best set" value={rec ? `${rec.bestWeight} kg × ${rec.bestWeightReps}` : '—'} colors={colors} />
+                <PrTile label="Max volume" value={`${Math.round(Math.max(...history.map(h => h.volume)))} kg`} colors={colors} />
+                <PrTile label="Best reps" value={rec ? `${rec.bestReps}` : '—'} colors={colors} />
+              </View>
+            </>
+          );
+        })()}
 
         <Text variant="titleSmall" style={styles.sectionTitle}>Recent Workouts</Text>
         {summaries.length === 0 ? (
@@ -264,7 +289,18 @@ export default function ProgressScreen() {
   );
 }
 
+function PrTile({ label, value, colors }: { label: string; value: string; colors: ReturnType<typeof useAppTheme>['colors'] }) {
+  return (
+    <View style={[styles.prTile, { backgroundColor: colors.surface }]}>
+      <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
+      <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  prGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+  prTile: { width: '47.5%', borderRadius: shape.lg, padding: spacing.md, gap: 4 },
   container: { flex: 1, backgroundColor: theme.colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
   title: { fontWeight: '700' },

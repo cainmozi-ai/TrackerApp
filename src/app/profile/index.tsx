@@ -19,10 +19,20 @@ export default function ProfileScreen() {
   const [height, setHeight] = useState('');
   const [calorieTarget, setCalorieTarget] = useState('');
   const [proteinTarget, setProteinTarget] = useState('');
+  const [proteinMin, setProteinMin] = useState('');
+  const [proteinMax, setProteinMax] = useState('');
   const [carbsTarget, setCarbsTarget] = useState('');
+  const [carbsMin, setCarbsMin] = useState('');
+  const [carbsMax, setCarbsMax] = useState('');
   const [fatTarget, setFatTarget] = useState('');
+  const [fatMin, setFatMin] = useState('');
+  const [fatMax, setFatMax] = useState('');
   const [fiberTarget, setFiberTarget] = useState('');
+  const [fiberMin, setFiberMin] = useState('');
+  const [fiberMax, setFiberMax] = useState('');
   const [sugarTarget, setSugarTarget] = useState('');
+  const [sugarMin, setSugarMin] = useState('');
+  const [sugarMax, setSugarMax] = useState('');
   const [sodiumTarget, setSodiumTarget] = useState('');
   const [waterTarget, setWaterTarget] = useState('');
   const [monthlyBudget, setMonthlyBudget] = useState('');
@@ -94,10 +104,20 @@ export default function ProfileScreen() {
       setHeight(profile.height ? String(profile.height) : '');
       setCalorieTarget(String(profile.calorieTarget));
       setProteinTarget(String(profile.proteinTarget));
+      setProteinMin(profile.proteinTargetMin == null ? '' : String(profile.proteinTargetMin));
+      setProteinMax(profile.proteinTargetMax == null ? '' : String(profile.proteinTargetMax));
       setCarbsTarget(String(profile.carbsTarget));
+      setCarbsMin(profile.carbsTargetMin == null ? '' : String(profile.carbsTargetMin));
+      setCarbsMax(profile.carbsTargetMax == null ? '' : String(profile.carbsTargetMax));
       setFatTarget(String(profile.fatTarget));
+      setFatMin(profile.fatTargetMin == null ? '' : String(profile.fatTargetMin));
+      setFatMax(profile.fatTargetMax == null ? '' : String(profile.fatTargetMax));
       setFiberTarget(String(profile.fiberTarget));
+      setFiberMin(profile.fiberTargetMin == null ? '' : String(profile.fiberTargetMin));
+      setFiberMax(profile.fiberTargetMax == null ? '' : String(profile.fiberTargetMax));
       setSugarTarget(String(profile.sugarTarget));
+      setSugarMin(profile.sugarTargetMin == null ? '' : String(profile.sugarTargetMin));
+      setSugarMax(profile.sugarTargetMax == null ? '' : String(profile.sugarTargetMax));
       setSodiumTarget(String(profile.sodiumTarget));
       setWaterTarget(String(profile.waterTarget));
       setMonthlyBudget(profile.monthlyBudget ? String(profile.monthlyBudget) : '');
@@ -114,10 +134,20 @@ export default function ProfileScreen() {
       height: height ? parseFloat(height) : null,
       calorieTarget: parseInt(calorieTarget) || 2000,
       proteinTarget: parseInt(proteinTarget) || 150,
+      proteinTargetMin: proteinMin ? parseInt(proteinMin) : null,
+      proteinTargetMax: proteinMax ? parseInt(proteinMax) : null,
       carbsTarget: parseInt(carbsTarget) || 250,
+      carbsTargetMin: carbsMin ? parseInt(carbsMin) : null,
+      carbsTargetMax: carbsMax ? parseInt(carbsMax) : null,
       fatTarget: parseInt(fatTarget) || 65,
+      fatTargetMin: fatMin ? parseInt(fatMin) : null,
+      fatTargetMax: fatMax ? parseInt(fatMax) : null,
       fiberTarget: parseInt(fiberTarget) || 30,
+      fiberTargetMin: fiberMin ? parseInt(fiberMin) : null,
+      fiberTargetMax: fiberMax ? parseInt(fiberMax) : null,
       sugarTarget: parseInt(sugarTarget) || 50,
+      sugarTargetMin: sugarMin ? parseInt(sugarMin) : null,
+      sugarTargetMax: sugarMax ? parseInt(sugarMax) : null,
       sodiumTarget: parseInt(sodiumTarget) || 2300,
       waterTarget: parseInt(waterTarget) || 8,
       monthlyBudget: monthlyBudget ? parseFloat(monthlyBudget) : null,
@@ -231,18 +261,23 @@ export default function ProfileScreen() {
           );
         })}
 
-        <Text variant="titleSmall" style={styles.sectionTitle}>Daily Targets</Text>
+        <Text variant="titleSmall" style={styles.sectionTitle}>Daily Target Ranges</Text>
         <TextInput label="Calorie target" value={calorieTarget} onChangeText={setCalorieTarget} mode="outlined" keyboardType="numeric" style={styles.input} />
         <View style={styles.row}>
           <TextInput label="Protein (g)" value={proteinTarget} onChangeText={setProteinTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
           <TextInput label="Carbs (g)" value={carbsTarget} onChangeText={setCarbsTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
           <TextInput label="Fat (g)" value={fatTarget} onChangeText={setFatTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
         </View>
+        <MacroRange label="Protein range" min={proteinMin} max={proteinMax} setMin={setProteinMin} setMax={setProteinMax} />
+        <MacroRange label="Carbs range" min={carbsMin} max={carbsMax} setMin={setCarbsMin} setMax={setCarbsMax} />
+        <MacroRange label="Fat range" min={fatMin} max={fatMax} setMin={setFatMin} setMax={setFatMax} />
         <View style={styles.row}>
           <TextInput label="Fiber (g)" value={fiberTarget} onChangeText={setFiberTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
           <TextInput label="Sugar (g)" value={sugarTarget} onChangeText={setSugarTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
           <TextInput label="Sodium (mg)" value={sodiumTarget} onChangeText={setSodiumTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
         </View>
+        <MacroRange label="Fiber range" min={fiberMin} max={fiberMax} setMin={setFiberMin} setMax={setFiberMax} />
+        <MacroRange label="Sugar range" min={sugarMin} max={sugarMax} setMin={setSugarMin} setMax={setSugarMax} />
         <View style={styles.row}>
           <TextInput label="Water (glasses)" value={waterTarget} onChangeText={setWaterTarget} mode="outlined" keyboardType="numeric" style={styles.halfInput} />
           <TextInput label="Monthly budget ($)" value={monthlyBudget} onChangeText={setMonthlyBudget} mode="outlined" keyboardType="numeric" style={styles.halfInput} />
@@ -293,6 +328,16 @@ export default function ProfileScreen() {
   );
 }
 
+function MacroRange({ label, min, max, setMin, setMax }: { label: string; min: string; max: string; setMin: (value: string) => void; setMax: (value: string) => void }) {
+  return (
+    <View style={styles.rangeRow}>
+      <Text variant="labelMedium" style={styles.rangeLabel}>{label}</Text>
+      <TextInput label="Min" value={min} onChangeText={setMin} mode="outlined" keyboardType="numeric" style={styles.rangeInput} dense />
+      <TextInput label="Max" value={max} onChangeText={setMax} mode="outlined" keyboardType="numeric" style={styles.rangeInput} dense />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
@@ -326,6 +371,9 @@ const styles = StyleSheet.create({
   equipCatLabel: { fontWeight: '700' },
   equipCatHint: { color: theme.colors.onSurfaceVariant },
   segmented: { marginBottom: spacing.sm },
+  rangeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  rangeLabel: { flex: 1, color: theme.colors.onSurfaceVariant },
+  rangeInput: { width: 78, backgroundColor: theme.colors.surface },
   saveBtn: { marginTop: spacing.lg },
   version: { textAlign: 'center', color: theme.colors.onSurfaceVariant, marginTop: spacing.lg },
 });

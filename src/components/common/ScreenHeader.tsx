@@ -29,7 +29,8 @@ export function ScreenHeader({ title, subtitle, showBack = true, onBack, right }
         )}
       </View>
       <View style={styles.center}>
-        <Text variant="titleLarge" style={[styles.title, { color: colors.onBackground }]} numberOfLines={1}>
+        <Text variant="titleLarge" style={[styles.title, { color: colors.onBackground }]}
+          numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72}>
           {title}
         </Text>
         {!!subtitle && (

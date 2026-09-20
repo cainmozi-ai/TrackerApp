@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, TextInput, Button, SegmentedButtons, Chip } from 'react-native-paper';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text, TextInput, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { spacing, shape, moduleColors, withAlpha } from '@/theme';
+import { spacing, shape, accent, withAlpha } from '@/theme';
 import { useUserStore } from '@/stores/userStore';
 import {
   calcTargets, ACTIVITY_LABELS, GOAL_LABELS,
@@ -61,9 +60,6 @@ export default function OnboardingScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInUp} style={styles.hero}>
-          <View style={[styles.logo, { backgroundColor: withAlpha(colors.primary, 0.15) }]}>
-            <MaterialCommunityIcons name="rocket-launch" size={40} color={colors.primary} />
-          </View>
           <Text variant="headlineMedium" style={[styles.title, { color: colors.onBackground }]}>
             Welcome to Incus
           </Text>
@@ -72,55 +68,65 @@ export default function OnboardingScreen() {
           </Text>
         </Animated.View>
 
-        <TextInput label="Your name" value={name} onChangeText={setName} mode="outlined" style={styles.input} />
-
-        <Text variant="labelLarge" style={[styles.label, { color: colors.onBackground }]}>Goal</Text>
-        <SegmentedButtons
-          value={goal}
-          onValueChange={v => setGoal(v as Goal)}
-          buttons={(Object.keys(GOAL_LABELS) as Goal[]).map(g => ({ value: g, label: GOAL_LABELS[g].split(' ')[0] }))}
-          style={styles.segmented}
+        <FieldLabel label="Your name" />
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          mode="outlined"
+          style={styles.input}
+          outlineStyle={styles.inputOutline}
+          placeholder="Your name"
         />
 
-        <Text variant="labelLarge" style={[styles.label, { color: colors.onBackground }]}>Sex</Text>
-        <SegmentedButtons
-          value={sex}
-          onValueChange={v => setSex(v as Sex)}
-          buttons={[
-            { value: 'male', label: 'Male' },
-            { value: 'female', label: 'Female' },
-            { value: 'other', label: 'Other' },
-          ]}
-          style={styles.segmented}
-        />
-
-        <View style={styles.row}>
-          <TextInput label="Age" value={age} onChangeText={setAge} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
-          <TextInput label="Weight (kg)" value={weight} onChangeText={setWeight} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
-          <TextInput label="Height (cm)" value={height} onChangeText={setHeight} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
+        <FieldLabel label="Goal" />
+        <View style={styles.segmentRow}>
+          {(Object.keys(GOAL_LABELS) as Goal[]).map(value => (
+            <OptionButton
+              key={value}
+              label={value === 'lose' ? 'Cut' : value === 'gain' ? 'Bulk' : 'Maintain'}
+              selected={goal === value}
+              onPress={() => setGoal(value)}
+            />
+          ))}
         </View>
 
-        <Text variant="labelLarge" style={[styles.label, { color: colors.onBackground }]}>Activity level</Text>
-        <View style={styles.chipWrap}>
+        <FieldLabel label="Sex" />
+        <View style={styles.segmentRow}>
+          {(['male', 'female', 'other'] as Sex[]).map(value => (
+            <OptionButton
+              key={value}
+              label={value.charAt(0).toUpperCase() + value.slice(1)}
+              selected={sex === value}
+              onPress={() => setSex(value)}
+            />
+          ))}
+        </View>
+
+        <View style={styles.row}>
+          <CompactField label="Age" value={age} onChangeText={setAge} />
+          <CompactField label="Weight (kg)" value={weight} onChangeText={setWeight} />
+          <CompactField label="Height (cm)" value={height} onChangeText={setHeight} />
+        </View>
+
+        <FieldLabel label="Activity level" />
+        <View style={styles.activityList}>
           {ACTIVITIES.map(a => (
-            <Chip key={a} selected={activity === a} onPress={() => setActivity(a)} style={styles.chip} showSelectedOverlay>
-              {ACTIVITY_LABELS[a].split(' (')[0]}
-            </Chip>
+            <ActivityButton key={a} label={ACTIVITY_LABELS[a].split(' (')[0]} selected={activity === a} onPress={() => setActivity(a)} />
           ))}
         </View>
 
         {preview && (
           <Animated.View entering={FadeInUp} style={[styles.previewCard, { backgroundColor: colors.surface }]}>
             <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant }}>Your daily plan</Text>
-            <Text variant="displaySmall" style={[styles.calories, { color: moduleColors.nutrition }]}>
+            <Text variant="displaySmall" style={[styles.calories, { color: accent }]}>
               {preview.calories}
             </Text>
             <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>calories / day</Text>
             <View style={styles.macroRow}>
-              <Macro label="Protein" value={`${preview.protein}g`} color="#A83232" />
-              <Macro label="Carbs" value={`${preview.carbs}g`} color="#A83232" />
-              <Macro label="Fat" value={`${preview.fat}g`} color="#A83232" />
-              <Macro label="Water" value={`${preview.water}`} color={moduleColors.water} />
+              <Macro label="Protein" value={`${preview.protein}g`} color={accent} />
+              <Macro label="Carbs" value={`${preview.carbs}g`} color={accent} />
+              <Macro label="Fat" value={`${preview.fat}g`} color={accent} />
+              <Macro label="Water" value={`${preview.water}`} color={accent} />
             </View>
           </Animated.View>
         )}
@@ -142,6 +148,56 @@ export default function OnboardingScreen() {
   );
 }
 
+function FieldLabel({ label }: { label: string }) {
+  const { colors } = useAppTheme();
+  return <Text variant="labelMedium" style={[styles.label, { color: colors.onSurfaceVariant }]}>{label}</Text>;
+}
+
+function CompactField({ label, value, onChangeText }: { label: string; value: string; onChangeText: (value: string) => void }) {
+  return (
+    <View style={styles.compactField}>
+      <FieldLabel label={label} />
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        mode="outlined"
+        keyboardType="numeric"
+        style={styles.compactInput}
+        outlineStyle={styles.inputOutline}
+      />
+    </View>
+  );
+}
+
+function OptionButton({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const { colors } = useAppTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={[styles.option, { borderColor: colors.outline }, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+    >
+      <Text variant="bodyMedium" style={{ color: selected ? colors.onPrimary : colors.onSurface }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function ActivityButton({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const { colors } = useAppTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={[styles.activity, { borderColor: colors.outline, backgroundColor: selected ? colors.primary : colors.surface }, selected && styles.activitySelected]}
+    >
+      <Text variant="bodyMedium" style={{ color: selected ? colors.onPrimary : colors.onSurface }}>{label}</Text>
+      {selected && <Text variant="titleMedium" style={{ color: colors.onPrimary }}>✓</Text>}
+    </Pressable>
+  );
+}
+
 function Macro({ label, value, color }: { label: string; value: string; color: string }) {
   const { colors } = useAppTheme();
   return (
@@ -154,23 +210,26 @@ function Macro({ label, value, color }: { label: string; value: string; color: s
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl },
-  hero: { alignItems: 'center', marginBottom: spacing.lg, gap: spacing.xs },
-  logo: { width: 80, height: 80, borderRadius: shape.pill, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.sm },
-  title: { fontWeight: '800', textAlign: 'center' },
-  subtitle: { textAlign: 'center', lineHeight: 20 },
-  input: { marginBottom: spacing.sm },
-  label: { marginTop: spacing.md, marginBottom: spacing.sm, fontWeight: '700' },
-  segmented: { marginBottom: spacing.xs },
-  row: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-  thirdInput: { flex: 1 },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  chip: {},
+  content: { paddingHorizontal: spacing.lg, paddingTop: 92, paddingBottom: spacing.xl },
+  hero: { alignItems: 'center', marginBottom: spacing.xl, gap: spacing.sm },
+  title: { fontWeight: '400', textAlign: 'center' },
+  subtitle: { maxWidth: 310, textAlign: 'center', lineHeight: 18 },
+  input: { height: 48, marginBottom: spacing.md, backgroundColor: 'transparent' },
+  inputOutline: { borderRadius: shape.md },
+  label: { marginBottom: spacing.xs, fontWeight: '400' },
+  segmentRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  option: { flex: 1, height: 44, borderWidth: 1, borderRadius: shape.md, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  compactField: { flex: 1 },
+  compactInput: { height: 48, textAlign: 'center', backgroundColor: 'transparent' },
+  activityList: { gap: spacing.sm },
+  activity: { height: 40, borderWidth: 1, borderRadius: shape.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md },
+  activitySelected: { borderColor: accent },
   previewCard: { marginTop: spacing.lg, padding: spacing.lg, borderRadius: shape.lg, alignItems: 'center' },
   calories: { fontWeight: '800' },
   macroRow: { flexDirection: 'row', justifyContent: 'space-around', alignSelf: 'stretch', marginTop: spacing.md },
   macro: { alignItems: 'center' },
   footer: { padding: spacing.lg, gap: spacing.xs },
-  cta: { borderRadius: shape.pill },
+  cta: { borderRadius: shape.md },
   ctaContent: { paddingVertical: spacing.xs },
 });

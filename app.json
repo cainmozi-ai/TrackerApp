@@ -19,8 +19,7 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.health.READ_STEPS"
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -34,7 +33,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Life Tracker to access your camera for barcode scanning."
+          "cameraPermission": "Allow Incus to access your camera for barcode scanning."
         }
       ],
       "expo-font",
@@ -47,8 +46,6 @@
           "color": "#A83232"
         }
       ],
-      "react-native-health-connect",
-      "./plugins/withHealthConnectPermissionDelegate",
       [
         "expo-build-properties",
         {

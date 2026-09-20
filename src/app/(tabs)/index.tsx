@@ -8,12 +8,15 @@ import Svg, { Circle } from 'react-native-svg';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, withAlpha, accent } from '@/theme';
 import { ProgressRing } from '@/components/common/ProgressRing';
+import { WeekStrip } from '@/components/common/WeekStrip';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useWeightStore } from '@/stores/weightStore';
 import { useSleepStore } from '@/stores/sleepStore';
+import { useWaterStore } from '@/stores/waterStore';
 import { useUserStore } from '@/stores/userStore';
 import { groupPercent } from '@/utils/micronutrients';
+import { localDate } from '@/utils/dates';
 import { VOLUME_LANDMARKS, volumeStatus, type VolumeStatus } from '@/data/volumeLandmarks';
 
 const VOL_COLOR: Record<VolumeStatus, string> = {
@@ -43,6 +46,7 @@ export default function HomeScreen() {
   const { getMuscleVolume } = useWorkoutStore();
   const { getTrendSeries } = useWeightStore();
   const { todayLog: sleep, loadTodayLog: loadSleep } = useSleepStore();
+  const { todayTotal: fluidMl, loadTodayLogs: loadWater } = useWaterStore();
   const { profile, loadProfile } = useUserStore();
 
   const [muscleVol, setMuscleVol] = useState<Record<string, number>>({});
@@ -50,7 +54,7 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadTodayLogs(); loadProfile(); loadSleep();
+      loadTodayLogs(); loadProfile(); loadSleep(); loadWater();
       getMuscleVolume(7).then(rows => setMuscleVol(Object.fromEntries(rows.map(r => [r.muscleGroup, r.sets]))));
       getTrendSeries(14).then(pts => setLatestWeight(pts.length ? pts[pts.length - 1].trend : null));
     }, [])
@@ -61,20 +65,26 @@ export default function HomeScreen() {
   const eaten = todayCalories;
   const left = Math.max(0, calTarget - eaten);
   const unit = p?.weightUnit ?? 'kg';
-  const sleepHrs = sleep ? `${Math.floor(sleep.durationMinutes / 60)}h ${sleep.durationMinutes % 60}m` : '—';
+  // Health Analytics rings — the design shows Sleep, Fluid, Vitamins, Minerals.
+  const sleepMins = sleep?.durationMinutes ?? 0;
+  const sleepHours = sleepMins / 60;
+  const sleepRingValue = sleepMins ? `${Number(sleepHours.toFixed(sleepHours % 1 ? 1 : 0))} Hrs` : '—';
+  const fluidTargetMl = (p?.waterTarget || 8) * 250;
+  const fluidRingValue = `${Number((fluidMl / 1000).toFixed(1))} L`;
   const vitPct = Math.round(groupPercent(todayMicros, 'vitamin'));
   const minPct = Math.round(groupPercent(todayMicros, 'mineral'));
+  const todayIso = localDate(new Date());
   const dateStr = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
   const fact = LEARN_FACTS[new Date().getDate() % LEARN_FACTS.length];
 
   const macros = [
-    { label: 'Protein', val: todayProtein, target: p?.proteinTarget || 150 },
-    { label: 'Carbs', val: todayCarbs, target: p?.carbsTarget || 250 },
-    { label: 'Fat', val: todayFat, target: p?.fatTarget || 65 },
+    { label: 'Protein', val: todayProtein, target: p?.proteinTarget || 150, min: p?.proteinTargetMin ?? null, max: p?.proteinTargetMax ?? null },
+    { label: 'Carbs', val: todayCarbs, target: p?.carbsTarget || 250, min: p?.carbsTargetMin ?? null, max: p?.carbsTargetMax ?? null },
+    { label: 'Fat', val: todayFat, target: p?.fatTarget || 65, min: p?.fatTargetMin ?? null, max: p?.fatTargetMax ?? null },
   ];
   const micros = [
-    { label: 'Fiber', val: todayFiber, target: p?.fiberTarget || 30 },
-    { label: 'Sugar', val: todaySugar, target: p?.sugarTarget || 50 },
+    { label: 'Fiber', val: todayFiber, target: p?.fiberTarget || 30, min: p?.fiberTargetMin ?? null, max: p?.fiberTargetMax ?? null },
+    { label: 'Sugar', val: todaySugar, target: p?.sugarTarget || 50, min: p?.sugarTargetMin ?? null, max: p?.sugarTargetMax ?? null },
     { label: 'Sodium', val: todaySodium, target: p?.sodiumTarget || 2300 },
   ];
   const muscleOrder = Object.keys(VOLUME_LANDMARKS);
@@ -93,7 +103,15 @@ export default function HomeScreen() {
               {(p?.name?.trim()?.[0] || 'Y').toUpperCase()}
             </Text>
           </Pressable>
+          <Pressable onPress={() => router.push('/dashboard-customize')} style={styles.customizeButton} accessibilityLabel="Customize dashboard">
+            <MaterialCommunityIcons name="tune-variant" size={21} color={colors.onSurfaceVariant} />
+          </Pressable>
         </View>
+
+        {/* Week strip — the design shows it between the greeting and the
+            nutrition card. Home itself is a today view, so picking a day opens
+            that day in Nutrition rather than rewinding the whole dashboard. */}
+        <WeekStrip selected={todayIso} onSelect={iso => router.push(`/health/nutrition?date=${iso}`)} />
 
         {/* Nutrition card */}
         <Pressable onPress={() => router.push('/health/nutrition')} style={[styles.card, { backgroundColor: colors.surface }]}>
@@ -140,12 +158,24 @@ export default function HomeScreen() {
         {/* Health Analytics */}
         <SectionTitle title="Health Analytics" colors={colors} />
         <View style={styles.grid}>
-          <StatCard label="Weight" value={latestWeight != null ? `${latestWeight}` : '—'} unit={unit}
-            icon="scale-bathroom" colors={colors} onPress={() => router.push('/health/weight')} />
-          <StatCard label="Sleep" value={sleepHrs} icon="moon-waning-crescent" colors={colors} onPress={() => router.push('/health/sleep')} />
-          <RingCard label="Vitamins" pct={vitPct} colors={colors} onPress={() => router.push('/health/micronutrients')} />
-          <RingCard label="Minerals" pct={minPct} colors={colors} onPress={() => router.push('/health/micronutrients')} />
+          <RingCard label="Sleep" value={sleepRingValue} progress={sleepMins / (8 * 60)}
+            colors={colors} onPress={() => router.push('/health/sleep')} />
+          <RingCard label="Fluid" value={fluidRingValue} progress={fluidTargetMl ? fluidMl / fluidTargetMl : 0}
+            colors={colors} onPress={() => router.push('/health/water')} />
+          <RingCard label="Vitamins" value={`${vitPct}%`} progress={vitPct / 100}
+            colors={colors} onPress={() => router.push('/health/micronutrients')} />
+          <RingCard label="Minerals" value={`${minPct}%`} progress={minPct / 100}
+            colors={colors} onPress={() => router.push('/health/micronutrients')} />
         </View>
+        {/* The design has no weight card; keep the screen reachable from here. */}
+        <Pressable onPress={() => router.push('/health/weight')} style={[styles.weightLink, { backgroundColor: colors.surface }]}>
+          <MaterialCommunityIcons name="scale-bathroom" size={18} color={accent} />
+          <Text variant="bodyMedium" style={{ color: colors.onSurface, flex: 1 }}>Weight</Text>
+          <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
+            {latestWeight != null ? `${latestWeight} ${unit}` : '—'}
+          </Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.onSurfaceVariant} />
+        </Pressable>
 
         {/* Learn */}
         <SectionTitle title="Learn" colors={colors} />
@@ -187,50 +217,47 @@ function CalRing({ eaten, target, colors }: { eaten: number; target: number; col
   );
 }
 
-function MacroRow({ label, val, target, colors }: { label: string; val: number; target: number; colors: C }) {
+function MacroRow({ label, val, target, min = null, max = null, colors }: { label: string; val: number; target: number; min?: number | null; max?: number | null; colors: C }) {
+  const hasRange = min !== null && max !== null && max >= min;
+  const scale = Math.max(target, max ?? 0, val, 1);
+  const status = hasRange ? val < min! ? '#FF6B6B' : val > max! ? '#FFA726' : '#66BB6A' : val > target ? '#FFA726' : '#66BB6A';
   return (
     <View style={styles.macroRow}>
       <View style={styles.macroLabels}>
         <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-        <Text variant="labelSmall" style={{ color: colors.onSurface }}>{val}/{target}g</Text>
+        <Text variant="labelSmall" style={{ color: colors.onSurface }}>{val}/{hasRange ? `${min}-${max}` : target}g</Text>
       </View>
       <View style={[styles.macroTrack, { backgroundColor: colors.surfaceVariant }]}>
-        <View style={[styles.macroFill, { width: `${Math.min(100, (val / target) * 100)}%`, backgroundColor: accent }]} />
+        {hasRange && <View style={[styles.targetBand, { left: `${(min! / scale) * 100}%`, width: `${((max! - min!) / scale) * 100}%` }]} />}
+        <View style={[styles.macroFill, { width: `${Math.min(100, (val / scale) * 100)}%`, backgroundColor: status }]} />
       </View>
     </View>
   );
 }
 
-function MicroCol({ label, val, target, colors }: { label: string; val: number; target: number; colors: C }) {
+function MicroCol({ label, val, target, min = null, max = null, colors }: { label: string; val: number; target: number; min?: number | null; max?: number | null; colors: C }) {
+  const hasRange = min !== null && max !== null && max >= min;
+  const scale = Math.max(target, max ?? 0, val, 1);
+  const status = hasRange ? val < min! ? '#FF6B6B' : val > max! ? '#FFA726' : '#66BB6A' : val > target ? '#FFA726' : '#66BB6A';
   return (
     <View style={styles.microCol}>
       <View style={styles.macroLabels}>
         <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-        <Text variant="labelSmall" style={{ color: colors.onSurface }}>{val}/{target}</Text>
+        <Text variant="labelSmall" style={{ color: colors.onSurface }}>{val}/{hasRange ? `${min}-${max}` : target}</Text>
       </View>
       <View style={[styles.macroTrack, { backgroundColor: colors.surfaceVariant }]}>
-        <View style={[styles.macroFill, { width: `${Math.min(100, (val / target) * 100)}%`, backgroundColor: accent }]} />
+        {hasRange && <View style={[styles.targetBand, { left: `${(min! / scale) * 100}%`, width: `${((max! - min!) / scale) * 100}%` }]} />}
+        <View style={[styles.macroFill, { width: `${Math.min(100, (val / scale) * 100)}%`, backgroundColor: status }]} />
       </View>
     </View>
   );
 }
 
-function StatCard({ label, value, unit, icon, colors, onPress }: { label: string; value: string; unit?: string; icon: string; colors: C; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={[styles.gridCard, { backgroundColor: colors.surface }]}>
-      <MaterialCommunityIcons name={icon as never} size={22} color={accent} />
-      <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '800', marginTop: 6 }}>
-        {value}{unit && value !== '—' ? <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}> {unit}</Text> : null}
-      </Text>
-      <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-    </Pressable>
-  );
-}
 
-function RingCard({ label, pct, colors, onPress }: { label: string; pct: number; colors: C; onPress: () => void }) {
+function RingCard({ label, value, progress, colors, onPress }: { label: string; value: string; progress: number; colors: C; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={[styles.gridCard, styles.ringCard, { backgroundColor: colors.surface }]}>
-      <ProgressRing progress={pct / 100} size={96} strokeWidth={9} color={accent} value={`${pct}%`} />
+      <ProgressRing progress={Math.min(1, progress || 0)} size={96} strokeWidth={9} color={accent} value={value} />
       <Text variant="labelLarge" style={{ color: colors.onSurface, fontWeight: '600', marginTop: 4 }}>{label}</Text>
     </Pressable>
   );
@@ -243,13 +270,16 @@ const styles = StyleSheet.create({
   dateKicker: { letterSpacing: 1.5, fontWeight: '700', marginBottom: 2 },
   greeting: { fontWeight: '800' },
   avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  customizeButton: { width: 36, height: 44, justifyContent: 'center', alignItems: 'flex-end' },
   card: { borderRadius: shape.lg, padding: spacing.md, marginBottom: spacing.xs },
+  weightLink: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: shape.lg, paddingHorizontal: spacing.md, paddingVertical: 12, marginTop: spacing.sm },
   calRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   calCenter: { position: 'absolute', width: 118, height: 118, justifyContent: 'center', alignItems: 'center' },
   macroCol: { flex: 1, gap: 6 },
   macroRow: { gap: 3 },
   macroLabels: { flexDirection: 'row', justifyContent: 'space-between' },
   macroTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  targetBand: { position: 'absolute', top: 0, bottom: 0, backgroundColor: withAlpha('#66BB6A', 0.3) },
   macroFill: { height: '100%', borderRadius: 3 },
   microRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
   microCol: { flex: 1, gap: 3 },

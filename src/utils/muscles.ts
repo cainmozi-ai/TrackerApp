@@ -93,3 +93,22 @@ export function formatMuscles(primary: string[], secondary: string[]): string {
   const s = secondary.join(', ');
   return s ? `${p} • ${s}` : p;
 }
+
+/** Per-muscle-group accents, sampled from the Figma exercise library and
+ * exercise-detail frames. The brand red is the app's single accent, but these
+ * frames deliberately colour-code the groups so a long list stays scannable. */
+export const GROUP_COLORS: Record<string, string> = {
+  Chest: '#3E8FC4',
+  Back: '#A83232',
+  Shoulders: '#D9A441',
+  Arms: '#8C62D9',
+  Legs: '#D98246',
+  Glutes: '#C4627E',
+  Core: '#3EBFB0',
+  Cardio: '#5FB56A',
+};
+
+/** Group accent with a safe fallback for custom exercises. */
+export function groupColor(group?: string | null): string {
+  return (group && GROUP_COLORS[group]) || '#A83232';
+}
