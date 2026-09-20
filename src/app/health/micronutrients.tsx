@@ -34,11 +34,11 @@ export default function MicronutrientsScreen() {
 
   // The design opens with the day's macros before the vitamin/mineral rings.
   const macroRows = [
-    { label: 'Protein', value: todayProtein, target: profile?.proteinTarget || 150, unit: 'g' },
-    { label: 'Carbs', value: todayCarbs, target: profile?.carbsTarget || 250, unit: 'g' },
-    { label: 'Fat', value: todayFat, target: profile?.fatTarget || 65, unit: 'g' },
-    { label: 'Sugar', value: todaySugar, target: profile?.sugarTarget || 50, unit: 'g' },
-    { label: 'Fiber', value: todayFiber, target: profile?.fiberTarget || 30, unit: 'g' },
+    { label: 'Protein', value: todayProtein, target: profile?.proteinTarget || 150, unit: 'g', min: profile?.proteinTargetMin, max: profile?.proteinTargetMax },
+    { label: 'Carbs', value: todayCarbs, target: profile?.carbsTarget || 250, unit: 'g', min: profile?.carbsTargetMin, max: profile?.carbsTargetMax },
+    { label: 'Fat', value: todayFat, target: profile?.fatTarget || 65, unit: 'g', min: profile?.fatTargetMin, max: profile?.fatTargetMax },
+    { label: 'Sugar', value: todaySugar, target: profile?.sugarTarget || 50, unit: 'g', min: profile?.sugarTargetMin, max: profile?.sugarTargetMax },
+    { label: 'Fiber', value: todayFiber, target: profile?.fiberTarget || 30, unit: 'g', min: profile?.fiberTargetMin, max: profile?.fiberTargetMax },
   ];
 
   return (
@@ -59,6 +59,12 @@ export default function MicronutrientsScreen() {
                 </View>
                 <View style={[styles.macroTrack, { backgroundColor: colors.surfaceVariant }]}>
                   <View style={[styles.macroFill, { width: `${pct}%`, backgroundColor: accent }]} />
+                  {/* Range markers — the design ticks the bar where a min/max is set. */}
+                  {[m.min, m.max].map((mark, mi) =>
+                    mark != null && m.target > 0 && mark <= m.target ? (
+                      <View key={mi} style={[styles.macroTick, { left: `${(mark / m.target) * 100}%`, backgroundColor: colors.onSurface }]} />
+                    ) : null
+                  )}
                 </View>
               </View>
             );
@@ -93,14 +99,15 @@ export default function MicronutrientsScreen() {
             const pct = categoryPercent(todayMicros, cat.key);
             return (
               <MotionCard key={cat.key} index={i} style={styles.catCard} onPress={() => router.push(`/health/wellness/${cat.key}`)}>
-                <Text style={styles.catIcon}>{cat.icon}</Text>
-                <Text variant="labelMedium" style={[styles.catLabel, { color: colors.onSurface }]} numberOfLines={2}>
-                  {cat.label}
-                </Text>
-                <View style={[styles.catTrack, { backgroundColor: withAlpha(fillColor(pct), 0.18) }]}>
+                <View style={[styles.catIconCircle, { backgroundColor: colors.surfaceVariant }]}>
+                  <Text style={styles.catIcon}>{cat.icon}</Text>
+                </View>
+                <View style={[styles.catTrack, { backgroundColor: colors.surfaceVariant }]}>
                   <View style={[styles.catFill, { width: `${Math.min(pct, 100)}%`, backgroundColor: fillColor(pct) }]} />
                 </View>
-                <Text variant="titleSmall" style={[styles.catPct, { color: fillColor(pct) }]}>{pct}%</Text>
+                <Text variant="labelMedium" style={[styles.catLabel, { color: colors.onSurface }]} numberOfLines={1}>
+                  {cat.label}
+                </Text>
               </MotionCard>
             );
           })}
@@ -152,18 +159,21 @@ const styles = StyleSheet.create({
   macroHead: { flexDirection: 'row', justifyContent: 'space-between' },
   macroTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
   macroFill: { height: '100%', borderRadius: 4 },
+  macroTick: { position: 'absolute', top: -2, width: 2, height: 12, borderRadius: 1 },
   ringRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   ringCard: { flex: 1, alignItems: 'center', paddingVertical: spacing.md, gap: spacing.xs },
   ringTitle: { fontWeight: '700' },
   empty: { padding: spacing.md, marginBottom: spacing.sm },
   sectionTitle: { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.sm },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  catCard: { width: '47.5%', padding: spacing.md, gap: 6 },
-  catIcon: { fontSize: 26 },
-  catLabel: { fontWeight: '600', minHeight: 34 },
-  catTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  // 171x170 in the design: a large icon circle, then the bar, then the label.
+  catCard: { width: '47.5%', padding: spacing.md, gap: spacing.sm, alignItems: 'center' },
+  catIconCircle: { width: 99, height: 97, borderRadius: 50, alignItems: 'center', justifyContent: 'center' },
+  catIcon: { fontSize: 34 },
+  catLabel: { fontWeight: '600', textAlign: 'center' },
+  catTrack: { height: 9, borderRadius: 5, overflow: 'hidden', alignSelf: 'stretch' },
   catFill: { height: '100%', borderRadius: 4 },
-  catPct: { fontWeight: '800' },
+
   listCard: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   microRow: { paddingVertical: spacing.sm },
   microHead: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginBottom: 6 },
