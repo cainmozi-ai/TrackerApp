@@ -32,7 +32,7 @@ function parseOffMicros(n: Record<string, number | undefined>, scale: number): R
     const grams = n[`${offKey}_100g`];
     if (grams == null || !isFinite(grams) || grams <= 0) continue;
     const def = MICRO_BY_KEY[ourKey];
-    const factor = def.unit === 'mcg' ? 1_000_000 : 1000; // grams → mcg / mg
+    const factor = def.unit === 'mcg' ? 1_000_000 : def.unit === 'g' ? 1 : 1000; // grams → mcg / mg / g
     const val = grams * factor * scale;
     if (val > 0) micros[ourKey] = Math.round(val * 100) / 100;
   }

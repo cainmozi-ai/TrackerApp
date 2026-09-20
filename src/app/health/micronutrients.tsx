@@ -4,21 +4,20 @@ import { Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { spacing, shape, moduleColors, withAlpha } from '@/theme';
+import { spacing, shape, moduleColors, withAlpha, accent } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { MotionCard } from '@/components/common/MotionCard';
 import { ProgressRing } from '@/components/common/ProgressRing';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import {
-  VITAMINS, MINERALS, CATEGORIES, groupPercent, categoryPercent, percentOf, type MicroDef,
+  VITAMINS, MINERALS, OTHER_NUTRIENTS, CATEGORIES, groupPercent, categoryPercent, percentOf, type MicroDef,
 } from '@/utils/micronutrients';
 
-/** Fill colour shifts from low (blue) → on-track (green) → over (amber). */
+/** The design draws these bars in the brand accent at any level; the number
+ * carries the meaning. Untouched nutrients stay grey so "nothing logged" reads
+ * differently from "logged a little". */
 function fillColor(pct: number): string {
-  if (pct >= 100) return '#A83232';
-  if (pct >= 70) return '#A83232';
-  if (pct >= 40) return '#A83232';
-  return '#9E9E9E';
+  return pct > 0 ? accent : '#9E9E9E';
 }
 
 export default function MicronutrientsScreen() {
@@ -39,12 +38,12 @@ export default function MicronutrientsScreen() {
         <View style={styles.ringRow}>
           <MotionCard style={styles.ringCard} noEnter>
             <ProgressRing progress={vitaminPct / 100} size={96} strokeWidth={10}
-              color="#A83232" value={`${vitaminPct}%`} />
+              color={accent} value={`${vitaminPct}%`} />
             <Text variant="titleSmall" style={[styles.ringTitle, { color: colors.onSurface }]}>Vitamins</Text>
           </MotionCard>
           <MotionCard style={styles.ringCard} noEnter>
             <ProgressRing progress={mineralPct / 100} size={96} strokeWidth={10}
-              color="#A83232" value={`${mineralPct}%`} />
+              color={accent} value={`${mineralPct}%`} />
             <Text variant="titleSmall" style={[styles.ringTitle, { color: colors.onSurface }]}>Minerals</Text>
           </MotionCard>
         </View>
@@ -86,6 +85,11 @@ export default function MicronutrientsScreen() {
         <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.onSurface }]}>Minerals</Text>
         <MotionCard style={styles.listCard}>
           {MINERALS.map((m, i) => <MicroRow key={m.key} def={m} amount={todayMicros[m.key] || 0} last={i === MINERALS.length - 1} />)}
+        </MotionCard>
+
+        <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.onSurface }]}>Other</Text>
+        <MotionCard style={styles.listCard}>
+          {OTHER_NUTRIENTS.map((m, i) => <MicroRow key={m.key} def={m} amount={todayMicros[m.key] || 0} last={i === OTHER_NUTRIENTS.length - 1} />)}
         </MotionCard>
 
         <Text variant="labelSmall" style={[styles.disclaimer, { color: colors.onSurfaceVariant }]}>

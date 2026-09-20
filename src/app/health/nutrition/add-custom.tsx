@@ -7,7 +7,7 @@ import { spacing, shape } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useNutritionStore } from '@/stores/nutritionStore';
-import { VITAMINS, MINERALS } from '@/utils/micronutrients';
+import { VITAMINS, MINERALS, OTHER_NUTRIENTS } from '@/utils/micronutrients';
 
 export default function AddCustomFoodScreen() {
   const [name, setName] = useState('');
@@ -119,6 +119,14 @@ export default function AddCustomFoodScreen() {
             <Text variant="titleSmall" style={styles.sectionTitle}>Minerals (per serving)</Text>
             <View style={styles.microWrap}>
               {microMinerals.map(m => (
+                <TextInput key={m.key} label={`${m.label} (${m.unit})`} value={micros[m.key] || ''}
+                  onChangeText={t => setMicros(p => ({ ...p, [m.key]: t }))}
+                  style={styles.microInput} mode="outlined" keyboardType="numeric" dense />
+              ))}
+            </View>
+            <Text variant="titleSmall" style={styles.sectionTitle}>Other (per serving)</Text>
+            <View style={styles.microWrap}>
+              {OTHER_NUTRIENTS.map(m => (
                 <TextInput key={m.key} label={`${m.label} (${m.unit})`} value={micros[m.key] || ''}
                   onChangeText={t => setMicros(p => ({ ...p, [m.key]: t }))}
                   style={styles.microInput} mode="outlined" keyboardType="numeric" dense />

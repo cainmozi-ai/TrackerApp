@@ -8,7 +8,9 @@ import { spacing, shape, accent } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
-import { MICROS, CATEGORIES, percentOf } from '@/utils/micronutrients';
+import {
+  CATEGORIES, CATEGORY_ROWS, MICRO_BY_KEY, percentOf, type CategoryKey,
+} from '@/utils/micronutrients';
 
 // The design draws every wellness bar in the brand accent regardless of how
 // close the nutrient is to its RDA — the number carries the meaning here, not
@@ -20,23 +22,30 @@ function pctColor(_pct: number): string {
 export default function WellnessCategory() {
   const { colors } = useAppTheme();
   const { cat } = useLocalSearchParams<{ cat: string }>();
-  const { todayMicros, todayCalories, loadTodayLogs } = useNutritionStore();
+  const { todayMicros, todayCalories, todayProtein, loadTodayLogs } = useNutritionStore();
   const { profile, loadProfile } = useUserStore();
 
   useFocusEffect(useCallback(() => { loadTodayLogs(); loadProfile(); }, []));
 
   const category = CATEGORIES.find(c => c.key === cat);
-  const nutrients = MICROS.filter(m => m.cats.includes(cat as never));
+  const rows: Row[] = [];
   const calTarget = profile?.calorieTarget || 2000;
+  const proteinTarget = profile?.proteinTarget || 150;
 
   type Row = { label: string; amount: number; target: number; unit: string; pct: number };
-  const rows: Row[] = [];
-  if (cat === 'energy') {
-    rows.push({ label: 'Calories', amount: todayCalories, target: calTarget, unit: 'kcal', pct: Math.round((todayCalories / calTarget) * 100) });
-  }
-  for (const m of nutrients) {
-    const amt = Math.round((todayMicros[m.key] || 0) * 10) / 10;
-    rows.push({ label: m.label, amount: amt, target: m.rda, unit: m.unit, pct: Math.round(percentOf(m.key, todayMicros[m.key] || 0)) });
+  const pct = (amount: number, target: number) => (target > 0 ? Math.round((amount / target) * 100) : 0);
+
+  for (const row of CATEGORY_ROWS[cat as CategoryKey] ?? []) {
+    if (row.kind === 'calories') {
+      rows.push({ label: 'Calories', amount: todayCalories, target: calTarget, unit: 'kcal', pct: pct(todayCalories, calTarget) });
+    } else if (row.kind === 'protein') {
+      rows.push({ label: 'Protein', amount: Math.round(todayProtein), target: proteinTarget, unit: 'g', pct: pct(todayProtein, proteinTarget) });
+    } else {
+      const def = MICRO_BY_KEY[row.key];
+      if (!def) continue;
+      const amt = Math.round((todayMicros[def.key] || 0) * 10) / 10;
+      rows.push({ label: def.label, amount: amt, target: def.rda, unit: def.unit, pct: Math.round(percentOf(def.key, todayMicros[def.key] || 0)) });
+    }
   }
 
   return (
