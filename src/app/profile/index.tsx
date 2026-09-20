@@ -261,7 +261,7 @@ export default function ProfileScreen() {
           );
         })}
 
-        <Text variant="titleSmall" style={styles.sectionTitle}>Daily Targets</Text>
+        <Text variant="titleSmall" style={styles.sectionTitle}>Daily Target Ranges</Text>
         <TextInput label="Calorie target" value={calorieTarget} onChangeText={setCalorieTarget} mode="outlined" keyboardType="numeric" style={styles.input} />
         <View style={styles.row}>
           <TextInput label="Protein (g)" value={proteinTarget} onChangeText={setProteinTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
