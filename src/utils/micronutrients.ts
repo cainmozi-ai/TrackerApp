@@ -47,6 +47,10 @@ export const MICROS: MicroDef[] = [
   { key: 'selenium', label: 'Selenium', unit: 'mcg', rda: 55, group: 'mineral', cats: ['skin', 'hormones'] },
   { key: 'sodium', label: 'Sodium', unit: 'mg', rda: 1500, group: 'mineral', cats: ['muscle', 'sleep', 'energy'] },
   { key: 'zinc', label: 'Zinc', unit: 'mg', rda: 11, group: 'mineral', cats: ['brain', 'skin', 'muscle', 'hormones'] },
+  { key: 'iodine', label: 'Iodine', unit: 'mcg', rda: 150, group: 'mineral', cats: [] },
+  { key: 'fluoride', label: 'Fluoride', unit: 'mg', rda: 3, group: 'mineral', cats: [] },
+  { key: 'sulfur', label: 'Sulfur', unit: 'mg', rda: 850, group: 'mineral', cats: [] },
+  { key: 'chloride', label: 'Chloride', unit: 'mg', rda: 1800, group: 'mineral', cats: [] },
   { key: 'tryptophan', label: 'Tryptophan', unit: 'g', rda: 0.3, group: 'other', cats: ['sleep'] },
 ];
 
