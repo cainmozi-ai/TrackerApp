@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, moduleColors, withAlpha } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
+import { WeekStrip } from '@/components/common/WeekStrip';
 import { ProgressRing } from '@/components/common/ProgressRing';
 import { MotionCard } from '@/components/common/MotionCard';
 import { useNutritionStore } from '@/stores/nutritionStore';
@@ -115,26 +116,7 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="Nutrition" showBack={!asTab} />
 
-      <View style={styles.dayStrip}>
-        {lastSevenDays().map(day => {
-          const selected = day.iso === currentDate;
-          return (
-            <Pressable
-              key={day.iso}
-              onPress={() => loadTodayLogs(day.iso)}
-              style={[styles.dayPill, {
-                backgroundColor: selected ? withAlpha(moduleColors.nutrition, 0.2) : 'transparent',
-                borderColor: selected ? moduleColors.nutrition : colors.outline,
-              }]}
-            >
-              <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{day.letter}</Text>
-              <Text variant="titleSmall" style={{ color: selected ? moduleColors.nutrition : colors.onSurface, fontWeight: '700' }}>
-                {day.dayNum}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <WeekStrip selected={currentDate} onSelect={iso => loadTodayLogs(iso)} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text variant="labelSmall" style={[styles.dateKicker, { color: colors.onSurfaceVariant }]}>
@@ -314,8 +296,6 @@ function MacroBar({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: 100 },
-  dayStrip: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.md, marginBottom: spacing.xs, gap: spacing.xs },
-  dayPill: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: shape.pill, borderWidth: 1.5 },
   dateKicker: { letterSpacing: 1.5, fontWeight: '700', marginBottom: spacing.xs },
   hero: { marginBottom: spacing.sm, padding: spacing.md },
   heroTop: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginBottom: spacing.md },

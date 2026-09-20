@@ -8,6 +8,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, withAlpha, accent } from '@/theme';
 import { ProgressRing } from '@/components/common/ProgressRing';
+import { WeekStrip } from '@/components/common/WeekStrip';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useWeightStore } from '@/stores/weightStore';
@@ -15,6 +16,7 @@ import { useSleepStore } from '@/stores/sleepStore';
 import { useWaterStore } from '@/stores/waterStore';
 import { useUserStore } from '@/stores/userStore';
 import { groupPercent } from '@/utils/micronutrients';
+import { localDate } from '@/utils/dates';
 import { VOLUME_LANDMARKS, volumeStatus, type VolumeStatus } from '@/data/volumeLandmarks';
 
 const VOL_COLOR: Record<VolumeStatus, string> = {
@@ -71,6 +73,7 @@ export default function HomeScreen() {
   const fluidRingValue = `${Number((fluidMl / 1000).toFixed(1))} L`;
   const vitPct = Math.round(groupPercent(todayMicros, 'vitamin'));
   const minPct = Math.round(groupPercent(todayMicros, 'mineral'));
+  const todayIso = localDate(new Date());
   const dateStr = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
   const fact = LEARN_FACTS[new Date().getDate() % LEARN_FACTS.length];
 
@@ -104,6 +107,11 @@ export default function HomeScreen() {
             <MaterialCommunityIcons name="tune-variant" size={21} color={colors.onSurfaceVariant} />
           </Pressable>
         </View>
+
+        {/* Week strip — the design shows it between the greeting and the
+            nutrition card. Home itself is a today view, so picking a day opens
+            that day in Nutrition rather than rewinding the whole dashboard. */}
+        <WeekStrip selected={todayIso} onSelect={iso => router.push(`/health/nutrition?date=${iso}`)} />
 
         {/* Nutrition card */}
         <Pressable onPress={() => router.push('/health/nutrition')} style={[styles.card, { backgroundColor: colors.surface }]}>
