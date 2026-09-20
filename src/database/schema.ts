@@ -20,6 +20,10 @@ interface ProgramSeed {
   name: string;
   level: string;
   daysPerWeek: number;
+  /** Programme length in weeks — shown on the programs card. */
+  weeks: number;
+  /** Accent for the card's left edge stripe. */
+  stripe: string;
   split: string;
   description: string;
   days: { label: string; exercises: { name: string; sets: number; repMin: number; repMax: number }[] }[];
@@ -572,13 +576,15 @@ async function seedFoods(db: SQLite.SQLiteDatabase): Promise<void> {
 }
 
 async function seedPrograms(db: SQLite.SQLiteDatabase): Promise<void> {
-  const exist = await db.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM workout_templates WHERE program_name IS NOT NULL'
-  );
-  if (exist && exist.count > 0) return;
-
+  // Seed per programme, not all-or-nothing: an install that already has the
+  // original set must still pick up programmes added in a later release.
   const programs = programsData as ProgramSeed[];
   for (const program of programs) {
+    const exist = await db.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM workout_templates WHERE program_name = ?',
+      [program.name]
+    );
+    if (exist && exist.count > 0) continue;
     for (const day of program.days) {
       const result = await db.runAsync(
         'INSERT INTO workout_templates (name, description, level, days_per_week, program_name, day_label) VALUES (?, ?, ?, ?, ?, ?)',
