@@ -22,7 +22,7 @@ function pctColor(_pct: number): string {
 export default function WellnessCategory() {
   const { colors } = useAppTheme();
   const { cat } = useLocalSearchParams<{ cat: string }>();
-  const { todayMicros, todayCalories, todayProtein, loadTodayLogs } = useNutritionStore();
+  const { todayMicros, todayCalories, todayProtein, todayFat, loadTodayLogs } = useNutritionStore();
   const { profile, loadProfile } = useUserStore();
 
   useFocusEffect(useCallback(() => { loadTodayLogs(); loadProfile(); }, []));
@@ -38,6 +38,9 @@ export default function WellnessCategory() {
   for (const row of CATEGORY_ROWS[cat as CategoryKey] ?? []) {
     if (row.kind === 'calories') {
       rows.push({ label: 'Calories', amount: todayCalories, target: calTarget, unit: 'kcal', pct: pct(todayCalories, calTarget) });
+    } else if (row.kind === 'fat') {
+      const fatTarget = profile?.fatTarget || 65;
+      rows.push({ label: 'Fat', amount: Math.round(todayFat), target: fatTarget, unit: 'g', pct: pct(todayFat, fatTarget) });
     } else if (row.kind === 'protein') {
       rows.push({ label: 'Protein', amount: Math.round(todayProtein), target: proteinTarget, unit: 'g', pct: pct(todayProtein, proteinTarget) });
     } else {

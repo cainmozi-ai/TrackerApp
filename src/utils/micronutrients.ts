@@ -30,23 +30,23 @@ export const MICROS: MicroDef[] = [
   { key: 'folate', label: 'B9 (Folate)', unit: 'mcg', rda: 400, group: 'vitamin', cats: ['brain', 'energy'] },
   { key: 'b12', label: 'B12 (Cobalamin)', unit: 'mcg', rda: 2.4, group: 'vitamin', cats: ['brain', 'muscle', 'energy', 'immune', 'hormones'] },
   { key: 'choline', label: 'Choline', unit: 'mg', rda: 550, group: 'vitamin', cats: ['brain'] },
-  { key: 'omega3', label: 'Omega-3', unit: 'g', rda: 1.6, group: 'other', cats: ['brain', 'skin'] },
+  { key: 'omega3', label: 'Omega-3', unit: 'g', rda: 1.6, group: 'other', cats: ['brain', 'skin', 'immune'] },
   { key: 'vitaminA', label: 'Vitamin A', unit: 'mcg', rda: 900, group: 'vitamin', cats: ['skin', 'immune', 'hormones'] },
   { key: 'vitaminC', label: 'Vitamin C (Ascorbic Acid)', unit: 'mg', rda: 90, group: 'vitamin', cats: ['skin', 'immune'] },
   { key: 'vitaminD', label: 'Vitamin D', unit: 'mcg', rda: 20, group: 'vitamin', cats: ['brain', 'muscle', 'sleep', 'bone', 'immune', 'hormones'] },
   { key: 'vitaminE', label: 'Vitamin E', unit: 'mg', rda: 15, group: 'vitamin', cats: ['skin'] },
   { key: 'vitaminK', label: 'Vitamin K', unit: 'mcg', rda: 120, group: 'vitamin', cats: ['bone'] },
   // Minerals
-  { key: 'calcium', label: 'Calcium', unit: 'mg', rda: 1000, group: 'mineral', cats: ['sleep'] },
-  { key: 'copper', label: 'Copper', unit: 'mcg', rda: 900, group: 'mineral', cats: ['skin', 'energy'] },
-  { key: 'iron', label: 'Iron', unit: 'mg', rda: 8, group: 'mineral', cats: ['brain', 'skin', 'energy', 'hormones'] },
-  { key: 'magnesium', label: 'Magnesium', unit: 'mg', rda: 400, group: 'mineral', cats: ['brain', 'sleep', 'energy', 'bone', 'hormones'] },
+  { key: 'calcium', label: 'Calcium', unit: 'mg', rda: 1000, group: 'mineral', cats: ['sleep', 'muscle', 'bone'] },
+  { key: 'copper', label: 'Copper', unit: 'mcg', rda: 900, group: 'mineral', cats: ['skin', 'energy', 'immune'] },
+  { key: 'iron', label: 'Iron', unit: 'mg', rda: 8, group: 'mineral', cats: ['brain', 'skin', 'muscle', 'energy', 'hormones'] },
+  { key: 'magnesium', label: 'Magnesium', unit: 'mg', rda: 400, group: 'mineral', cats: ['brain', 'muscle', 'sleep', 'energy', 'bone', 'hormones'] },
   { key: 'manganese', label: 'Manganese', unit: 'mg', rda: 2.3, group: 'mineral', cats: ['bone'] },
   { key: 'phosphorus', label: 'Phosphorus', unit: 'mg', rda: 700, group: 'mineral', cats: ['bone'] },
-  { key: 'potassium', label: 'Potassium', unit: 'mg', rda: 3400, group: 'mineral', cats: ['sleep', 'energy', 'bone'] },
+  { key: 'potassium', label: 'Potassium', unit: 'mg', rda: 3400, group: 'mineral', cats: ['muscle', 'sleep', 'energy', 'bone'] },
   { key: 'selenium', label: 'Selenium', unit: 'mcg', rda: 55, group: 'mineral', cats: ['skin', 'hormones'] },
   { key: 'sodium', label: 'Sodium', unit: 'mg', rda: 1500, group: 'mineral', cats: ['muscle', 'sleep', 'energy'] },
-  { key: 'zinc', label: 'Zinc', unit: 'mg', rda: 11, group: 'mineral', cats: ['brain', 'skin', 'muscle', 'hormones'] },
+  { key: 'zinc', label: 'Zinc', unit: 'mg', rda: 11, group: 'mineral', cats: ['brain', 'skin', 'muscle', 'immune', 'hormones'] },
   { key: 'iodine', label: 'Iodine', unit: 'mcg', rda: 150, group: 'mineral', cats: [] },
   { key: 'fluoride', label: 'Fluoride', unit: 'mg', rda: 3, group: 'mineral', cats: [] },
   { key: 'sulfur', label: 'Sulfur', unit: 'mg', rda: 850, group: 'mineral', cats: [] },
@@ -60,7 +60,8 @@ export const MICROS: MicroDef[] = [
 export type CategoryRow =
   | { kind: 'micro'; key: string }
   | { kind: 'calories' }
-  | { kind: 'protein' };
+  | { kind: 'protein' }
+  | { kind: 'fat' };
 
 const micro = (key: string): CategoryRow => ({ kind: 'micro', key });
 
@@ -71,8 +72,9 @@ export const CATEGORY_ROWS: Record<CategoryKey, CategoryRow[]> = {
     micro('b12'), micro('zinc'), micro('vitaminD'), micro('folate'), { kind: 'calories' },
   ],
   muscle: [
-    { kind: 'protein' }, { kind: 'calories' },
-    micro('b12'), micro('sodium'), micro('zinc'), micro('vitaminD'),
+    { kind: 'protein' }, { kind: 'calories' }, micro('iron'), micro('magnesium'),
+    micro('b12'), micro('potassium'), micro('sodium'), micro('zinc'),
+    micro('vitaminD'), micro('calcium'),
   ],
   skin: [
     { kind: 'protein' }, micro('omega3'), micro('copper'), micro('iron'), micro('selenium'),
@@ -88,18 +90,19 @@ export const CATEGORY_ROWS: Record<CategoryKey, CategoryRow[]> = {
     micro('potassium'), micro('sodium'),
   ],
   bone: [
-    micro('magnesium'), micro('manganese'), micro('phosphorus'),
-    micro('potassium'), micro('vitaminD'), micro('vitaminK'),
+    micro('calcium'), micro('magnesium'), micro('manganese'), micro('phosphorus'),
+    micro('potassium'), micro('vitaminD'), micro('vitaminK'), { kind: 'protein' },
   ],
   immune: [
-    micro('b12'), micro('vitaminA'), micro('vitaminC'), micro('vitaminD'),
+    micro('copper'), micro('b12'), micro('zinc'), micro('vitaminA'),
+    micro('vitaminC'), micro('vitaminD'), micro('omega3'),
   ],
   hormones: [
-    micro('iron'), micro('magnesium'), micro('selenium'), micro('zinc'),
-    micro('b12'), micro('vitaminA'), micro('vitaminD'),
+    { kind: 'protein' }, { kind: 'calories' }, { kind: 'fat' }, micro('iron'),
+    micro('magnesium'), micro('selenium'), micro('zinc'), micro('b12'),
+    micro('vitaminA'), micro('vitaminD'),
   ],
 };
-
 export const MICRO_KEYS = MICROS.map(m => m.key);
 export const VITAMINS = MICROS.filter(m => m.group === 'vitamin');
 export const MINERALS = MICROS.filter(m => m.group === 'mineral');
