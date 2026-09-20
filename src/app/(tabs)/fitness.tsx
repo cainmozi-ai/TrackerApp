@@ -92,6 +92,7 @@ export default function FitnessScreen() {
           <MiniLink icon="calendar-week" label="Weekly Split" onPress={() => router.push('/fitness/weekly-split')} />
           <MiniLink icon="heart-pulse" label="Cardio" onPress={() => router.push('/fitness/cardio')} />
           <MiniLink icon="trophy" label="Records" onPress={() => router.push('/fitness/records')} />
+          <MiniLink icon="history" label="History" onPress={() => router.push('/fitness/history')} />
         </View>
       </ScrollView>
 
