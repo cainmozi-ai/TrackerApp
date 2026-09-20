@@ -12,8 +12,9 @@ import { useWorkoutStore, type Program } from '@/stores/workoutStore';
 import programsData from '@/data/programs.json';
 
 /** Weeks + stripe colour live with the seed data, not in the database. */
-const PROGRAM_META: Record<string, { weeks: number; stripe: string }> = Object.fromEntries(
-  (programsData as { name: string; weeks: number; stripe: string }[]).map(p => [p.name, { weeks: p.weeks, stripe: p.stripe }])
+const PROGRAM_META: Record<string, { weeks: number; stripe: string; blurb: string }> = Object.fromEntries(
+  (programsData as { name: string; weeks: number; stripe: string; description: string }[])
+    .map(p => [p.name, { weeks: p.weeks, stripe: p.stripe, blurb: p.description }])
 );
 
 const LEVELS = ['All', 'Beginner', 'Intermediate', 'Advanced'];
@@ -49,7 +50,7 @@ export default function ProgramsScreen() {
             body="Try a different experience level." />
         ) : (
           programs.map((p, i) => {
-            const meta = PROGRAM_META[p.programName] ?? { weeks: 8, stripe: accent };
+            const meta = PROGRAM_META[p.programName] ?? { weeks: 8, stripe: accent, blurb: p.split };
             return (
               <MotionCard key={p.programName} index={i} style={styles.card}>
                 <View style={[styles.stripe, { backgroundColor: meta.stripe }]} />
@@ -62,7 +63,7 @@ export default function ProgramsScreen() {
                     {p.daysPerWeek} days/week · {meta.weeks} weeks
                   </Text>
                   <View style={styles.bottomRow}>
-                    <Text variant="bodyMedium" style={[styles.blurb, { color: colors.onSurface }]}>{p.split}</Text>
+                    <Text variant="bodyMedium" style={[styles.blurb, { color: colors.onSurface }]}>{meta.blurb || p.split}</Text>
                     <Button mode="outlined" compact onPress={() => handleAdd(p)}
                       textColor={meta.stripe} style={[styles.startBtn, { borderColor: meta.stripe }]}>
                       Start →
