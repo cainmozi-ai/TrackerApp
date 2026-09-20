@@ -9,12 +9,8 @@ import { useAppTheme } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
-import { MUSCLES, EXERCISE_TYPES, exerciseType, formatMuscles, type ExerciseType } from '@/utils/muscles';
+import { MUSCLES, EXERCISE_TYPES, exerciseType, formatMuscles, type ExerciseType, groupColor } from '@/utils/muscles';
 
-const GROUP_COLORS: Record<string, string> = {
-  Chest: '#A83232', Back: '#A83232', Shoulders: '#A83232', Arms: '#A83232',
-  Legs: '#A83232', Glutes: '#A83232', Core: '#A83232', Cardio: '#A83232',
-};
 const CUSTOM_GROUPS = ['Chest', 'Back', 'Shoulders', 'Legs', 'Glutes', 'Arms', 'Core', 'Cardio'];
 
 export default function ExerciseLibraryScreen() {
@@ -139,7 +135,7 @@ export default function ExerciseLibraryScreen() {
         ) : (
           filtered.map(ex => {
             const grp = ex.muscleGroup;
-            const tileColor = GROUP_COLORS[grp] ?? moduleColors.workout;
+            const tileColor = groupColor(grp);
             const inGym = available(ex.equipment);
             const muscles = formatMuscles(ex.primaryMuscles, ex.secondaryMuscles);
             return (

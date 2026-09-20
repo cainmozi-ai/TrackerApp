@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, accent, moduleColors, withAlpha } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
+import { groupColor } from '@/utils/muscles';
 import { MotionCard } from '@/components/common/MotionCard';
 import { useWorkoutStore, estimate1RM } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
@@ -67,31 +68,46 @@ export default function ExerciseDetailScreen() {
   const lastWeight = working.length ? Math.max(...working.map(s => s.weight)) : 0;
   const readyToProgress = isWeight && !!suggestion && suggestion.weight > lastWeight && lastWeight > 0;
 
+  const gColor = groupColor(exercise.muscleGroup);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title={exercise.name} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Hero — muscle group tinted, per the design */}
+        <View style={[styles.hero, { backgroundColor: withAlpha(gColor, 0.16) }]}>
+          <Text variant="headlineSmall" style={[styles.heroMuscle, { color: gColor }]}>
+            {exercise.muscleGroup?.toUpperCase()}
+          </Text>
+          <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>Primary target</Text>
+        </View>
+
         <View style={styles.tagRow}>
-          <Chip icon="arm-flex" compact>{exercise.muscleGroup}</Chip>
-          <Chip icon="dumbbell" compact>{exercise.equipment}</Chip>
-          <Chip icon="cog" compact>{exercise.mechanic === 'isolation' ? 'Isolation' : 'Compound'}</Chip>
-          {exercise.isCustom && <Chip icon="account" compact>Custom</Chip>}
+          <Chip compact style={{ backgroundColor: accent }} textStyle={{ color: '#FFFFFF' }}>
+            {exercise.mechanic === 'isolation' ? 'Isolation' : 'Compound'}
+          </Chip>
+          <Chip compact>{exercise.equipment}</Chip>
+          {!!exercise.target && <Chip compact>{exercise.target}</Chip>}
+          {exercise.isCustom && <Chip compact>Custom</Chip>}
         </View>
 
         {(exercise.primaryMuscles.length > 0 || exercise.secondaryMuscles.length > 0) && (
-          <View style={styles.musclesRow}>
+          <MotionCard style={styles.card} noEnter>
+            <Text variant="titleSmall" style={[styles.cardTitle, { color: colors.onSurface }]}>Muscles worked</Text>
             {exercise.primaryMuscles.length > 0 && (
-              <Text variant="bodySmall" style={{ color: colors.onSurface }}>
-                <Text style={{ fontWeight: '700' }}>Primary: </Text>{exercise.primaryMuscles.join(', ')}
-              </Text>
+              <View style={styles.muscleRow}>
+                <Text variant="bodySmall" style={[styles.muscleKey, { color: colors.onSurfaceVariant }]}>Primary</Text>
+                <Text variant="bodyMedium" style={{ color: colors.onSurface, flex: 1 }}>{exercise.primaryMuscles.join(', ')}</Text>
+              </View>
             )}
             {exercise.secondaryMuscles.length > 0 && (
-              <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                <Text style={{ fontWeight: '700' }}>Secondary: </Text>{exercise.secondaryMuscles.join(', ')}
-              </Text>
+              <View style={styles.muscleRow}>
+                <Text variant="bodySmall" style={[styles.muscleKey, { color: colors.onSurfaceVariant }]}>Secondary</Text>
+                <Text variant="bodyMedium" style={{ color: colors.onSurface, flex: 1 }}>{exercise.secondaryMuscles.join(', ')}</Text>
+              </View>
             )}
-          </View>
+          </MotionCard>
         )}
 
         {!!exercise.description && (
@@ -107,13 +123,12 @@ export default function ExerciseDetailScreen() {
 
         {exercise.tips.length > 0 && (
           <MotionCard style={styles.card}>
-            <View style={styles.cardHead}>
-              <MaterialCommunityIcons name="school" size={20} color={moduleColors.workout} />
-              <Text variant="titleSmall" style={[styles.cardTitle, { color: colors.onSurface }]}>Form Tips</Text>
-            </View>
+            <Text variant="titleSmall" style={[styles.cardTitle, { color: colors.onSurface }]}>How to perform</Text>
             {exercise.tips.map((tip, i) => (
-              <View key={i} style={styles.tipRow}>
-                <MaterialCommunityIcons name="check-circle" size={16} color={accent} style={styles.tipIcon} />
+              <View key={i} style={styles.stepRow}>
+                <View style={[styles.stepNum, { backgroundColor: withAlpha(accent, 0.18) }]}>
+                  <Text variant="labelSmall" style={{ color: accent, fontWeight: '800' }}>{i + 1}</Text>
+                </View>
                 <Text variant="bodyMedium" style={[styles.tipText, { color: colors.onSurface }]}>{tip}</Text>
               </View>
             ))}
@@ -227,6 +242,12 @@ export default function ExerciseDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  hero: { borderRadius: shape.lg, paddingVertical: spacing.xl, alignItems: 'center', gap: 4, marginBottom: spacing.md },
+  heroMuscle: { fontWeight: '800', letterSpacing: 1 },
+  muscleRow: { flexDirection: 'row', gap: spacing.md, marginTop: 6 },
+  muscleKey: { width: 74 },
+  stepRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start', marginTop: spacing.sm },
+  stepNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   tagRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.sm, flexWrap: 'wrap' },
