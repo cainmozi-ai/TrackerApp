@@ -30,7 +30,6 @@ export default function MicronutrientsScreen() {
 
   const vitaminPct = groupPercent(todayMicros, 'vitamin');
   const mineralPct = groupPercent(todayMicros, 'mineral');
-  const anyData = Object.keys(todayMicros).length > 0;
 
   // The design opens with the day's macros before the vitamin/mineral rings.
   const macroRows = [
@@ -84,15 +83,6 @@ export default function MicronutrientsScreen() {
           </MotionCard>
         </View>
 
-        {!anyData && (
-          <MotionCard style={styles.empty} index={0}>
-            <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant, textAlign: 'center' }}>
-              Log foods to see your vitamins and minerals here. Scanned products fill in
-              automatically when the data exists, or add values yourself under “Add vitamins &
-              minerals” on the custom-food screen.
-            </Text>
-          </MotionCard>
-        )}
 
         <View style={styles.catGrid}>
           {CATEGORIES.map((cat, i) => {
@@ -163,7 +153,6 @@ const styles = StyleSheet.create({
   ringRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   ringCard: { flex: 1, alignItems: 'center', paddingVertical: spacing.md, gap: spacing.xs },
   ringTitle: { fontWeight: '700' },
-  empty: { padding: spacing.md, marginBottom: spacing.sm },
   sectionTitle: { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.sm },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   // 171x170 in the design: a large icon circle, then the bar, then the label.
