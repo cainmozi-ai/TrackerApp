@@ -37,16 +37,30 @@ function loadFoodList(): Promise<CnfFood[]> {
 
 const words = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 
-/** Every query word must appear as a word prefix; earlier and shorter wins. */
+/** CNF uses Canadian spellings and terms. */
+const CNF_TERMS: [RegExp, string][] = [
+  [/\byogh?urts?\b/g, 'yogourt'],
+  [/\breduced fat\b/g, 'partly skimmed'],
+  [/\bnonfat\b/g, 'skim'],
+  [/\bfiber\b/g, 'fibre'],
+  [/\bflavor(ed)?\b/g, 'flavour'],
+];
+
+/** The last query word (usually the food itself: "greek yogurt" → yogurt)
+ * must appear; each other word that appears adds to the score. Earlier and
+ * shorter descriptions win ties. */
 function score(desc: string, q: string[]): number {
   const w = words(desc);
+  const head = q[q.length - 1];
+  if (!w.some(x => x.startsWith(head))) return -1;
   let s = 0;
+  let missing = 0;
   for (const t of q) {
     const i = w.findIndex(x => x.startsWith(t));
-    if (i < 0) return -1;
-    s += 10 - Math.min(i, 8);
+    if (i < 0) missing += 1;
+    else s += 20 - Math.min(i, 8);
   }
-  return s - desc.length / 20;
+  return s - missing * 15 - desc.length / 20;
 }
 
 async function nutrientsFor(f: CnfFood): Promise<Food> {
@@ -63,11 +77,15 @@ async function nutrientsFor(f: CnfFood): Promise<Food> {
   });
 }
 
-export async function searchCnf(query: string, limit = 5): Promise<Food[]> {
-  const q = words(query);
+/** `accept` can rule foods out by description before their nutrients are fetched. */
+export async function searchCnf(query: string, limit = 5, accept?: (description: string) => boolean): Promise<Food[]> {
+  let text = query.toLowerCase();
+  for (const [re, to] of CNF_TERMS) text = text.replace(re, to);
+  const q = words(text);
   if (!q.length) return [];
   const list = await loadFoodList();
   const best = list
+    .filter(f => !accept || accept(f.food_description))
     .map(f => ({ f, s: score(f.food_description, q) }))
     .filter(x => x.s >= 0)
     .sort((a, b) => b.s - a.s)

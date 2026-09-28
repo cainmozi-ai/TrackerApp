@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
@@ -12,6 +12,8 @@ import { ProgressRing } from '@/components/common/ProgressRing';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
 import { NutrientSheet } from '@/components/nutrition/NutrientSheet';
+import { estimateMicros, needsEstimate } from '@/services/foodSources/estimate';
+import type { Food } from '@/types';
 import {
   VITAMINS, MINERALS, CATEGORIES, groupPercent, categoryPercent, percentOf, targetFor, isOverLimit, formatAmount,
   type MicroDef, type NutrientProfile,
@@ -27,11 +29,42 @@ function fillColor(pct: number): string {
 export default function MicronutrientsScreen() {
   const { colors } = useAppTheme();
   const {
-    todayMicros, todaySupplementMicros, todayMicroCoverage, todayLogCount,
-    todayProtein, todayCarbs, todayFat, todaySugar, todayFiber, loadTodayLogs,
+    todayMicros, todaySupplementMicros, todayMicroCoverage, todayLogCount, todayEstimatedCount, todayLogs,
+    todayProtein, todayCarbs, todayFat, todaySugar, todayFiber, loadTodayLogs, applyMicroEstimate,
   } = useNutritionStore();
   const { profile, loadProfile } = useUserStore();
   const [openKey, setOpenKey] = useState<string | null>(null);
+
+  // Today's foods whose labels list no vitamins/minerals (e.g. UK packs from
+  // Open Food Facts) — offered an estimate from a similar reference food.
+  const [estimating, setEstimating] = useState(false);
+  const [unmatched, setUnmatched] = useState<string[]>([]);
+  const missing = useMemo(() => {
+    const seen = new Set<number>();
+    const out: Food[] = [];
+    for (const l of todayLogs) {
+      if (l.food && !seen.has(l.food.id) && needsEstimate(l.food) && !unmatched.includes(l.food.name)) {
+        seen.add(l.food.id);
+        out.push(l.food);
+      }
+    }
+    return out;
+  }, [todayLogs, unmatched]);
+
+  const estimateMissing = async () => {
+    setEstimating(true);
+    const failed: string[] = [];
+    try {
+      for (const food of missing) {
+        const est = await estimateMicros(food).catch(() => null);
+        if (est) await applyMicroEstimate(food.id, est.micros, est.from);
+        else failed.push(food.name);
+      }
+    } finally {
+      setUnmatched(prev => [...prev, ...failed]);
+      setEstimating(false);
+    }
+  };
 
   useFocusEffect(useCallback(() => { loadTodayLogs(); loadProfile(); }, []));
 
@@ -90,6 +123,30 @@ export default function MicronutrientsScreen() {
           })}
         </MotionCard>
 
+        {(missing.length > 0 || unmatched.length > 0) && (
+          <MotionCard style={styles.missingCard} noEnter>
+            {missing.length > 0 && (
+              <>
+                <Text variant="bodyMedium" style={{ color: colors.onSurface }}>
+                  {`${missing.length === 1 ? '1 food' : `${missing.length} foods`} you logged today ${missing.length === 1 ? 'has' : 'have'} no vitamin or mineral data: ${missing.map(f => f.name).join(', ')}.`}
+                </Text>
+                <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                  {`${missing.length === 1 ? 'Its label doesn’t' : 'Their labels don’t'} list them. We can estimate them from the closest USDA or Canadian reference food.`}
+                </Text>
+                <Button mode="outlined" onPress={estimateMissing} loading={estimating} disabled={estimating}
+                  textColor={colors.onSurface} style={styles.missingBtn}>
+                  Estimate from similar foods
+                </Button>
+              </>
+            )}
+            {unmatched.length > 0 && (
+              <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                {`No reference food was close enough for ${unmatched.join(', ')}.`}
+              </Text>
+            )}
+          </MotionCard>
+        )}
+
         <View style={styles.ringRow}>
           <MotionCard style={styles.ringCard} noEnter>
             <ProgressRing progress={vitaminPct / 100} size={108}
@@ -146,6 +203,7 @@ export default function MicronutrientsScreen() {
         fromSupplements={openKey ? supplementAmount(openKey) : 0}
         coverage={openKey ? todayMicroCoverage[openKey] || 0 : 0}
         logCount={todayLogCount}
+        estimatedCount={todayEstimatedCount}
       />
     </SafeAreaView>
   );
@@ -198,6 +256,8 @@ const styles = StyleSheet.create({
   macroFill: { height: '100%', borderRadius: 4 },
   macroTick: { position: 'absolute', top: -2, width: 2, height: 12, borderRadius: 1 },
   ringRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  missingCard: { padding: spacing.md, marginBottom: spacing.sm, gap: spacing.xs },
+  missingBtn: { alignSelf: 'flex-start', marginTop: spacing.xs, borderRadius: shape.md },
   ringCard: { flex: 1, alignItems: 'center', paddingVertical: spacing.md, gap: spacing.xs },
   ringTitle: { fontWeight: '300' },
   sectionTitle: { fontWeight: '300', marginTop: spacing.md, marginBottom: spacing.sm },

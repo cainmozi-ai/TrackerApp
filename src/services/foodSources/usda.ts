@@ -76,6 +76,20 @@ export async function searchUsda(query: string): Promise<Food[]> {
   return [...generic, ...branded];
 }
 
+/** Reference foods with full vitamin and mineral profiles (SR Legacy and the
+ * FNDDS survey foods), per 100 g — used to estimate what labels leave out.
+ * Searched separately: combined, FNDDS's many variants (granola bars, …)
+ * push SR Legacy's plain foods out of the results. */
+export async function searchUsdaReference(query: string, pageSize = 12): Promise<Food[]> {
+  const settled = await Promise.allSettled([
+    search(query, 'SR Legacy', pageSize),
+    search(query, 'Survey (FNDDS)', pageSize),
+  ]);
+  const foods = settled.flatMap(r => (r.status === 'fulfilled' ? r.value : []));
+  if (!foods.length && settled[0].status === 'rejected') throw settled[0].reason;
+  return foods;
+}
+
 /** Branded-food lookup by UPC/EAN barcode. */
 export async function lookupUsdaBarcode(code: string): Promise<Food | null> {
   const digits = code.replace(/\D/g, '');

@@ -24,7 +24,7 @@ export default function WellnessCategory() {
   const { colors } = useAppTheme();
   const { cat } = useLocalSearchParams<{ cat: string }>();
   const {
-    todayMicros, todaySupplementMicros, todayMicroCoverage, todayLogCount,
+    todayMicros, todaySupplementMicros, todayMicroCoverage, todayLogCount, todayEstimatedCount,
     todayCalories, todayProtein, todayFat, loadTodayLogs,
   } = useNutritionStore();
   const { profile, loadProfile } = useUserStore();
@@ -107,6 +107,7 @@ export default function WellnessCategory() {
         fromSupplements={openKey ? supplementAmount(openKey) : 0}
         coverage={openKey ? todayMicroCoverage[openKey] || 0 : 0}
         logCount={todayLogCount}
+        estimatedCount={todayEstimatedCount}
       />
     </SafeAreaView>
   );

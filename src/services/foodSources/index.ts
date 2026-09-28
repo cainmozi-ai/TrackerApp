@@ -12,6 +12,7 @@ import { searchUsda, lookupUsdaBarcode, USDA_HAS_KEY } from './usda';
 import { searchCnf } from './cnf';
 import { searchDsld, lookupDsldBarcode } from './dsld';
 import { SourceError } from './common';
+import { nameMatch, norm, microCount } from './ranking';
 
 export { SOURCE_META } from './common';
 export { USDA_HAS_KEY } from './usda';
@@ -86,9 +87,6 @@ export async function lookupBarcodeAll(code: string): Promise<Food | null> {
 /** Some Open Food Facts entries have no nutrition at all — hide them. */
 export const hasNutrition = (f: Food) => f.calories > 0 || f.protein > 0 || f.carbs > 0 || f.fat > 0;
 
-const norm = (s: string | null | undefined) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-const microCount = (f: Food) => Object.keys(f.micros || {}).length;
-
 /** Copy nutrients `extra` reports that `base` doesn't. Serving sizes can
  * differ, so values are rescaled by calories when both have them, else by
  * serving weight when both are in grams; otherwise nothing is copied. */
@@ -128,39 +126,10 @@ function dedupe(foods: Food[]): Food[] {
 
 const SUPPLEMENT_WORDS = /\b(vitamin|supplement|capsule|tablet|softgel|gumm(y|ies)|multi ?vitamin|creatine|pre ?workout|bcaa|eaa|electrolyte|fish oil|omega|magnesium|zinc|iron|calcium|melatonin|ashwagandha|collagen|probiotic|b12|d3|biotin|folic|glutamine|beta ?alanine|citrulline)\b/;
 
-/** Words that describe how a food is prepared or served rather than what it
- * is — "Fish, salmon, raw" is as good a match for "salmon" as "Salmon". */
-const NEUTRAL_WORDS = new Set([
-  'raw', 'cooked', 'fresh', 'plain', 'whole', 'baked', 'grilled', 'boiled', 'roasted', 'steamed',
-  'broiled', 'poached', 'nfs', 'ns', 'as', 'to', 'eaten', 'with', 'without', 'and', 'or', 'of', 'in',
-  'the', 'a', 'skin', 'flesh', 'meat', 'only', 'edible', 'portion', 'unprepared', 'prepared',
-  'drained', 'solids', 'canned', 'frozen', 'dry', 'dried', 'unsalted', 'salted',
-]);
-
-/** Higher is better: whole-word matches first, then fewer unrelated words
- * (so plain foods beat dishes that merely contain them), then sources suited
- * to the query, then how many nutrients the entry reports. */
+/** Word matches first (see ranking.ts), then sources suited to the query,
+ * then how many nutrients the entry reports. */
 function score(f: Food, query: string, tokens: string[], wantsSupplement: boolean): number {
-  const name = norm(f.name);
-  const nameWords = name.split(' ');
-  const allWords = nameWords.concat(norm(f.brand).split(' ').filter(Boolean));
-  let matched = 0;
-  for (const t of tokens) {
-    if (allWords.includes(t) || allWords.includes(`${t}s`) || allWords.includes(t.replace(/s$/, ''))) matched += 1;
-    else if (allWords.some(w => w.startsWith(t))) matched += 0.4; // "salmon" in "salmonberry"
-  }
-  let s = (40 * matched) / Math.max(1, tokens.length);
-  if (matched < tokens.length) s -= 20;
-  if (name === query) s += 25;
-
-  // Unrelated words in the name. USDA/CNF names lead with a category
-  // ("Fish, salmon, raw"), which isn't counted against the food.
-  const segments = f.name.split(',').map(norm);
-  const category = segments.length > 1 && !tokens.some(t => segments[0].includes(t)) ? new Set(segments[0].split(' ')) : null;
-  const extra = nameWords.filter(w => w && !tokens.some(t => w.startsWith(t) || t.startsWith(w))
-    && !NEUTRAL_WORDS.has(w) && !category?.has(w)).length;
-  s -= Math.min(30, extra * 6);
-
+  let s = nameMatch(f, query, tokens).score;
   if (f.source === 'dsld') s += wantsSupplement ? 15 : -30;
   else if (f.source === 'usda') s += f.brand ? 2 : 10;
   else if (f.source === 'cnf') s += 8;

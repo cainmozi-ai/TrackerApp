@@ -19,6 +19,8 @@ interface Props {
   /** How many of today's foods report this nutrient, out of `logCount`. */
   coverage: number;
   logCount: number;
+  /** How many of today's foods have values estimated from a similar food. */
+  estimatedCount?: number;
 }
 
 const SCOPE_TITLE = {
@@ -31,7 +33,7 @@ const SCOPE_TITLE = {
 /** Everything behind one nutrient's number: what it does, the NIH target for
  * this person, the upper limit and what it covers, today's data coverage and
  * a link to the source fact sheet. */
-export function NutrientSheet({ nutrientKey, onDismiss, profile, amount, fromSupplements, coverage, logCount }: Props) {
+export function NutrientSheet({ nutrientKey, onDismiss, profile, amount, fromSupplements, coverage, logCount, estimatedCount = 0 }: Props) {
   const { colors } = useAppTheme();
   const def = nutrientKey ? MICRO_BY_KEY[nutrientKey] : null;
   const target = def ? targetFor(def.key, profile) : null;
@@ -94,10 +96,15 @@ export function NutrientSheet({ nutrientKey, onDismiss, profile, amount, fromSup
               {logCount === 0
                 ? 'Nothing logged yet today.'
                 : coverage === logCount
-                  ? (logCount === 1 ? 'The food you logged reports this nutrient.' : `All ${logCount} foods you logged report this nutrient.`)
+                  ? (logCount === 1 ? 'The food you logged reports this nutrient.'
+                    : logCount === 2 ? 'Both foods you logged report this nutrient.'
+                    : `All ${logCount} foods you logged report this nutrient.`)
                   : coverage === 0
                     ? `None of the ${logCount} food${logCount === 1 ? '' : 's'} you logged report this nutrient, so today’s amount is unknown.`
                     : `${coverage} of ${logCount} foods you logged report this nutrient. The rest have no data, so your real intake is probably higher.`}
+              {estimatedCount > 0
+                ? ` ${estimatedCount === 1 ? 'One food uses' : `${estimatedCount} foods use`} values estimated from a similar reference food, because ${estimatedCount === 1 ? 'its label doesn’t' : 'their labels don’t'} list vitamins or minerals.`
+                : ''}
             </Section>
 
             {def.source && (

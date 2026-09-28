@@ -208,8 +208,10 @@ export async function fetchJson<T>(url: string, init: RequestInit = {}, timeoutM
 }
 
 export class SourceError extends Error {
-  constructor(public kind: 'rate-limit' | 'http' | 'timeout' | 'network', message: string) {
+  kind: 'rate-limit' | 'http' | 'timeout' | 'network';
+  constructor(kind: SourceError['kind'], message: string) {
     super(message);
+    this.kind = kind;
   }
 }
 

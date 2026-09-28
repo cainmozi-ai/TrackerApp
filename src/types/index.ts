@@ -94,6 +94,10 @@ export interface Food {
   source?: FoodSourceId | null;
   /** The food's id in that database (FDC id, barcode, DSLD label id, CNF code). */
   sourceId?: string | null;
+  /** Set when some micros were estimated from a similar reference food
+   * (e.g. "USDA: Chocolate, dark, 70-85% cacao solids") because the label
+   * didn't list them. */
+  microsEstimatedFrom?: string | null;
   isCustom: boolean;
   isFavorite: boolean;
   createdAt: string;

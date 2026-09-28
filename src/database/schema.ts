@@ -510,6 +510,8 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     // Multi-database food data — which database a food came from, and its id there.
     'ALTER TABLE foods ADD COLUMN source TEXT',
     'ALTER TABLE foods ADD COLUMN source_id TEXT',
+    // Which reference food filled in micros a label didn't list (null = none estimated).
+    'ALTER TABLE foods ADD COLUMN micros_estimated_from TEXT',
   ];
   for (const sql of alters) {
     try {

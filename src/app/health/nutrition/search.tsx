@@ -16,6 +16,7 @@ import {
   type OnlineSourceId, type SourceStatus,
 } from '@/services/foodSources';
 import { macroLine } from '@/utils/foodFormat';
+import { useMicroEstimate, MicroEstimateNote } from '@/components/nutrition/MicroEstimate';
 import type { Food, MealType, SavedMeal } from '@/types';
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -55,10 +56,12 @@ export default function FoodSearchScreen() {
   const [servingsText, setServingsText] = useState('1');
   const [amountText, setAmountText] = useState('100');
   const [logging, setLogging] = useState(false);
+  // Labels often list no vitamins/minerals — estimate them from a similar food.
+  const estimate = useMicroEstimate(pendingFood);
   const {
     allFoods, recents, savedMeals,
     loadAllFoods, loadRecents, loadSavedMeals,
-    logFood, addCustomFood, logSavedMeal,
+    logFood, addCustomFood, logSavedMeal, applyMicroEstimate,
   } = useNutritionStore();
   const { reward } = useUserStore();
 
@@ -125,7 +128,9 @@ export default function FoodSearchScreen() {
     setLogging(true);
     try {
       let foodId = pendingFood.id;
-      if (!foodId || foodId === 0) foodId = await addCustomFood(pendingFood);
+      const est = estimate.status === 'found' && estimate.include ? estimate.estimate : null;
+      if (!foodId || foodId === 0) foodId = await addCustomFood(estimate.apply(pendingFood));
+      else if (est) await applyMicroEstimate(foodId, est.micros, est.from);
       await logFood(foodId, selectedMeal, Math.round(portionServings * 100) / 100, date);
       await reward(10, 'meal', 'Logged a meal', 'first_meal');
       setPendingFood(null);
@@ -305,6 +310,7 @@ export default function FoodSearchScreen() {
                 {pendingFood?.sodium != null ? `Sodium ${Math.round(pendingFood.sodium * portionServings)}mg` : ''}
               </Text>
             )}
+            <MicroEstimateNote state={estimate} />
           </Dialog.Content>
           <Dialog.Actions>
             <Button textColor={colors.accentText} onPress={() => setPendingFood(null)}>Cancel</Button>

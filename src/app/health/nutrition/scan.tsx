@@ -8,6 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { moduleColors, spacing, shape, type AppColors } from '@/theme';
 import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { lookupBarcodeAll, SOURCE_META } from '@/services/foodSources';
+import { useMicroEstimate, MicroEstimateNote } from '@/components/nutrition/MicroEstimate';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
 import type { Food, MealType } from '@/types';
@@ -78,7 +79,10 @@ export default function ScanScreen() {
 
   // The food in the basis the user picked. Has its own per-100 toggle so labels
   // with multiple serving columns can't mislead the log.
-  const active = result ? (basis === 'per100' || result.servingSize === 100 ? per100Variant(result) : result) : null;
+  // Fill vitamins/minerals the label doesn't list from a similar reference food.
+  const estimate = useMicroEstimate(result);
+  const base = result ? estimate.apply(result) : null;
+  const active = base ? (basis === 'per100' || base.servingSize === 100 ? per100Variant(base) : base) : null;
   const servings = parseFloat(servingsText) || 0;
 
   const handleLog = async () => {
@@ -165,6 +169,7 @@ export default function ScanScreen() {
             {!!result.source && (
               <Text variant="bodySmall" style={styles.resultBrand}>Data: {SOURCE_META[result.source].label}</Text>
             )}
+            <MicroEstimateNote state={estimate} />
 
             {result.servingSize !== 100 && (result.servingUnit === 'g' || result.servingUnit === 'ml') && (
               <>
