@@ -63,10 +63,10 @@ export default function RemindersScreen() {
                 <MaterialCommunityIcons name={def.icon as MdiName} size={22} color={accent} />
               </View>
               <View style={styles.info}>
-                <Text variant="bodyLarge" style={{ color: colors.onSurface, fontWeight: '600' }}>{def.label}</Text>
+                <Text variant="bodyLarge" style={{ color: colors.onSurface, fontWeight: '300' }}>{def.label}</Text>
                 <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{def.description}</Text>
                 {r.enabled && (
-                  <Text onPress={() => openTime(def.type)} variant="labelMedium" style={{ color: accent, marginTop: 2, fontWeight: '700' }}>
+                  <Text onPress={() => openTime(def.type)} variant="labelMedium" style={{ color: colors.accentText, marginTop: 2, fontWeight: '300' }}>
                     {formatTime(r.hour, r.minute)} · change
                   </Text>
                 )}

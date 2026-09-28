@@ -106,7 +106,7 @@ export default function WeightScreen() {
                 return (
                   <View key={w.label} style={styles.changeRow}>
                     <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant, width: 64 }}>{w.label}</Text>
-                    <Text variant="bodyMedium" style={{ flex: 1, color: colors.onSurface, fontWeight: '600' }}>
+                    <Text variant="bodyMedium" style={{ flex: 1, color: colors.onSurface, fontWeight: '300' }}>
                       {d === null ? '— ' : `${d > 0 ? '+' : ''}${d} `}{unit}
                     </Text>
                     {d !== null && (
@@ -145,7 +145,7 @@ export default function WeightScreen() {
             {recent.slice(0, 10).map(log => (
               <View key={log.id} style={[styles.logRow, { backgroundColor: colors.surface }]}>
                 <Text variant="bodyMedium" style={{ color: colors.onSurface, flex: 1 }}>{log.logDate}</Text>
-                <Text variant="bodyMedium" style={{ color: colors.onSurface, fontWeight: '700' }}>{log.weight} {unit}</Text>
+                <Text variant="bodyMedium" style={{ color: colors.onSurface, fontWeight: '300' }}>{log.weight} {unit}</Text>
                 <IconButton icon="close" size={16} onPress={() => deleteLog(log.id)} />
               </View>
             ))}
@@ -160,7 +160,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   const { colors } = useAppTheme();
   return (
     <View style={styles.stat}>
-      <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{value}</Text>
+      <Text variant="titleMedium" style={{ color: colors.accentText, fontWeight: '300' }}>{value}</Text>
       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
     </View>
   );
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   logCard: { marginBottom: spacing.md },
-  cardTitle: { fontWeight: '700', marginBottom: spacing.sm },
+  cardTitle: { fontWeight: '300', marginBottom: spacing.sm },
   inputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
   input: { flex: 1 },
   logBtn: { borderRadius: shape.sm },
@@ -181,6 +181,6 @@ const styles = StyleSheet.create({
   changeTag: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   chartCard: { marginBottom: spacing.md, alignItems: 'center' },
   chart: { borderRadius: shape.md, marginTop: spacing.sm },
-  sectionTitle: { fontWeight: '700', marginBottom: spacing.sm },
+  sectionTitle: { fontWeight: '300', marginBottom: spacing.sm },
   logRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.xs, paddingLeft: spacing.md, borderRadius: shape.sm, marginBottom: spacing.xs },
 });

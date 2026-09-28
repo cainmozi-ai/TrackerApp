@@ -59,7 +59,7 @@ export default function FitnessScreen() {
           <Pressable onPress={resume} style={[styles.resumeBanner, { backgroundColor: withAlpha(accent, 0.16), borderColor: accent }]}>
             <MaterialCommunityIcons name="play-circle" size={26} color={accent} />
             <View style={styles.resumeText}>
-              <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>Workout in progress</Text>
+              <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>Workout in progress</Text>
               <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
                 {active.name} · tap to resume
               </Text>
@@ -73,7 +73,7 @@ export default function FitnessScreen() {
             style={[styles.resumeBanner, { backgroundColor: withAlpha(accent, 0.12), borderColor: accent }]}>
             <MaterialCommunityIcons name="calendar-star" size={26} color={accent} />
             <View style={styles.resumeText}>
-              <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>Today's split</Text>
+              <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>Today's split</Text>
               <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>{todaySplit.name} · tap to start</Text>
             </View>
             <MaterialCommunityIcons name="play-circle" size={24} color={accent} />
@@ -82,7 +82,7 @@ export default function FitnessScreen() {
 
         <Text variant="labelSmall" style={[styles.kicker, { color: colors.onSurfaceVariant }]}>MODULES</Text>
         <ModuleRow title="Start Workout" subtitle="Begin a new workout session" icon="play" color={accent} onPress={onStartPress} />
-        <ModuleRow title="Programs" subtitle="Leveled routines: beginner to advanced" icon="podium" color={accent} onPress={() => router.push('/fitness/programs')} />
+        <ModuleRow title="Programs" subtitle="Leveled routines: beginner → advanced" icon="podium" color={accent} onPress={() => router.push('/fitness/programs')} />
         <ModuleRow title="My Routines" subtitle="Create and manage workout templates" icon="clipboard-list" color="#C7B8A5" onPress={() => router.push('/fitness/template-builder')} />
         <ModuleRow title="Exercise Library" subtitle="Browse 190 exercises by muscle group" icon="book-open-variant" color="#8C62D9" onPress={() => router.push('/fitness/exercise-library')} />
 
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   scrollContent: { padding: spacing.md, paddingBottom: spacing.xxl },
   title: { fontWeight: '400' },
   subtitle: { marginTop: 2, marginBottom: spacing.lg },
-  kicker: { fontWeight: '700', marginBottom: spacing.sm },
+  kicker: { fontWeight: '300', marginBottom: spacing.sm },
   resumeBanner: {
     flexDirection: 'row',
     alignItems: 'center',

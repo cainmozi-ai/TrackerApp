@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, IconButton, Button, Chip, SegmentedButtons, Snackbar } from 'react-native-paper';
+import { Text, IconButton, Button, SegmentedButtons, Snackbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, accent } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
+import { Pill } from '@/components/common/Pill';
 import { useUserStore } from '@/stores/userStore';
 import { DASHBOARD_SECTIONS, SECTION_LABEL, DEFAULT_DASHBOARD } from '@/utils/dashboard';
 import { MUSCLE_GROUPS } from '@/utils/muscles';
@@ -64,7 +65,7 @@ export default function DashboardCustomizeScreen() {
             <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.onSurface }]}>Hidden sections</Text>
             <View style={styles.chipWrap}>
               {disabled.map(key => (
-                <Chip key={key} icon="plus" onPress={() => add(key)} style={styles.addChip}>{SECTION_LABEL[key]}</Chip>
+                <Pill key={key} label={`+ ${SECTION_LABEL[key]}`} onPress={() => add(key)} />
               ))}
             </View>
           </>
@@ -73,7 +74,7 @@ export default function DashboardCustomizeScreen() {
         <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.onSurface }]}>Muscle Group cards</Text>
         <View style={styles.chipWrap}>
           {MUSCLE_GROUPS.map(g => (
-            <Chip key={g} selected={cfg.muscleGroups.includes(g)} onPress={() => toggleMuscle(g)} showSelectedOverlay style={styles.addChip}>{g}</Chip>
+            <Pill key={g} label={g} selected={cfg.muscleGroups.includes(g)} onPress={() => toggleMuscle(g)} />
           ))}
         </View>
 
@@ -111,7 +112,7 @@ function TargetStepper({ label, value, step = 1, onChange }: { label: string; va
       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
       <View style={styles.stepperRow}>
         <IconButton icon="minus" size={16} onPress={() => onChange(Math.max(0, value - step))} style={styles.arrow} />
-        <Text variant="titleMedium" style={{ color: colors.onSurface, fontWeight: '800' }}>{value}</Text>
+        <Text variant="titleMedium" style={{ color: colors.onSurface, fontWeight: '300' }}>{value}</Text>
         <IconButton icon="plus" size={16} onPress={() => onChange(value + step)} style={styles.arrow} />
       </View>
     </View>
@@ -121,14 +122,13 @@ function TargetStepper({ label, value, step = 1, onChange }: { label: string; va
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
-  sectionTitle: { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.sm },
+  sectionTitle: { fontWeight: '300', marginTop: spacing.md, marginBottom: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', padding: spacing.xs, paddingLeft: spacing.sm, borderRadius: shape.md, marginBottom: spacing.xs, gap: spacing.xs },
-  rowLabel: { flex: 1, fontWeight: '600' },
+  rowLabel: { flex: 1, fontWeight: '300' },
   arrow: { margin: 0 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  addChip: { backgroundColor: 'transparent' },
   targetRow: { flexDirection: 'row', gap: spacing.sm },
   stepper: { flex: 1, borderRadius: shape.md, padding: spacing.sm, alignItems: 'center' },
   stepperRow: { flexDirection: 'row', alignItems: 'center' },
-  saveBtn: { marginTop: spacing.lg, borderRadius: shape.pill },
+  saveBtn: { marginTop: spacing.lg, borderRadius: shape.md },
 });

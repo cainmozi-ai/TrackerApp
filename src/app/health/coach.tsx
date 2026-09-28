@@ -74,7 +74,7 @@ export default function CoachScreen() {
                 <MaterialCommunityIcons name="fire" size={20} color={accent} />
                 <Text variant="titleMedium" style={[styles.cardTitle, { color: colors.onSurface }]}>Estimated expenditure</Text>
               </View>
-              <Text variant="displaySmall" style={[styles.big, { color: accent }]}>{result.expenditure}</Text>
+              <Text variant="displaySmall" style={[styles.big, { color: colors.accentText }]}>{result.expenditure}</Text>
               <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>kcal / day maintenance</Text>
               {result.weeklyRateKg !== null && (
                 <Text variant="bodySmall" style={[styles.sub, { color: colors.onSurfaceVariant }]}>
@@ -124,7 +124,7 @@ function Macro({ label, value }: { label: string; value: string }) {
   const { colors } = useAppTheme();
   return (
     <View style={styles.macro}>
-      <Text variant="titleMedium" style={{ color: colors.onSurface, fontWeight: '800' }}>{value}</Text>
+      <Text variant="titleMedium" style={{ color: colors.onSurface, fontWeight: '300' }}>{value}</Text>
       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
     </View>
   );
@@ -135,11 +135,11 @@ const styles = StyleSheet.create({
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   card: { marginBottom: spacing.md },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  cardTitle: { fontWeight: '700' },
-  big: { fontWeight: '800', marginTop: spacing.sm },
+  cardTitle: { fontWeight: '300' },
+  big: { fontWeight: '300', marginTop: spacing.sm },
   sub: { marginTop: spacing.xs },
   macroRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md },
   macro: { alignItems: 'center', flex: 1 },
-  applyBtn: { marginTop: spacing.lg, borderRadius: shape.pill },
+  applyBtn: { marginTop: spacing.lg, borderRadius: shape.md },
   footnote: { textAlign: 'center', lineHeight: 18, marginTop: spacing.sm },
 });

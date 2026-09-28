@@ -25,7 +25,7 @@ export function ArticleScreen({ title, intro, sections }: { title: string; intro
           <View key={i} style={[styles.card, { backgroundColor: colors.surface }]}>
             <View style={styles.headRow}>
               <View style={[styles.dot, { backgroundColor: accent }]} />
-              <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '800' }}>{s.heading}</Text>
+              <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>{s.heading}</Text>
             </View>
             {!!s.body && (
               <Text variant="bodyMedium" style={{ color: colors.onSurface, lineHeight: 22 }}>{s.body}</Text>
@@ -34,7 +34,7 @@ export function ArticleScreen({ title, intro, sections }: { title: string; intro
               <View key={j} style={styles.bulletRow}>
                 <MaterialCommunityIcons name="circle-medium" size={18} color={accent} />
                 <Text variant="bodyMedium" style={{ color: colors.onSurface, flex: 1, lineHeight: 21 }}>
-                  <Text style={{ fontWeight: '700' }}>{b.term}</Text>
+                  <Text style={{ fontWeight: '300' }}>{b.term}</Text>
                   {b.term ? ' — ' : ''}{b.text}
                 </Text>
               </View>

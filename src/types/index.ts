@@ -70,6 +70,9 @@ export interface SavedMealItem {
   food?: Food;
 }
 
+/** Where a food's nutrition data came from. */
+export type FoodSourceId = 'usda' | 'cnf' | 'off' | 'dsld' | 'custom' | 'ai';
+
 export interface Food {
   id: number;
   name: string;
@@ -84,8 +87,13 @@ export interface Food {
   sodium: number | null;
   servingSize: number;
   servingUnit: string;
-  /** Vitamins & minerals per serving, keyed by micronutrient (mg/mcg). */
+  /** Vitamins & minerals per serving, keyed by micronutrient (mg/mcg). A key
+   * with 0 means the source reported none; a missing key means no data. */
   micros?: Record<string, number> | null;
+  /** Which database the nutrition came from (see services/foodSources). */
+  source?: FoodSourceId | null;
+  /** The food's id in that database (FDC id, barcode, DSLD label id, CNF code). */
+  sourceId?: string | null;
   isCustom: boolean;
   isFavorite: boolean;
   createdAt: string;

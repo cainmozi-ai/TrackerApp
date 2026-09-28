@@ -1,19 +1,21 @@
 import { useState, useCallback } from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
-import { Text, FAB, IconButton, Portal, Dialog, TextInput, Button, Snackbar, SegmentedButtons, Chip } from 'react-native-paper';
+import { Text, Portal, Dialog, TextInput, Button, Snackbar, SegmentedButtons } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { spacing, shape, moduleColors, withAlpha } from '@/theme';
+import { spacing, shape, accent } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { WeekStrip } from '@/components/common/WeekStrip';
-import { ProgressRing } from '@/components/common/ProgressRing';
 import { MotionCard } from '@/components/common/MotionCard';
+import { Pill } from '@/components/common/Pill';
+import { CalorieCard } from '@/components/nutrition/CalorieCard';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
 import type { FoodLog, MealType } from '@/types';
 import { localDate } from '@/utils/dates';
+import { macroLine, servingsLabel } from '@/utils/foodFormat';
 
 const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const WEEKDAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -38,19 +40,12 @@ function dateLabel(iso: string): string {
   const d = new Date(iso + 'T12:00:00');
   return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
 }
-const MEAL_ICONS: Record<MealType, keyof typeof MaterialCommunityIcons.glyphMap> = {
-  breakfast: 'weather-sunny',
-  lunch: 'white-balance-sunny',
-  dinner: 'weather-night',
-  snack: 'cookie',
-};
-
 export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
   const { colors } = useAppTheme();
   const {
     currentDate, todayLogs, todayCalories, todayProtein, todayCarbs, todayFat,
     todayFiber, todaySugar, todaySodium,
-    loadTodayLogs, deleteLog, updateLog, copyYesterday, saveMealFromDay,
+    loadTodayLogs, deleteLog, updateLog, logFood, copyYesterday, saveMealFromDay,
   } = useNutritionStore();
   const { profile, loadProfile } = useUserStore();
   const [saveDialog, setSaveDialog] = useState(false);
@@ -59,6 +54,8 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
   const [editLog, setEditLog] = useState<FoodLog | null>(null);
   const [editServings, setEditServings] = useState('1');
   const [editMeal, setEditMeal] = useState<MealType>('lunch');
+  // Kept for a few seconds after a delete so it can be undone.
+  const [removed, setRemoved] = useState<FoodLog | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -66,21 +63,6 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
       loadProfile();
     }, [])
   );
-
-  const calorieTarget = profile?.calorieTarget || 2000;
-  const proteinTarget = profile?.proteinTarget || 150;
-  const proteinRange = { min: profile?.proteinTargetMin ?? null, max: profile?.proteinTargetMax ?? null };
-  const carbsTarget = profile?.carbsTarget || 250;
-  const carbsRange = { min: profile?.carbsTargetMin ?? null, max: profile?.carbsTargetMax ?? null };
-  const fatTarget = profile?.fatTarget || 65;
-  const fatRange = { min: profile?.fatTargetMin ?? null, max: profile?.fatTargetMax ?? null };
-  const fiberTarget = profile?.fiberTarget || 30;
-  const fiberRange = { min: profile?.fiberTargetMin ?? null, max: profile?.fiberTargetMax ?? null };
-  const sugarTarget = profile?.sugarTarget || 50;
-  const sugarRange = { min: profile?.sugarTargetMin ?? null, max: profile?.sugarTargetMax ?? null };
-  const sodiumTarget = profile?.sodiumTarget || 2300;
-  const diff = calorieTarget - todayCalories;
-  const over = diff < 0;
 
   const getMealLogs = (meal: MealType) => todayLogs.filter(l => l.mealType === meal);
 
@@ -104,6 +86,21 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
     setSnack('Updated');
   };
 
+  const handleDeleteLog = async () => {
+    if (!editLog) return;
+    const log = editLog;
+    setEditLog(null);
+    await deleteLog(log.id);
+    setRemoved(log);
+  };
+
+  const handleUndoDelete = async () => {
+    if (!removed) return;
+    const log = removed;
+    setRemoved(null);
+    await logFood(log.foodId, log.mealType, log.servings, log.logDate);
+  };
+
   const handleSaveMeal = async () => {
     if (!mealName.trim()) return;
     await saveMealFromDay(mealName.trim());
@@ -119,39 +116,29 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
       <WeekStrip selected={currentDate} onSelect={iso => loadTodayLogs(iso)} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text variant="labelSmall" style={[styles.dateKicker, { color: colors.onSurfaceVariant }]}>
-          {dateLabel(currentDate)}
-        </Text>
-        <MotionCard style={styles.hero} noEnter onPress={() => router.push('/health/micronutrients')}>
-          <View style={styles.heroTop}>
-            <View style={styles.sideCol}>
-              <MacroBar label="Fiber" current={todayFiber} target={fiberTarget} range={fiberRange} />
-            </View>
-            <ProgressRing
-              progress={todayCalories / calorieTarget}
-              size={112}
-              strokeWidth={11}
-              color={moduleColors.nutrition}
-              value={String(todayCalories)}
-              label="eaten"
-            />
-            <View style={styles.sideCol}>
-              <MacroBar label="Sugar" current={todaySugar} target={sugarTarget} range={sugarRange} />
-            </View>
-          </View>
-          <MacroBar label="Protein" current={todayProtein} target={proteinTarget} range={proteinRange} />
-          <MacroBar label="Carbs" current={todayCarbs} target={carbsTarget} range={carbsRange} />
-          <MacroBar label="Fat" current={todayFat} target={fatTarget} range={fatRange} />
-        </MotionCard>
+        {currentDate !== localDate(new Date()) && (
+          <Text variant="labelSmall" style={[styles.dateKicker, { color: colors.onSurfaceVariant }]}>
+            {dateLabel(currentDate)}
+          </Text>
+        )}
+        <View style={styles.hero}>
+          <CalorieCard
+            profile={profile}
+            totals={{ calories: todayCalories, protein: todayProtein, carbs: todayCarbs, fat: todayFat, fiber: todayFiber, sugar: todaySugar, sodium: todaySodium }}
+            onPress={() => router.push('/health/micronutrients')}
+          />
+        </View>
 
         <View style={styles.actionRow}>
-          <Button mode="contained-tonal" icon="content-copy" compact style={styles.actionBtn} onPress={handleCopyYesterday}>
-            Copy Yesterday
-          </Button>
-          <Button mode="contained-tonal" icon="bookmark-plus" compact style={styles.actionBtn}
-            onPress={() => setSaveDialog(true)} disabled={todayLogs.length === 0}>
-            Save as Meal
-          </Button>
+          <Pressable onPress={handleCopyYesterday} accessibilityRole="button"
+            style={[styles.actionBtn, { backgroundColor: colors.surface }]}>
+            <Text variant="bodyMedium" style={{ color: colors.onSurface }}>Copy Yesterday</Text>
+          </Pressable>
+          <Pressable onPress={() => setSaveDialog(true)} disabled={todayLogs.length === 0} accessibilityRole="button"
+            accessibilityState={{ disabled: todayLogs.length === 0 }}
+            style={[styles.actionBtn, { backgroundColor: colors.surface, opacity: todayLogs.length === 0 ? 0.4 : 1 }]}>
+            <Text variant="bodyMedium" style={{ color: colors.onSurface }}>Save as Meal</Text>
+          </Pressable>
         </View>
 
         {MEAL_ORDER.map((meal, i) => {
@@ -160,33 +147,31 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
           return (
             <MotionCard key={meal} index={i} style={styles.mealCard}>
               <View style={styles.mealHeader}>
-                <MaterialCommunityIcons name={MEAL_ICONS[meal]} size={20} color={moduleColors.nutrition} />
+                <View style={[styles.mealDot, { backgroundColor: accent }]} />
                 <Text variant="titleSmall" style={[styles.mealTitle, { color: colors.onSurface }]}>
                   {meal.charAt(0).toUpperCase() + meal.slice(1)}
                 </Text>
-                <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant }}>{Math.round(cals)} cal</Text>
-                <IconButton
-                  icon="plus"
-                  size={18}
-                  mode="contained-tonal"
-                  containerColor={withAlpha(moduleColors.nutrition, 0.16)}
-                  iconColor={moduleColors.nutrition}
-                  style={styles.addBtn}
+                <Text variant="bodySmall" style={{ color: colors.onSurface }}>{Math.round(cals)} cal</Text>
+                <Pressable
                   onPress={() => router.push(`/health/nutrition/search?meal=${meal}&date=${currentDate}`)}
-                />
+                  accessibilityRole="button"
+                  accessibilityLabel={`Add food to ${meal}`}
+                  style={[styles.addBtn, { backgroundColor: colors.surfaceVariant }]}
+                >
+                  <MaterialCommunityIcons name="plus" size={18} color={colors.onSurface} />
+                </Pressable>
               </View>
               {logs.length === 0 ? (
                 <Text variant="bodySmall" style={[styles.empty, { color: colors.onSurfaceVariant }]}>Nothing logged</Text>
               ) : (
                 logs.map(log => (
-                  <Pressable key={log.id} style={styles.foodRow} onPress={() => openEdit(log)}>
-                    <View style={styles.foodInfo}>
-                      <Text variant="bodyMedium" style={{ color: colors.onSurface }}>{log.food?.name}</Text>
-                      <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                        {Math.round((log.food?.calories || 0) * log.servings)} cal · {log.servings} serving{log.servings !== 1 ? 's' : ''} · tap to edit
-                      </Text>
-                    </View>
-                    <IconButton icon="close" size={16} onPress={() => deleteLog(log.id)} />
+                  <Pressable key={log.id} style={styles.foodRow} onPress={() => openEdit(log)}
+                    accessibilityRole="button" accessibilityHint="Edit or delete this food">
+                    <Text variant="bodyMedium" style={{ color: colors.onSurface }}>{log.food?.name}</Text>
+                    <Text variant="bodySmall" style={{ color: colors.onSurface }}>
+                      {Math.round((log.food?.calories || 0) * log.servings)} cal
+                      {log.food ? ` · ${macroLine(log.food, log.servings)}` : ''} · {servingsLabel(log.servings)}
+                    </Text>
                   </Pressable>
                 ))
               )}
@@ -195,8 +180,6 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
         })}
       </ScrollView>
 
-      <FAB icon="plus" style={[styles.fab, { backgroundColor: moduleColors.nutrition }]} color="#fff"
-        onPress={() => router.push(`/health/nutrition/search?date=${currentDate}`)} />
 
       <Portal>
         <Dialog visible={!!editLog} onDismiss={() => setEditLog(null)}>
@@ -209,10 +192,8 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
               mode="outlined" keyboardType="numeric" style={{ marginBottom: spacing.sm }} />
             <View style={styles.quickRow}>
               {[0.5, 1, 1.5, 2, 3].map(q => (
-                <Chip key={q} compact onPress={() => setEditServings(String(q))}
-                  selected={parseFloat(editServings) === q} showSelectedOverlay>
-                  {q}
-                </Chip>
+                <Pill key={q} label={String(q)} compact onPress={() => setEditServings(String(q))}
+                  selected={parseFloat(editServings) === q} />
               ))}
             </View>
             <Text variant="labelLarge" style={{ marginBottom: spacing.xs }}>Meal</Text>
@@ -221,9 +202,9 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
               onValueChange={v => setEditMeal(v as MealType)}
               buttons={MEAL_ORDER.map(m => ({ value: m, label: m.charAt(0).toUpperCase() + m.slice(1) }))}
             />
-            <Text variant="titleSmall" style={{ marginTop: spacing.sm, color: moduleColors.nutrition }}>
-              = {Math.round((editLog?.food?.calories || 0) * (parseFloat(editServings) || 0))} cal ·
-              P{Math.round((editLog?.food?.protein || 0) * (parseFloat(editServings) || 0))} C{Math.round((editLog?.food?.carbs || 0) * (parseFloat(editServings) || 0))} F{Math.round((editLog?.food?.fat || 0) * (parseFloat(editServings) || 0))}
+            <Text variant="titleSmall" style={{ marginTop: spacing.sm, color: colors.accentText }}>
+              = {Math.round((editLog?.food?.calories || 0) * (parseFloat(editServings) || 0))} cal
+              {editLog?.food ? ` · ${macroLine(editLog.food, parseFloat(editServings) || 0)}` : ''}
             </Text>
             {(editLog?.food?.fiber != null || editLog?.food?.sugar != null || editLog?.food?.sodium != null) && (
               <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
@@ -234,8 +215,9 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
             )}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setEditLog(null)}>Cancel</Button>
-            <Button onPress={handleSaveEdit} disabled={!(parseFloat(editServings) > 0)}>Save</Button>
+            <Button textColor={colors.error} onPress={handleDeleteLog} style={styles.deleteBtn}>Delete</Button>
+            <Button textColor={colors.onSurface} onPress={() => setEditLog(null)}>Cancel</Button>
+            <Button mode="contained" onPress={handleSaveEdit} disabled={!(parseFloat(editServings) > 0)}>Save</Button>
           </Dialog.Actions>
         </Dialog>
 
@@ -248,80 +230,37 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
             <TextInput label="Meal name" value={mealName} onChangeText={setMealName} mode="outlined" autoFocus placeholder="e.g. My usual breakfast" />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setSaveDialog(false)}>Cancel</Button>
-            <Button onPress={handleSaveMeal} disabled={!mealName.trim()}>Save</Button>
+            <Button textColor={colors.onSurface} onPress={() => setSaveDialog(false)}>Cancel</Button>
+            <Button mode="contained" onPress={handleSaveMeal} disabled={!mealName.trim()}>Save</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
 
       <Snackbar visible={!!snack} onDismiss={() => setSnack('')} duration={2500}>{snack}</Snackbar>
+      <Snackbar visible={!!removed} onDismiss={() => setRemoved(null)} duration={6000}
+        action={{ label: 'Undo', onPress: handleUndoDelete }}>
+        {`Removed ${removed?.food?.name ?? 'food'}`}
+      </Snackbar>
     </SafeAreaView>
-  );
-}
-
-function MacroBar({
-  label, current, target, range, unit = 'g',
-}: {
-  label: string;
-  current: number;
-  target: number;
-  range: { min: number | null; max: number | null };
-  unit?: string;
-}) {
-  const { colors } = useAppTheme();
-  const hasRange = range.min !== null && range.max !== null && range.max >= range.min;
-  const scale = Math.max(target, range.max ?? 0, current, 1);
-  const pct = Math.min(current / scale, 1);
-  const bandStart = hasRange ? Math.min((range.min! / scale) * 100, 100) : 0;
-  const bandWidth = hasRange ? Math.min(((range.max! - range.min!) / scale) * 100, 100 - bandStart) : 0;
-  const status = hasRange
-    ? current < range.min! ? '#FF6B6B' : current > range.max! ? '#FFA726' : '#66BB6A'
-    : current > target ? '#FFA726' : '#66BB6A';
-  return (
-    <View style={styles.macroBar}>
-      <View style={styles.macroLabelRow}>
-        <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-        <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
-          {Math.round(current)}/{hasRange ? `${range.min}-${range.max}` : target}{unit}
-        </Text>
-      </View>
-      <View style={[styles.macroTrack, { backgroundColor: colors.surfaceVariant }]}> 
-        {hasRange && <View style={[styles.macroBand, { left: `${bandStart}%`, width: `${bandWidth}%`, backgroundColor: withAlpha('#66BB6A', 0.28) }]} />}
-        <View style={[styles.macroFill, { width: `${pct * 100}%`, backgroundColor: status }]} />
-      </View>
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: 100 },
-  dateKicker: { letterSpacing: 1.5, fontWeight: '700', marginBottom: spacing.xs },
-  hero: { marginBottom: spacing.sm, padding: spacing.md },
-  heroTop: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginBottom: spacing.md },
-  sideCol: { flex: 1 },
-  heroRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  microRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.sm },
-  microItem: { flex: 1 },
+  dateKicker: { fontWeight: '300', marginBottom: spacing.xs },
+  hero: { marginBottom: spacing.sm },
   quickRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.md },
-  macroColumn: { flex: 1, gap: spacing.xs },
-  remainingRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 2 },
-  remaining: { fontWeight: '800' },
   actionRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-  actionBtn: { flex: 1 },
+  actionBtn: { flex: 1, height: 40, borderRadius: shape.md, justifyContent: 'center', alignItems: 'center' },
   mealCard: { marginBottom: spacing.sm },
   mealHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  mealTitle: { flex: 1, fontWeight: '700' },
-  addBtn: { margin: 0, marginLeft: spacing.xs },
-  empty: { fontStyle: 'italic', marginTop: spacing.xs },
-  foodRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2, marginTop: 4 },
-  foodInfo: { flex: 1 },
-  macroBar: { marginBottom: spacing.sm },
-  macroLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
-  macroTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
-  macroBand: { position: 'absolute', top: 0, bottom: 0, borderRadius: 4 },
-  macroFill: { height: '100%', borderRadius: 3 },
-  fab: { position: 'absolute', right: 16, bottom: 24, borderRadius: shape.pill },
+  mealDot: { width: 16, height: 16, borderRadius: 8 },
+  mealTitle: { flex: 1, fontWeight: '300' },
+  addBtn: { width: 28, height: 28, borderRadius: shape.sm, justifyContent: 'center', alignItems: 'center', marginLeft: spacing.xs },
+  empty: { marginTop: spacing.sm },
+  foodRow: { paddingVertical: 4, marginTop: 4, gap: 2 },
+  deleteBtn: { marginRight: 'auto' },
 });
 
 /** Route wrapper — pushed from Home/deep links, so it keeps the back button. */

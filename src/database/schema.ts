@@ -4,16 +4,25 @@ import exercisesData from '@/data/exercises.json';
 import programsData from '@/data/programs.json';
 import foodsData from '@/data/foods.json';
 
+/** One food in src/data/foods.json (built by scripts/build-food-seed.mjs).
+ * Values are per 100 g; null means USDA doesn't report that nutrient. */
 interface FoodSeed {
   name: string;
+  fdcId: number;
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
-  fiber: number;
-  sugar: number;
-  sodium: number;
+  fiber: number | null;
+  sugar: number | null;
+  sodium: number | null;
   micros?: Record<string, number>;
+}
+
+interface FoodSeedFile {
+  /** Changes whenever the data changes; see seedFoods. */
+  version: string;
+  foods: FoodSeed[];
 }
 
 interface ProgramSeed {
@@ -433,6 +442,13 @@ export async function initializeDatabase(): Promise<void> {
       event_type TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     );
+
+    -- Small app-level settings that aren't user data (e.g. which version of
+    -- the bundled food library has been applied).
+    CREATE TABLE IF NOT EXISTS app_meta (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
   `);
 
   await runMigrations(database);
@@ -491,6 +507,9 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     'ALTER TABLE user_profile ADD COLUMN fiber_target_max INTEGER',
     'ALTER TABLE user_profile ADD COLUMN sugar_target_min INTEGER',
     'ALTER TABLE user_profile ADD COLUMN sugar_target_max INTEGER',
+    // Multi-database food data — which database a food came from, and its id there.
+    'ALTER TABLE foods ADD COLUMN source TEXT',
+    'ALTER TABLE foods ADD COLUMN source_id TEXT',
   ];
   for (const sql of alters) {
     try {
@@ -506,6 +525,25 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
       }
     }
   }
+
+  // Backfill food sources: the bundled library is USDA data, foods with a
+  // barcode came from Open Food Facts, everything else was typed in.
+  await db.runAsync(
+    `UPDATE foods SET source = CASE
+       WHEN is_custom = 0 THEN 'usda'
+       WHEN barcode IS NOT NULL AND barcode != '' THEN 'off'
+       ELSE 'custom' END
+     WHERE source IS NULL`
+  );
+
+  // Data repair: workouts started from a routine used to be saved as
+  // "Quick Workout". Give them back their routine's name (safe to re-run).
+  await db.runAsync(
+    `UPDATE workout_logs
+       SET name = (SELECT t.name FROM workout_templates t WHERE t.id = workout_logs.template_id)
+     WHERE name = 'Quick Workout' AND template_id IS NOT NULL
+       AND EXISTS (SELECT 1 FROM workout_templates t WHERE t.id = workout_logs.template_id)`
+  );
 }
 
 async function seedDefaultData(db: SQLite.SQLiteDatabase): Promise<void> {
@@ -539,18 +577,19 @@ async function seedDefaultData(db: SQLite.SQLiteDatabase): Promise<void> {
   await seedPrograms(db);
 }
 
-/** Seed a library of common whole foods with USDA macros + micronutrients so the
- * food search and micronutrient tracker are useful out of the box. Upserts by
- * name (is_custom = 0) and is guarded so it only runs when foods are missing. */
+/** Seed a library of common whole foods with full USDA nutrient profiles so
+ * the food search and micronutrient tracker are useful out of the box.
+ * Re-applied whenever the bundled data's version changes, upserting by name
+ * (is_custom = 0), so app updates carry corrected values to existing installs. */
 async function seedFoods(db: SQLite.SQLiteDatabase): Promise<void> {
   // Cast through unknown: TS infers a union of per-food literal shapes from the
   // JSON (each with a different subset of micro keys), which doesn't directly
   // match FoodSeed's open micros record.
-  const foods = foodsData as unknown as FoodSeed[];
-  const exist = await db.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM foods WHERE is_custom = 0'
+  const { version, foods } = foodsData as unknown as FoodSeedFile;
+  const applied = await db.getFirstAsync<{ value: string }>(
+    "SELECT value FROM app_meta WHERE key = 'food_seed_version'"
   );
-  if (exist && exist.count >= foods.length) return;
+  if (applied?.value === version) return;
 
   await db.withTransactionAsync(async () => {
     for (const f of foods) {
@@ -561,17 +600,22 @@ async function seedFoods(db: SQLite.SQLiteDatabase): Promise<void> {
       );
       if (found) {
         await db.runAsync(
-          'UPDATE foods SET calories = ?, protein = ?, carbs = ?, fat = ?, fiber = ?, sugar = ?, sodium = ?, micros = ? WHERE id = ?',
-          [f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, microsJson, found.id]
+          `UPDATE foods SET calories = ?, protein = ?, carbs = ?, fat = ?, fiber = ?, sugar = ?, sodium = ?, micros = ?,
+             serving_size = 100, serving_unit = 'g', source = 'usda', source_id = ? WHERE id = ?`,
+          [f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, microsJson, String(f.fdcId), found.id]
         );
       } else {
         await db.runAsync(
-          `INSERT INTO foods (name, brand, barcode, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit, micros, is_custom, is_favorite)
-           VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, 100, 'g', ?, 0, 0)`,
-          [f.name, f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, microsJson]
+          `INSERT INTO foods (name, brand, barcode, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit, micros, is_custom, is_favorite, source, source_id)
+           VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, 100, 'g', ?, 0, 0, 'usda', ?)`,
+          [f.name, f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, microsJson, String(f.fdcId)]
         );
       }
     }
+    await db.runAsync(
+      "INSERT INTO app_meta (key, value) VALUES ('food_seed_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      [version]
+    );
   });
 }
 

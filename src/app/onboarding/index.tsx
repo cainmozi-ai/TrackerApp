@@ -73,7 +73,8 @@ export default function OnboardingScreen() {
           value={name}
           onChangeText={setName}
           mode="outlined"
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.surface }]}
+          outlineColor={colors.outline}
           outlineStyle={styles.inputOutline}
           placeholder="Your name"
         />
@@ -118,15 +119,15 @@ export default function OnboardingScreen() {
         {preview && (
           <Animated.View entering={FadeInUp} style={[styles.previewCard, { backgroundColor: colors.surface }]}>
             <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant }}>Your daily plan</Text>
-            <Text variant="displaySmall" style={[styles.calories, { color: accent }]}>
+            <Text variant="displaySmall" style={[styles.calories, { color: colors.accentText }]}>
               {preview.calories}
             </Text>
             <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>calories / day</Text>
             <View style={styles.macroRow}>
-              <Macro label="Protein" value={`${preview.protein}g`} color={accent} />
-              <Macro label="Carbs" value={`${preview.carbs}g`} color={accent} />
-              <Macro label="Fat" value={`${preview.fat}g`} color={accent} />
-              <Macro label="Water" value={`${preview.water}`} color={accent} />
+              <Macro label="Protein" value={`${preview.protein}g`} color={colors.accentText} />
+              <Macro label="Carbs" value={`${preview.carbs}g`} color={colors.accentText} />
+              <Macro label="Fat" value={`${preview.fat}g`} color={colors.accentText} />
+              <Macro label="Water" value={`${preview.water}`} color={colors.accentText} />
             </View>
           </Animated.View>
         )}
@@ -142,7 +143,7 @@ export default function OnboardingScreen() {
         >
           {canCompute ? 'Start Tracking' : 'Fill in your details'}
         </Button>
-        <Button mode="text" onPress={() => finish(false)}>Skip for now</Button>
+        <Button mode="text" textColor={colors.accentText} onPress={() => finish(false)}>Skip for now</Button>
       </View>
     </SafeAreaView>
   );
@@ -154,6 +155,7 @@ function FieldLabel({ label }: { label: string }) {
 }
 
 function CompactField({ label, value, onChangeText }: { label: string; value: string; onChangeText: (value: string) => void }) {
+  const { colors } = useAppTheme();
   return (
     <View style={styles.compactField}>
       <FieldLabel label={label} />
@@ -162,7 +164,8 @@ function CompactField({ label, value, onChangeText }: { label: string; value: st
         onChangeText={onChangeText}
         mode="outlined"
         keyboardType="numeric"
-        style={styles.compactInput}
+        style={[styles.compactInput, { backgroundColor: colors.surface }]}
+        outlineColor={colors.outline}
         outlineStyle={styles.inputOutline}
       />
     </View>
@@ -176,7 +179,7 @@ function OptionButton({ label, selected, onPress }: { label: string; selected: b
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[styles.option, { borderColor: colors.outline }, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+      style={[styles.option, { borderColor: colors.outline, backgroundColor: colors.surface }, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}
     >
       <Text variant="bodyMedium" style={{ color: selected ? colors.onPrimary : colors.onSurface }}>{label}</Text>
     </Pressable>
@@ -202,7 +205,7 @@ function Macro({ label, value, color }: { label: string; value: string; color: s
   const { colors } = useAppTheme();
   return (
     <View style={styles.macro}>
-      <Text variant="titleMedium" style={{ color, fontWeight: '700' }}>{value}</Text>
+      <Text variant="titleMedium" style={{ color, fontWeight: '300' }}>{value}</Text>
       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
     </View>
   );
@@ -214,19 +217,19 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', marginBottom: spacing.xl, gap: spacing.sm },
   title: { fontWeight: '400', textAlign: 'center' },
   subtitle: { maxWidth: 310, textAlign: 'center', lineHeight: 18 },
-  input: { height: 48, marginBottom: spacing.md, backgroundColor: 'transparent' },
+  input: { height: 48, marginBottom: spacing.md },
   inputOutline: { borderRadius: shape.md },
   label: { marginBottom: spacing.xs, fontWeight: '400' },
   segmentRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   option: { flex: 1, height: 44, borderWidth: 1, borderRadius: shape.md, alignItems: 'center', justifyContent: 'center' },
   row: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   compactField: { flex: 1 },
-  compactInput: { height: 48, textAlign: 'center', backgroundColor: 'transparent' },
+  compactInput: { height: 48, textAlign: 'center' },
   activityList: { gap: spacing.sm },
   activity: { height: 40, borderWidth: 1, borderRadius: shape.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md },
   activitySelected: { borderColor: accent },
   previewCard: { marginTop: spacing.lg, padding: spacing.lg, borderRadius: shape.lg, alignItems: 'center' },
-  calories: { fontWeight: '800' },
+  calories: { fontWeight: '300' },
   macroRow: { flexDirection: 'row', justifyContent: 'space-around', alignSelf: 'stretch', marginTop: spacing.md },
   macro: { alignItems: 'center' },
   footer: { padding: spacing.lg, gap: spacing.xs },

@@ -1,5 +1,6 @@
 import type { Food } from '@/types';
 import { MICRO_BY_KEY } from '@/utils/micronutrients';
+import { fetchJson } from '@/services/foodSources/common';
 
 const BASE_URL = 'https://world.openfoodfacts.org';
 
@@ -21,20 +22,23 @@ const OFF_MICRO_MAP: Record<string, string> = {
   'vitamin-b9': 'folate', 'folates': 'folate', 'vitamin-b12': 'b12', 'choline': 'choline',
   'calcium': 'calcium', 'copper': 'copper', 'iron': 'iron', 'magnesium': 'magnesium',
   'manganese': 'manganese', 'phosphorus': 'phosphorus', 'potassium': 'potassium',
-  'selenium': 'selenium', 'zinc': 'zinc',
+  'selenium': 'selenium', 'zinc': 'zinc', 'iodine': 'iodine', 'fluoride': 'fluoride',
+  'chloride': 'chloride', 'omega-3-fat': 'omega3',
 };
 
 /** Extract whatever micronutrients OFF provides, scaled to one serving and
- * converted from grams to our tracking unit (mg or mcg). */
+ * converted from grams to our tracking unit (mg or mcg). A reported 0 is kept
+ * so "none" can be told apart from "not on the label". */
 function parseOffMicros(n: Record<string, number | undefined>, scale: number): Record<string, number> {
   const micros: Record<string, number> = {};
   for (const [offKey, ourKey] of Object.entries(OFF_MICRO_MAP)) {
     const grams = n[`${offKey}_100g`];
-    if (grams == null || !isFinite(grams) || grams <= 0) continue;
+    if (grams == null || !isFinite(grams) || grams < 0) continue;
     const def = MICRO_BY_KEY[ourKey];
     const factor = def.unit === 'mcg' ? 1_000_000 : def.unit === 'g' ? 1 : 1000; // grams → mcg / mg / g
-    const val = grams * factor * scale;
-    if (val > 0) micros[ourKey] = Math.round(val * 100) / 100;
+    const val = Math.round(grams * factor * scale * 100) / 100;
+    // Two OFF keys feed folate; keep the larger rather than letting a 0 win.
+    if (micros[ourKey] == null || val > micros[ourKey]) micros[ourKey] = val;
   }
   return micros;
 }
@@ -80,6 +84,8 @@ function parseProduct(product: OFFProduct): Food {
     servingSize: serving ? serving.qty : 100,
     servingUnit: serving ? serving.unit : 'g',
     micros: parseOffMicros(n, scale),
+    source: 'off',
+    sourceId: product.code || null,
     isCustom: false,
     isFavorite: false,
     createdAt: '',
@@ -88,19 +94,14 @@ function parseProduct(product: OFFProduct): Food {
 
 const FIELDS = 'product_name,brands,code,nutriments,serving_size,serving_quantity';
 
+/** Throws a SourceError when OFF is down or rate-limiting, so the search
+ * screen can say so instead of showing "no results". */
 export async function searchOpenFoodFacts(query: string, page = 1): Promise<Food[]> {
-  try {
-    const url = `${BASE_URL}/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page=${page}&page_size=20&fields=${FIELDS}`;
-    const response = await fetch(url);
-    if (!response.ok) return [];
-    const data = await response.json();
-    if (!data.products) return [];
-    return data.products
-      .filter((p: OFFProduct) => p.product_name)
-      .map(parseProduct);
-  } catch {
-    return [];
-  }
+  const url = `${BASE_URL}/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page=${page}&page_size=20&fields=${FIELDS}`;
+  const data = await fetchJson<{ products?: OFFProduct[] }>(url, {}, 12000);
+  return (data.products || [])
+    .filter((p: OFFProduct) => p.product_name)
+    .map(parseProduct);
 }
 
 export async function lookupBarcode(barcode: string): Promise<Food | null> {

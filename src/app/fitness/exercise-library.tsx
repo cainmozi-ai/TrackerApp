@@ -4,24 +4,27 @@ import { Text, IconButton, Surface, Searchbar, Chip, TouchableRipple, Portal, Di
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing, shape, withAlpha } from '@/theme';
-import { useAppTheme } from '@/theme/ThemeContext';
+import { moduleColors, spacing, shape, withAlpha, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
+import { Pill } from '@/components/common/Pill';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
-import { MUSCLES, EXERCISE_TYPES, exerciseType, formatMuscles, type ExerciseType, groupColor } from '@/utils/muscles';
+import { EXERCISE_TYPES, exerciseType, formatMuscles, type ExerciseType, groupColor } from '@/utils/muscles';
 
 const CUSTOM_GROUPS = ['Chest', 'Back', 'Shoulders', 'Legs', 'Glutes', 'Arms', 'Core', 'Cardio'];
 
 export default function ExerciseLibraryScreen() {
   const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const { selectFor } = useLocalSearchParams<{ selectFor?: string }>();
   const isSelectMode = !!selectFor;
   const { exercises, loadExercises, addExerciseToTemplate, addCustomExercise } = useWorkoutStore();
   const { profile, loadProfile } = useUserStore();
 
   const [search, setSearch] = useState('');
-  const [muscle, setMuscle] = useState<string>('All');
+  // The design filters by muscle group (Chest, Back, …), not individual muscles.
+  const [group, setGroup] = useState<string>('All');
   const [type, setType] = useState<ExerciseType | 'all'>('all');
   const [library, setLibrary] = useState<'all' | 'default' | 'custom'>('all');
   const [myGymOnly, setMyGymOnly] = useState(true);
@@ -41,13 +44,13 @@ export default function ExerciseLibraryScreen() {
   const available = (equipment: string) => !hasGym || gymEquipment.includes(equipment);
 
   const filtered = useMemo(() => exercises.filter(ex => {
-    if (muscle !== 'All' && !ex.primaryMuscles.includes(muscle) && !ex.secondaryMuscles.includes(muscle)) return false;
+    if (group !== 'All' && ex.muscleGroup !== group) return false;
     if (type !== 'all' && exerciseType(ex.mechanic, ex.region) !== type) return false;
     if (library === 'custom' && !ex.isCustom) return false;
     if (library === 'default' && ex.isCustom) return false;
     if (myGymOnly && hasGym && !ex.isCustom && !available(ex.equipment)) return false;
     return true;
-  }), [exercises, muscle, type, library, myGymOnly, gymEquipment.join(',')]);
+  }), [exercises, group, type, library, myGymOnly, gymEquipment.join(',')]);
 
   const handleSelect = async (exerciseId: number) => {
     if (isSelectMode) {
@@ -79,11 +82,9 @@ export default function ExerciseLibraryScreen() {
 
       {/* Muscle filter row */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chipRow}>
-        <Chip selected={muscle === 'All'} onPress={() => setMuscle('All')} style={styles.chip} selectedColor={moduleColors.workout} compact>All</Chip>
-        {MUSCLES.map(m => (
-          <Chip key={m.key} selected={muscle === m.key} onPress={() => setMuscle(m.key)} style={styles.chip} selectedColor={moduleColors.workout} compact>
-            {m.key}
-          </Chip>
+        <Pill label="All" selected={group === 'All'} onPress={() => setGroup('All')} />
+        {CUSTOM_GROUPS.map(g => (
+          <Pill key={g} label={g} selected={group === g} onPress={() => setGroup(g)} />
         ))}
       </ScrollView>
 
@@ -94,7 +95,7 @@ export default function ExerciseLibraryScreen() {
           onDismiss={() => setTypeMenu(false)}
           anchor={
             <Chip icon="filter-variant" onPress={() => setTypeMenu(true)} compact
-              style={styles.filterPill} selected={type !== 'all'} selectedColor={moduleColors.workout}>
+              style={styles.filterPill} selected={type !== 'all'} selectedColor={type !== 'all' ? colors.accentText : colors.onSurface}>
               {typeLabel}
             </Chip>
           }>
@@ -109,7 +110,7 @@ export default function ExerciseLibraryScreen() {
           onDismiss={() => setLibMenu(false)}
           anchor={
             <Chip icon="bookshelf" onPress={() => setLibMenu(true)} compact
-              style={styles.filterPill} selected={library !== 'all'} selectedColor={moduleColors.workout}>
+              style={styles.filterPill} selected={library !== 'all'} selectedColor={library !== 'all' ? colors.accentText : colors.onSurface}>
               {libLabel}
             </Chip>
           }>
@@ -120,7 +121,7 @@ export default function ExerciseLibraryScreen() {
 
         {hasGym && (
           <Chip icon={myGymOnly ? 'dumbbell' : 'earth'} selected={myGymOnly} onPress={() => setMyGymOnly(v => !v)}
-            style={styles.filterPill} selectedColor={moduleColors.workout} compact>
+            style={styles.filterPill} selectedColor={myGymOnly ? colors.accentText : colors.onSurface} compact>
             My Gym
           </Chip>
         )}
@@ -142,12 +143,12 @@ export default function ExerciseLibraryScreen() {
               <TouchableRipple key={ex.id} onPress={() => handleSelect(ex.id)} style={styles.touchable} borderless>
                 <Surface style={styles.exCard} elevation={1}>
                   <View style={[styles.tile, { backgroundColor: withAlpha(tileColor, 0.18) }]}>
-                    <MaterialCommunityIcons name="arm-flex" size={20} color={tileColor} />
+                    <View style={[styles.tileDot, { backgroundColor: tileColor }]} />
                   </View>
                   <View style={styles.exInfo}>
                     <Text variant="titleSmall" numberOfLines={2}>{ex.name}</Text>
                     {!!ex.target && (
-                      <Text variant="labelSmall" style={{ color: tileColor, fontWeight: '700' }} numberOfLines={1}>{ex.target}</Text>
+                      <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }} numberOfLines={1}>{ex.target}</Text>
                     )}
                     {!!muscles && (
                       <Text variant="bodySmall" style={styles.exMeta} numberOfLines={2}>{muscles}</Text>
@@ -164,7 +165,7 @@ export default function ExerciseLibraryScreen() {
                       <MaterialCommunityIcons name="plus-circle" size={24} color={moduleColors.workout} />
                     </>
                   ) : (
-                    <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+                    <MaterialCommunityIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
                   )}
                 </Surface>
               </TouchableRipple>
@@ -181,7 +182,7 @@ export default function ExerciseLibraryScreen() {
             <Text variant="labelMedium" style={styles.dialogLabel}>Muscle Group</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dialogChips}>
               {CUSTOM_GROUPS.map(g => (
-                <Chip key={g} selected={customGroup === g} onPress={() => setCustomGroup(g)} style={styles.dialogChip} compact>{g}</Chip>
+                <Pill key={g} label={g} selected={customGroup === g} onPress={() => setCustomGroup(g)} compact style={styles.dialogChip} />
               ))}
             </ScrollView>
           </Dialog.Content>
@@ -195,25 +196,26 @@ export default function ExerciseLibraryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
-  searchbar: { marginHorizontal: spacing.md, marginBottom: spacing.sm, backgroundColor: theme.colors.surface },
-  chipScroll: { maxHeight: 44, flexGrow: 0 },
-  chipRow: { paddingHorizontal: spacing.md, gap: spacing.xs, alignItems: 'center' },
-  chip: { backgroundColor: theme.colors.surface },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  searchbar: { marginHorizontal: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.surface },
+  // flexShrink 0: otherwise the list below squeezes this row down to a sliver.
+  chipScroll: { flexGrow: 0, flexShrink: 0 },
+  chipRow: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, gap: spacing.sm, alignItems: 'center' },
   filterRow: { flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, marginTop: spacing.xs, marginBottom: spacing.sm },
-  filterPill: { backgroundColor: theme.colors.surface },
+  filterPill: { backgroundColor: colors.surfaceVariant },
   scrollContent: { padding: spacing.md, paddingTop: 0, paddingBottom: 40 },
   count: { marginBottom: spacing.sm },
-  emptyText: { color: theme.colors.onSurfaceVariant, textAlign: 'center', marginTop: spacing.xl },
+  emptyText: { color: colors.onSurfaceVariant, textAlign: 'center', marginTop: spacing.xl },
   touchable: { borderRadius: shape.md, marginBottom: spacing.sm },
-  exCard: { flexDirection: 'row', alignItems: 'center', padding: spacing.sm, borderRadius: shape.md, backgroundColor: theme.colors.surface, gap: spacing.sm },
-  tile: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  exCard: { flexDirection: 'row', alignItems: 'center', padding: spacing.sm, borderRadius: shape.md, backgroundColor: colors.surface, gap: spacing.sm },
+  tile: { width: 40, height: 40, borderRadius: shape.md, justifyContent: 'center', alignItems: 'center' },
+  tileDot: { width: 16, height: 16, borderRadius: 8 },
   exInfo: { flex: 1 },
-  exMeta: { color: theme.colors.onSurfaceVariant, marginTop: 2 },
+  exMeta: { color: colors.onSurfaceVariant, marginTop: 2 },
   exEquip: { marginTop: 2 },
   dialogInput: { marginBottom: spacing.sm },
   dialogLabel: { marginBottom: spacing.xs },
   dialogChips: { gap: spacing.xs, paddingVertical: spacing.xs },
-  dialogChip: { backgroundColor: theme.colors.surfaceVariant },
+  dialogChip: { marginRight: spacing.xs },
 });

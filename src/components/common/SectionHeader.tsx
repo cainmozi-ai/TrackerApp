@@ -26,5 +26,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     marginBottom: spacing.sm,
   },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
 });

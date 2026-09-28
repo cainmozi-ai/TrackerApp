@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -8,8 +8,9 @@ import { spacing, shape, accent } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
+import { NutrientSheet } from '@/components/nutrition/NutrientSheet';
 import {
-  CATEGORIES, CATEGORY_ROWS, MICRO_BY_KEY, percentOf, type CategoryKey,
+  CATEGORIES, CATEGORY_ROWS, MICRO_BY_KEY, percentOf, targetFor, isOverLimit, formatAmount, type CategoryKey,
 } from '@/utils/micronutrients';
 
 // The design draws every wellness bar in the brand accent regardless of how
@@ -22,8 +23,16 @@ function pctColor(_pct: number): string {
 export default function WellnessCategory() {
   const { colors } = useAppTheme();
   const { cat } = useLocalSearchParams<{ cat: string }>();
-  const { todayMicros, todayCalories, todayProtein, todayFat, loadTodayLogs } = useNutritionStore();
+  const {
+    todayMicros, todaySupplementMicros, todayMicroCoverage, todayLogCount,
+    todayCalories, todayProtein, todayFat, loadTodayLogs,
+  } = useNutritionStore();
   const { profile, loadProfile } = useUserStore();
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const supplementAmount = (key: string) =>
+    key === 'folate' ? todaySupplementMicros.folicAcid || 0
+      : key === 'vitaminA' ? todaySupplementMicros.vitaminAPreformed || 0
+      : todaySupplementMicros[key] || 0;
 
   useFocusEffect(useCallback(() => { loadTodayLogs(); loadProfile(); }, []));
 
@@ -32,7 +41,8 @@ export default function WellnessCategory() {
   const calTarget = profile?.calorieTarget || 2000;
   const proteinTarget = profile?.proteinTarget || 150;
 
-  type Row = { label: string; amount: number; target: number; unit: string; pct: number };
+  /** amount/target/pct are null when unknown (no data, or no NIH target). */
+  type Row = { key?: string; label: string; amount: number | null; target: number | null; unit: string; pct: number | null; over?: boolean };
   const pct = (amount: number, target: number) => (target > 0 ? Math.round((amount / target) * 100) : 0);
 
   for (const row of CATEGORY_ROWS[cat as CategoryKey] ?? []) {
@@ -46,8 +56,15 @@ export default function WellnessCategory() {
     } else {
       const def = MICRO_BY_KEY[row.key];
       if (!def) continue;
-      const amt = Math.round((todayMicros[def.key] || 0) * 10) / 10;
-      rows.push({ label: def.label, amount: amt, target: def.rda, unit: def.unit, pct: Math.round(percentOf(def.key, todayMicros[def.key] || 0)) });
+      const total = todayMicros[def.key] || 0;
+      const unknown = todayLogCount > 0 && !todayMicroCoverage[def.key];
+      const target = targetFor(def.key, profile);
+      rows.push({
+        key: def.key, label: def.label, unit: def.unit, target,
+        amount: unknown ? null : total,
+        pct: unknown || target == null ? null : Math.round(percentOf(def.key, total, profile)),
+        over: isOverLimit(def.key, total, supplementAmount(def.key), profile),
+      });
     }
   }
 
@@ -56,24 +73,41 @@ export default function WellnessCategory() {
       <ScreenHeader title={category?.label || 'Wellness'} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          {rows.map((r, i) => (
-            <View key={i} style={styles.row}>
-              <View style={styles.rowHead}>
-                <Text variant="bodyMedium" style={{ color: colors.onSurface }}>{r.label}</Text>
-                <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant }}>
-                  {r.amount}/{r.target} {r.unit}  <Text style={{ color: pctColor(r.pct), fontWeight: '700' }}>{r.pct}%</Text>
-                </Text>
-              </View>
-              <View style={[styles.track, { backgroundColor: colors.surfaceVariant }]}>
-                <View style={[styles.fill, { width: `${Math.min(100, r.pct)}%`, backgroundColor: pctColor(r.pct) }]} />
-              </View>
-            </View>
-          ))}
+          {rows.map((r, i) => {
+            const amountText = r.amount == null ? '—' : formatAmount(r.amount);
+            const pct = r.pct ?? 0;
+            return (
+              <Pressable key={i} style={styles.row} disabled={!r.key} onPress={() => r.key && setOpenKey(r.key)}
+                accessibilityRole={r.key ? 'button' : undefined}>
+                <View style={styles.rowHead}>
+                  <Text variant="bodyMedium" style={{ color: colors.onSurface }}>{r.label}</Text>
+                  <Text variant="labelMedium" style={{ color: r.over ? colors.error : colors.onSurfaceVariant }}>
+                    {r.target != null ? `${amountText} / ${formatAmount(r.target)} ${r.unit}` : `${amountText} ${r.unit} · no NIH target`}
+                    {'   '}
+                    <Text style={{ color: colors.onSurface, fontWeight: '300' }}>{r.pct == null ? '—' : `${r.pct}%`}</Text>
+                  </Text>
+                </View>
+                <View style={[styles.track, { backgroundColor: colors.surfaceVariant }]}>
+                  <View style={[styles.fill, { width: `${Math.min(100, pct)}%`, backgroundColor: r.over ? colors.error : pctColor(pct) }]} />
+                </View>
+              </Pressable>
+            );
+          })}
+          <Text variant="labelSmall" style={[styles.note, { color: colors.onSurface }]}>
+            Vitamin and mineral targets are NIH values for your age and sex. Amounts are estimated from the foods you log; “—” means none of them report that nutrient. Tap a nutrient for details.
+          </Text>
+          <Text variant="labelSmall" style={[styles.noteLast, { color: colors.onSurface }]}>This is not medical advice</Text>
         </View>
-        <Text variant="labelSmall" style={[styles.note, { color: colors.onSurfaceVariant }]}>
-          Values are estimated from your logged foods and profile. Incomplete or missing data will affect accuracy. This is not medical advice.
-        </Text>
       </ScrollView>
+      <NutrientSheet
+        nutrientKey={openKey}
+        onDismiss={() => setOpenKey(null)}
+        profile={profile}
+        amount={openKey ? todayMicros[openKey] || 0 : 0}
+        fromSupplements={openKey ? supplementAmount(openKey) : 0}
+        coverage={openKey ? todayMicroCoverage[openKey] || 0 : 0}
+        logCount={todayLogCount}
+      />
     </SafeAreaView>
   );
 }
@@ -86,5 +120,6 @@ const styles = StyleSheet.create({
   rowHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   track: { height: 8, borderRadius: 4, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 4 },
-  note: { textAlign: 'center', marginTop: spacing.md, lineHeight: 16 },
+  note: { textAlign: 'center', marginTop: spacing.xl, lineHeight: 16 },
+  noteLast: { textAlign: 'center', marginTop: spacing.sm },
 });

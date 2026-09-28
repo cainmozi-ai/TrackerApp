@@ -3,11 +3,13 @@ import { StyleSheet, View } from 'react-native';
 import { Text, TextInput, Button, IconButton, SegmentedButtons } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { theme, spacing } from '@/theme';
+import { spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { useHabitStore } from '@/stores/habitStore';
 import { useUserStore } from '@/stores/userStore';
 
 export default function AddHabitScreen() {
+  const styles = useThemedStyles(makeStyles);
   const [name, setName] = useState('');
   const [frequency, setFrequency] = useState('daily');
   const { addHabit } = useHabitStore();
@@ -50,13 +52,13 @@ export default function AddHabitScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   content: { padding: spacing.md },
-  input: { marginBottom: spacing.md, backgroundColor: theme.colors.surface },
-  label: { marginBottom: spacing.sm, fontWeight: '600' },
+  input: { marginBottom: spacing.md, backgroundColor: colors.surface },
+  label: { marginBottom: spacing.sm, fontWeight: '300' },
   segmented: { marginBottom: spacing.md },
   saveBtn: { marginTop: spacing.lg },
 });

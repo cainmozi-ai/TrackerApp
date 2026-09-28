@@ -73,7 +73,7 @@ export default function AddCustomFoodScreen() {
   const { colors } = useAppTheme();
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <ScreenHeader title="Add Custom Food" />
+      <ScreenHeader title="Create Food" />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <TextInput label="Food name" value={name} onChangeText={setName} style={styles.input} mode="outlined" />
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   halfInput: { flex: 1 },
   row: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   thirdInput: { flex: 1 },
-  sectionTitle: { fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.sm },
+  sectionTitle: { fontWeight: '300', marginTop: spacing.md, marginBottom: spacing.sm },
   microToggle: { height: 52, borderRadius: shape.md, marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md },
   microWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   microInput: { width: '47.5%' },

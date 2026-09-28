@@ -4,11 +4,13 @@ import { Text, IconButton, Surface, Checkbox, Button } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing } from '@/theme';
+import { moduleColors, spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useMealPlanStore, getWeekStart } from '@/stores/mealPlanStore';
 
 export default function ShoppingListScreen() {
+  const styles = useThemedStyles(makeStyles);
   const { shoppingList, loadShoppingList, toggleShoppingItem, clearShoppingList } = useMealPlanStore();
   const [weekStart] = useState(getWeekStart());
 
@@ -68,18 +70,18 @@ export default function ShoppingListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, gap: spacing.sm },
-  emptyText: { color: theme.colors.onSurfaceVariant, textAlign: 'center' },
+  emptyText: { color: colors.onSurfaceVariant, textAlign: 'center' },
   backBtn: { marginTop: spacing.sm },
-  progress: { color: theme.colors.onSurfaceVariant, marginBottom: spacing.sm },
-  itemRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.sm, backgroundColor: theme.colors.surface, borderRadius: 10, marginBottom: spacing.xs },
+  progress: { color: colors.onSurfaceVariant, marginBottom: spacing.sm },
+  itemRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.sm, backgroundColor: colors.surface, borderRadius: 10, marginBottom: spacing.xs },
   itemInfo: { flex: 1 },
-  itemName: { fontWeight: '500' },
-  checkedItem: { textDecorationLine: 'line-through', color: theme.colors.onSurfaceVariant },
-  itemQty: { color: theme.colors.onSurfaceVariant },
+  itemName: { fontWeight: '300' },
+  checkedItem: { textDecorationLine: 'line-through', color: colors.onSurfaceVariant },
+  itemQty: { color: colors.onSurfaceVariant },
 });

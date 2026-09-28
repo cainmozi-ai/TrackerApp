@@ -26,6 +26,8 @@ interface SetKeypadProps {
   confirmLabel?: string;
   onConfirm: (entry: SetEntry) => void;
   onDismiss: () => void;
+  /** When editing an existing set: shows a delete button. */
+  onDelete?: () => void;
 }
 
 const MAX_REPS = 100;
@@ -55,7 +57,7 @@ const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'];
 
 /** Fast in-app set entry. Fields adapt to the exercise's log type:
  * weight×reps, bodyweight reps, a duration (mm:ss), or cardio distance+time. */
-export function SetKeypad({ visible, exerciseName, logType = 'weight_reps', initial, weightUnit = 'kg', confirmLabel = 'Log set', onConfirm, onDismiss }: SetKeypadProps) {
+export function SetKeypad({ visible, exerciseName, logType = 'weight_reps', initial, weightUnit = 'kg', confirmLabel = 'Log set', onConfirm, onDismiss, onDelete }: SetKeypadProps) {
   const { colors } = useAppTheme();
   const fields = FIELDS_FOR[logType];
   const [weight, setWeight] = useState(initial.weight ?? '');
@@ -155,7 +157,16 @@ export function SetKeypad({ visible, exerciseName, logType = 'weight_reps', init
     <Portal>
       <Pressable style={styles.backdrop} onPress={onDismiss} />
       <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
-        <Text variant="titleSmall" style={[styles.title, { color: colors.onSurface }]} numberOfLines={1}>{exerciseName}</Text>
+        <View style={styles.titleRow}>
+          <Text variant="titleSmall" style={[styles.title, { color: colors.onSurface }]} numberOfLines={1}>{exerciseName}</Text>
+          {onDelete && (
+            <Pressable onPress={onDelete} accessibilityRole="button" accessibilityLabel="Delete this set" hitSlop={8}
+              style={styles.deleteBtn}>
+              <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.error} />
+              <Text variant="labelMedium" style={{ color: colors.error, fontWeight: '300' }}>Delete</Text>
+            </Pressable>
+          )}
+        </View>
 
         <View style={styles.fields}>
           {fields.map(f => (
@@ -172,7 +183,7 @@ export function SetKeypad({ visible, exerciseName, logType = 'weight_reps', init
             {SET_TYPES.map(t => (
               <Pressable key={t.key} onPress={() => setSetType(t.key)}
                 style={[styles.chip, { backgroundColor: setType === t.key ? accent : colors.surfaceVariant }]}>
-                <Text variant="labelSmall" style={{ color: setType === t.key ? colors.onPrimary : colors.onSurfaceVariant, fontWeight: '700' }}>
+                <Text variant="labelSmall" style={{ color: setType === t.key ? colors.onPrimary : colors.onSurfaceVariant, fontWeight: '300' }}>
                   {t.label}
                 </Text>
               </Pressable>
@@ -229,7 +240,7 @@ function FieldBox({ label, value, active, onPress }: { label: string; value: str
       ]}
     >
       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-      <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '800' }}>{value || '0'}</Text>
+      <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>{value || '0'}</Text>
     </Pressable>
   );
 }
@@ -241,7 +252,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: shape.lg, borderTopRightRadius: shape.lg,
     padding: spacing.md, paddingBottom: spacing.lg, gap: spacing.sm,
   },
-  title: { fontWeight: '700', textAlign: 'center' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', minHeight: 24 },
+  title: { fontWeight: '300', textAlign: 'center', flexShrink: 1, paddingHorizontal: 72 },
+  deleteBtn: { position: 'absolute', right: 0, flexDirection: 'row', alignItems: 'center', gap: 4 },
   fields: { flexDirection: 'row', gap: spacing.sm },
   fieldBox: { flex: 1, borderRadius: shape.md, borderWidth: 2, padding: spacing.sm, alignItems: 'center' },
   chipRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
@@ -250,6 +263,6 @@ const styles = StyleSheet.create({
   rpeChip: { width: 40, height: 32, borderRadius: shape.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   keypad: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between' },
   key: { width: '31%', height: 52, borderRadius: shape.md, justifyContent: 'center', alignItems: 'center' },
-  confirm: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, height: 52, borderRadius: shape.pill, marginTop: spacing.xs },
-  confirmText: { fontWeight: '800' },
+  confirm: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, height: 48, borderRadius: shape.md, marginTop: spacing.xs },
+  confirmText: { fontWeight: '300' },
 });

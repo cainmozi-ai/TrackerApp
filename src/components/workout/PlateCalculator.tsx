@@ -51,7 +51,7 @@ export function PlateCalculator({ visible, totalWeight, unit = 'kg', onDismiss }
           {bars.map(b => (
             <Pressable key={b} onPress={() => setBar(b)}
               style={[styles.barChip, { backgroundColor: bar === b ? accent : colors.surfaceVariant }]}>
-              <Text variant="labelMedium" style={{ color: bar === b ? colors.onPrimary : colors.onSurfaceVariant, fontWeight: '700' }}>{b}{unit}</Text>
+              <Text variant="labelMedium" style={{ color: bar === b ? colors.onPrimary : colors.onSurfaceVariant, fontWeight: '300' }}>{b}{unit}</Text>
             </Pressable>
           ))}
         </View>
@@ -69,7 +69,7 @@ export function PlateCalculator({ visible, totalWeight, unit = 'kg', onDismiss }
               <View style={styles.plateList}>
                 {result.out.map(p => (
                   <View key={p.plate} style={[styles.plateChip, { backgroundColor: withAlpha(accent, 0.18), borderColor: accent }]}>
-                    <Text variant="titleMedium" style={{ color: colors.onSurface, fontWeight: '800' }}>{p.count}×</Text>
+                    <Text variant="titleMedium" style={{ color: colors.onSurface, fontWeight: '300' }}>{p.count}×</Text>
                     <Text variant="bodyMedium" style={{ color: colors.onSurface }}>{p.plate}{unit}</Text>
                   </View>
                 ))}
@@ -85,7 +85,7 @@ export function PlateCalculator({ visible, totalWeight, unit = 'kg', onDismiss }
 
         <Pressable onPress={onDismiss} style={[styles.done, { backgroundColor: colors.surfaceVariant }]}>
           <MaterialCommunityIcons name="check" size={20} color={colors.onSurface} />
-          <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>Done</Text>
+          <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>Done</Text>
         </Pressable>
       </View>
     </Portal>
@@ -99,12 +99,12 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: shape.lg, borderTopRightRadius: shape.lg,
     padding: spacing.md, paddingBottom: spacing.lg, gap: spacing.sm,
   },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
   barChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: shape.pill },
-  perSide: { fontWeight: '700', marginTop: spacing.sm },
+  perSide: { fontWeight: '300', marginTop: spacing.sm },
   plateList: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   plateChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: shape.md, borderWidth: 1.5 },
   warn: { fontStyle: 'italic', marginTop: spacing.xs },
-  done: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, height: 48, borderRadius: shape.pill, marginTop: spacing.sm },
+  done: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, height: 48, borderRadius: shape.md, marginTop: spacing.sm },
 });

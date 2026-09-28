@@ -1,17 +1,18 @@
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors } from '@/theme';
+import { useAppTheme } from '@/theme/ThemeContext';
 
 export default function TabLayout() {
+  const { colors } = useAppTheme();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+        tabBarActiveTintColor: colors.accentText,
+        tabBarInactiveTintColor: colors.onSurfaceVariant,
         tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.outline,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.outline,
           borderTopWidth: 1,
           height: 64,
           paddingBottom: 8,
@@ -24,7 +25,7 @@ export default function TabLayout() {
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
+          fontWeight: '300',
         },
       }}
     >

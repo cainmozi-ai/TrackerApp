@@ -5,8 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LineChart } from 'react-native-chart-kit';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing, accent, withAlpha, shape } from '@/theme';
-import { useAppTheme } from '@/theme/ThemeContext';
+import { moduleColors, spacing, accent, withAlpha, shape, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useWorkoutStore, type ExerciseRecord, type ProgressionEntry, type WorkoutSummary } from '@/stores/workoutStore';
 import { VOLUME_LANDMARKS, volumeStatus, type VolumeStatus } from '@/data/volumeLandmarks';
@@ -30,6 +30,8 @@ const SET_TYPE_META: { key: string; label: string; color: string }[] = [
 ];
 
 export default function ProgressScreen() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const { recentWorkouts, loadRecentWorkouts, exercises, loadExercises, getExerciseHistory, getAllRecords, getMuscleVolume, getMuscleSetBreakdown, getProgressionReport, getWorkoutSummaries } = useWorkoutStore();
   const [summaries, setSummaries] = useState<WorkoutSummary[]>([]);
   const [selected, setSelected] = useState<Exercise | null>(null);
@@ -63,15 +65,13 @@ export default function ProgressScreen() {
   };
 
   const chartConfig = {
-    backgroundGradientFrom: theme.colors.surface,
-    backgroundGradientTo: theme.colors.surface,
+    backgroundGradientFrom: colors.surface,
+    backgroundGradientTo: colors.surface,
     decimalPlaces: 0,
     color: (opacity = 1) => `rgba(108, 99, 255, ${opacity})`,
-    labelColor: () => theme.colors.onSurfaceVariant,
+    labelColor: () => colors.onSurfaceVariant,
     propsForDots: { r: '4', strokeWidth: '2', stroke: moduleColors.workout },
   };
-
-  const { colors } = useAppTheme();
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="Progress" />
@@ -102,7 +102,7 @@ export default function ProgressScreen() {
                 return (
                   <View key={group} style={styles.lmRow}>
                     <View style={styles.lmHead}>
-                      <Text variant="labelMedium" style={{ color: colors.onSurface, fontWeight: '700' }}>{group}</Text>
+                      <Text variant="labelMedium" style={{ color: colors.onSurface, fontWeight: '300' }}>{group}</Text>
                       <Text variant="labelSmall" style={{ color }}>{sets} sets · {label}</Text>
                     </View>
                     <View style={[styles.lmTrack, { backgroundColor: withAlpha(colors.onSurfaceVariant, 0.12) }]}>
@@ -164,7 +164,7 @@ export default function ProgressScreen() {
                         : `Stay at ${p.lastWeight} kg · aim for ${p.suggestedReps} reps (last: ${p.lastBestReps})`}
                     </Text>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.onSurfaceVariant} />
                 </Surface>
               </TouchableRipple>
             ))}
@@ -191,7 +191,7 @@ export default function ProgressScreen() {
               <Surface style={styles.chartCard} elevation={1}>
                 <Text variant="titleSmall" style={styles.chartTitle}>Estimated 1RM</Text>
                 {delta !== 0 && (
-                  <Text variant="labelSmall" style={{ color: accent }}>
+                  <Text variant="labelSmall" style={{ color: colors.accentText }}>
                     {delta > 0 ? '+' : ''}{Math.round(delta * 10) / 10} kg over {history.length} sessions
                   </Text>
                 )}
@@ -206,7 +206,7 @@ export default function ProgressScreen() {
                   bezier
                   style={styles.chart}
                 />
-                <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '800' }}>
+                <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>
                   {rec?.best1RM ?? Math.max(...series)} kg
                 </Text>
               </Surface>
@@ -235,25 +235,25 @@ export default function ProgressScreen() {
                     <MaterialCommunityIcons name="dumbbell" size={20} color={moduleColors.workout} />
                   </View>
                   <View style={styles.workoutInfo}>
-                    <Text variant="titleSmall" style={{ fontWeight: '700' }}>{s.workout.name}</Text>
+                    <Text variant="titleSmall" style={{ fontWeight: '300' }}>{s.workout.name}</Text>
                     <Text variant="labelSmall" style={styles.workoutDate}>
                       {s.workout.startedAt?.slice(0, 10)} · {s.durationMin >= 60 ? `${Math.floor(s.durationMin / 60)}h ${s.durationMin % 60}m` : `${s.durationMin} min`}
                     </Text>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.onSurfaceVariant} />
                 </View>
                 <View style={styles.workoutStats}>
                   <View style={styles.workoutStat}>
                     <Text variant="labelSmall" style={styles.workoutStatLabel}>EXERCISES</Text>
-                    <Text variant="titleSmall" style={{ fontWeight: '800', color: accent }}>{s.exerciseCount}</Text>
+                    <Text variant="titleSmall" style={{ fontWeight: '300', color: colors.accentText }}>{s.exerciseCount}</Text>
                   </View>
                   <View style={styles.workoutStat}>
                     <Text variant="labelSmall" style={styles.workoutStatLabel}>SETS</Text>
-                    <Text variant="titleSmall" style={{ fontWeight: '800', color: accent }}>{s.setCount}</Text>
+                    <Text variant="titleSmall" style={{ fontWeight: '300', color: colors.accentText }}>{s.setCount}</Text>
                   </View>
                   <View style={styles.workoutStat}>
                     <Text variant="labelSmall" style={styles.workoutStatLabel}>VOLUME</Text>
-                    <Text variant="titleSmall" style={{ fontWeight: '800', color: accent }}>{s.volume}</Text>
+                    <Text variant="titleSmall" style={{ fontWeight: '300', color: colors.accentText }}>{s.volume}</Text>
                   </View>
                 </View>
                 {s.muscles.length > 0 && (
@@ -290,29 +290,30 @@ export default function ProgressScreen() {
 }
 
 function PrTile({ label, value, colors }: { label: string; value: string; colors: ReturnType<typeof useAppTheme>['colors'] }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.prTile, { backgroundColor: colors.surface }]}>
       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
-      <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{value}</Text>
+      <Text variant="titleMedium" style={{ color: colors.accentText, fontWeight: '300' }}>{value}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: AppColors) => StyleSheet.create({
   prGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   prTile: { width: '47.5%', borderRadius: shape.lg, padding: spacing.md, gap: 4 },
-  container: { flex: 1, backgroundColor: theme.colors.background },
+  container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
-  summaryCard: { alignItems: 'center', padding: spacing.lg, borderRadius: 16, backgroundColor: theme.colors.surface, gap: 4, marginBottom: spacing.md },
-  summaryValue: { fontWeight: '700', color: moduleColors.workout },
-  summaryLabel: { color: theme.colors.onSurfaceVariant },
-  sectionTitle: { fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.sm },
+  summaryCard: { alignItems: 'center', padding: spacing.lg, borderRadius: 16, backgroundColor: colors.surface, gap: 4, marginBottom: spacing.md },
+  summaryValue: { fontWeight: '300', color: colors.accentText },
+  summaryLabel: { color: colors.onSurfaceVariant },
+  sectionTitle: { fontWeight: '300', marginTop: spacing.md, marginBottom: spacing.sm },
   selectBtn: { marginBottom: spacing.md },
-  emptyText: { color: theme.colors.onSurfaceVariant, textAlign: 'center', marginVertical: spacing.md },
-  chartCard: { padding: spacing.md, borderRadius: 16, backgroundColor: theme.colors.surface, marginBottom: spacing.md, alignItems: 'center' },
-  chartTitle: { fontWeight: '600', alignSelf: 'flex-start', marginBottom: spacing.sm },
+  emptyText: { color: colors.onSurfaceVariant, textAlign: 'center', marginVertical: spacing.md },
+  chartCard: { padding: spacing.md, borderRadius: 16, backgroundColor: colors.surface, marginBottom: spacing.md, alignItems: 'center' },
+  chartTitle: { fontWeight: '300', alignSelf: 'flex-start', marginBottom: spacing.sm },
   volRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs, alignSelf: 'stretch' },
   volLabel: { width: 76 },
   volTrack: { flex: 1, height: 10, borderRadius: 5, overflow: 'hidden' },
@@ -329,19 +330,19 @@ const styles = StyleSheet.create({
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   bdBar: { flex: 1, flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', backgroundColor: 'rgba(128,128,128,0.12)' },
   chart: { borderRadius: 12 },
-  workoutRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: theme.colors.surface, borderRadius: 10, marginBottom: spacing.xs, gap: spacing.sm },
+  workoutRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.surface, borderRadius: 10, marginBottom: spacing.xs, gap: spacing.sm },
   progressionTouch: { borderRadius: 10, marginBottom: spacing.xs },
-  workoutCard: { padding: spacing.md, backgroundColor: theme.colors.surface, borderRadius: 12 },
+  workoutCard: { padding: spacing.md, backgroundColor: colors.surface, borderRadius: 12 },
   workoutCardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   workoutIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   workoutStats: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm },
   workoutStat: {},
-  workoutStatLabel: { color: theme.colors.onSurfaceVariant, letterSpacing: 0.8, fontSize: 10 },
-  progressionRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: theme.colors.surface, borderRadius: 10, gap: spacing.sm },
+  workoutStatLabel: { color: colors.onSurfaceVariant, letterSpacing: 0.8, fontSize: 10 },
+  progressionRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.surface, borderRadius: 10, gap: spacing.sm },
   workoutInfo: { flex: 1 },
-  workoutDate: { color: theme.colors.onSurfaceVariant },
+  workoutDate: { color: colors.onSurfaceVariant },
   pickerDialog: { maxHeight: '80%' },
-  pickerSearch: { marginBottom: spacing.sm, backgroundColor: theme.colors.surfaceVariant },
+  pickerSearch: { marginBottom: spacing.sm, backgroundColor: colors.surfaceVariant },
   pickerList: { maxHeight: 320 },
   pickerItem: { paddingVertical: spacing.sm, paddingHorizontal: spacing.xs },
 });

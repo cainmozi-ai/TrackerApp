@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View, Linking } from 'react-native';
-import { Text, Button, Chip, IconButton } from 'react-native-paper';
+import { Text, Button, IconButton } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { spacing, shape, accent, moduleColors, withAlpha } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { groupColor } from '@/utils/muscles';
 import { MotionCard } from '@/components/common/MotionCard';
+import { Pill } from '@/components/common/Pill';
 import { useWorkoutStore, estimate1RM } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
 import { type LogType, formatSet } from '@/utils/workout';
@@ -84,12 +85,10 @@ export default function ExerciseDetailScreen() {
         </View>
 
         <View style={styles.tagRow}>
-          <Chip compact style={{ backgroundColor: accent }} textStyle={{ color: '#FFFFFF' }}>
-            {exercise.mechanic === 'isolation' ? 'Isolation' : 'Compound'}
-          </Chip>
-          <Chip compact>{exercise.equipment}</Chip>
-          {!!exercise.target && <Chip compact>{exercise.target}</Chip>}
-          {exercise.isCustom && <Chip compact>Custom</Chip>}
+          <Pill label={exercise.mechanic === 'isolation' ? 'Isolation' : 'Compound'} selected />
+          <Pill label={exercise.equipment} />
+          {!!exercise.target && <Pill label={exercise.target} />}
+          {exercise.isCustom && <Pill label="Custom" />}
         </View>
 
         {(exercise.primaryMuscles.length > 0 || exercise.secondaryMuscles.length > 0) && (
@@ -127,7 +126,7 @@ export default function ExerciseDetailScreen() {
             {exercise.tips.map((tip, i) => (
               <View key={i} style={styles.stepRow}>
                 <View style={[styles.stepNum, { backgroundColor: withAlpha(accent, 0.18) }]}>
-                  <Text variant="labelSmall" style={{ color: accent, fontWeight: '800' }}>{i + 1}</Text>
+                  <Text variant="labelSmall" style={{ color: colors.accentText, fontWeight: '300' }}>{i + 1}</Text>
                 </View>
                 <Text variant="bodyMedium" style={[styles.tipText, { color: colors.onSurface }]}>{tip}</Text>
               </View>
@@ -158,7 +157,7 @@ export default function ExerciseDetailScreen() {
                       color={readyToProgress ? accent : '#A83232'}
                     />
                     <View style={styles.verdictText}>
-                      <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>
+                      <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>
                         {readyToProgress
                           ? `Move up — try ${suggestion!.weight} ${unit} × ${suggestion!.reps}`
                           : suggestion
@@ -175,15 +174,15 @@ export default function ExerciseDetailScreen() {
 
                   <View style={styles.statRow}>
                     <View style={styles.stat}>
-                      <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{lastWeight} {unit}</Text>
+                      <Text variant="titleMedium" style={{ color: colors.accentText, fontWeight: '300' }}>{lastWeight} {unit}</Text>
                       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Last top weight</Text>
                     </View>
                     <View style={styles.stat}>
-                      <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{best1RM} {unit}</Text>
+                      <Text variant="titleMedium" style={{ color: colors.accentText, fontWeight: '300' }}>{best1RM} {unit}</Text>
                       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Est. 1RM</Text>
                     </View>
                     <View style={styles.stat}>
-                      <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{history.length}</Text>
+                      <Text variant="titleMedium" style={{ color: colors.accentText, fontWeight: '300' }}>{history.length}</Text>
                       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Sessions</Text>
                     </View>
                   </View>
@@ -191,14 +190,14 @@ export default function ExerciseDetailScreen() {
                   <View style={[styles.incRow, { backgroundColor: withAlpha(accent, 0.08) }]}>
                     <MaterialCommunityIcons name="weight" size={18} color={accent} />
                     <View style={styles.verdictText}>
-                      <Text variant="bodyMedium" style={{ color: colors.onSurface, fontWeight: '700' }}>Weight jump</Text>
+                      <Text variant="bodyMedium" style={{ color: colors.onSurface, fontWeight: '300' }}>Weight jump</Text>
                       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
                         Added when you hit the top of the rep range
                         {exercise.weightIncrement == null ? ' · default for this equipment' : ''}
                       </Text>
                     </View>
                     <IconButton icon="minus" size={16} mode="contained-tonal" onPress={() => changeIncrement(-0.5)} />
-                    <Text variant="titleMedium" style={{ color: accent, fontWeight: '800', minWidth: 52, textAlign: 'center' }}>
+                    <Text variant="titleMedium" style={{ color: colors.accentText, fontWeight: '300', minWidth: 52, textAlign: 'center' }}>
                       +{currentInc} {unit}
                     </Text>
                     <IconButton icon="plus" size={16} mode="contained-tonal" onPress={() => changeIncrement(0.5)} />
@@ -243,7 +242,7 @@ export default function ExerciseDetailScreen() {
 
 const styles = StyleSheet.create({
   hero: { borderRadius: shape.lg, paddingVertical: spacing.xl, alignItems: 'center', gap: 4, marginBottom: spacing.md },
-  heroMuscle: { fontWeight: '800', letterSpacing: 1 },
+  heroMuscle: { fontWeight: '300', letterSpacing: 1 },
   muscleRow: { flexDirection: 'row', gap: spacing.md, marginTop: 6 },
   muscleKey: { width: 74 },
   stepRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start', marginTop: spacing.sm },
@@ -253,10 +252,10 @@ const styles = StyleSheet.create({
   tagRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.sm, flexWrap: 'wrap' },
   musclesRow: { gap: 2, marginBottom: spacing.md },
   description: { marginBottom: spacing.md, lineHeight: 20 },
-  videoBtn: { marginBottom: spacing.md, borderRadius: shape.pill },
+  videoBtn: { marginBottom: spacing.md, borderRadius: shape.md },
   card: { marginBottom: spacing.sm },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-  cardTitle: { fontWeight: '700' },
+  cardTitle: { fontWeight: '300' },
   tipRow: { flexDirection: 'row', marginBottom: spacing.xs },
   tipIcon: { marginTop: 2, marginRight: spacing.sm },
   tipText: { flex: 1, lineHeight: 20 },
@@ -270,5 +269,5 @@ const styles = StyleSheet.create({
   histDate: { width: 78 },
   histTrack: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
   histFill: { height: '100%', borderRadius: 4 },
-  histWeight: { width: 56, textAlign: 'right', fontWeight: '600' },
+  histWeight: { width: 56, textAlign: 'right', fontWeight: '300' },
 });

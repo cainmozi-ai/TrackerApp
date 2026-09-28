@@ -5,8 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-chart-kit';
-import { theme, moduleColors, spacing } from '@/theme';
-import { useAppTheme } from '@/theme/ThemeContext';
+import { moduleColors, spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { ProgressRing } from '@/components/common/ProgressRing';
 import { useBudgetStore } from '@/stores/budgetStore';
@@ -16,6 +16,8 @@ const screenWidth = Dimensions.get('window').width;
 const FALLBACK_COLORS = ['#A83232', '#A83232', '#A83232', '#A83232', '#A83232', '#A83232', '#A83232'];
 
 export default function BudgetScreen() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const { transactions, monthlyIncome, monthlyExpenses, categories, loadTransactions, loadCategories, deleteTransaction, getCategoryTotals } = useBudgetStore();
   const { profile, loadProfile } = useUserStore();
   const [pieData, setPieData] = useState<{ name: string; amount: number; color: string; legendFontColor: string; legendFontSize: number }[]>([]);
@@ -37,7 +39,7 @@ export default function BudgetScreen() {
           name,
           amount,
           color: cat?.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
-          legendFontColor: theme.colors.onSurface,
+          legendFontColor: colors.onSurface,
           legendFontSize: 12,
         };
       });
@@ -47,8 +49,6 @@ export default function BudgetScreen() {
 
   const budget = profile?.monthlyBudget || 0;
   const remaining = budget - monthlyExpenses;
-
-  const { colors } = useAppTheme();
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="Budget" />
@@ -57,14 +57,14 @@ export default function BudgetScreen() {
         <View style={styles.summaryRow}>
           <Surface style={styles.summaryCard} elevation={1}>
             <MaterialCommunityIcons name="arrow-down-circle" size={24} color={moduleColors.habits} />
-            <Text variant="titleMedium" style={{ color: moduleColors.habits, fontWeight: '700' }}>
+            <Text variant="titleMedium" style={{ color: colors.accentText, fontWeight: '300' }}>
               ${monthlyIncome.toFixed(2)}
             </Text>
             <Text variant="labelSmall" style={styles.summaryLabel}>Income</Text>
           </Surface>
           <Surface style={styles.summaryCard} elevation={1}>
             <MaterialCommunityIcons name="arrow-up-circle" size={24} color="#FF5252" />
-            <Text variant="titleMedium" style={{ color: '#FF5252', fontWeight: '700' }}>
+            <Text variant="titleMedium" style={{ color: '#FF5252', fontWeight: '300' }}>
               ${monthlyExpenses.toFixed(2)}
             </Text>
             <Text variant="labelSmall" style={styles.summaryLabel}>Expenses</Text>
@@ -76,7 +76,6 @@ export default function BudgetScreen() {
             <ProgressRing
               progress={monthlyExpenses / budget}
               size={80}
-              strokeWidth={8}
               color={remaining >= 0 ? moduleColors.budget : '#FF5252'}
               label="Budget"
               value={`$${Math.abs(remaining).toFixed(0)}`}
@@ -118,7 +117,7 @@ export default function BudgetScreen() {
                 <Text variant="bodyMedium">{t.category}</Text>
                 {!!t.note && <Text variant="bodySmall" style={styles.note}>{t.note}</Text>}
               </View>
-              <Text variant="titleSmall" style={{ color: t.type === 'income' ? moduleColors.habits : '#FF5252', fontWeight: '600' }}>
+              <Text variant="titleSmall" style={{ color: t.type === 'income' ? colors.accentText : '#FF5252', fontWeight: '300' }}>
                 {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
               </Text>
               <IconButton icon="close" size={16} onPress={() => deleteTransaction(t.id)} />
@@ -137,10 +136,10 @@ export default function BudgetScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   scrollContent: { padding: spacing.md, paddingBottom: 100 },
   summaryRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   summaryCard: {
@@ -148,34 +147,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: 16,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: colors.surface,
     gap: 4,
   },
-  summaryLabel: { color: theme.colors.onSurfaceVariant },
+  summaryLabel: { color: colors.onSurfaceVariant },
   budgetCard: {
     alignItems: 'center',
     padding: spacing.lg,
     borderRadius: 16,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: colors.surface,
     marginBottom: spacing.lg,
     gap: spacing.sm,
   },
-  budgetText: { color: theme.colors.onSurfaceVariant },
-  chartCard: { padding: spacing.md, borderRadius: 16, backgroundColor: theme.colors.surface, marginBottom: spacing.md },
-  chartTitle: { fontWeight: '600', marginBottom: spacing.sm },
-  sectionTitle: { fontWeight: '600', marginBottom: spacing.sm },
-  emptyText: { color: theme.colors.onSurfaceVariant, textAlign: 'center', marginTop: spacing.lg },
+  budgetText: { color: colors.onSurfaceVariant },
+  chartCard: { padding: spacing.md, borderRadius: 16, backgroundColor: colors.surface, marginBottom: spacing.md },
+  chartTitle: { fontWeight: '300', marginBottom: spacing.sm },
+  sectionTitle: { fontWeight: '300', marginBottom: spacing.sm },
+  emptyText: { color: colors.onSurfaceVariant, textAlign: 'center', marginTop: spacing.lg },
   transactionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.sm,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 10,
     marginBottom: spacing.xs,
     gap: spacing.sm,
   },
   typeDot: { width: 10, height: 10, borderRadius: 5 },
   transactionInfo: { flex: 1 },
-  note: { color: theme.colors.onSurfaceVariant },
+  note: { color: colors.onSurfaceVariant },
   fab: { position: 'absolute', right: 16, bottom: 24, backgroundColor: moduleColors.budget, borderRadius: 28 },
 });

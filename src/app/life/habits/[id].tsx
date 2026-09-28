@@ -4,11 +4,13 @@ import { Text, IconButton, Surface, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing } from '@/theme';
+import { moduleColors, spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { useHabitStore } from '@/stores/habitStore';
 import { HabitHeatmap } from '@/components/habits/HabitHeatmap';
 
 export default function HabitDetailScreen() {
+  const styles = useThemedStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const habitId = Number(id);
   const { habits, loadHabits, getStreak, getHeatmapData, deleteHabit } = useHabitStore();
@@ -69,15 +71,15 @@ export default function HabitDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700', flex: 1, textAlign: 'center' },
+  title: { fontWeight: '300', flex: 1, textAlign: 'center' },
   scrollContent: { padding: spacing.md },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
-  statCard: { flex: 1, alignItems: 'center', padding: spacing.md, borderRadius: 16, backgroundColor: theme.colors.surface, gap: 2 },
-  statValue: { fontWeight: '700' },
-  statLabel: { color: theme.colors.onSurfaceVariant, textAlign: 'center' },
-  sectionTitle: { fontWeight: '600', marginBottom: spacing.sm },
-  heatmapCard: { padding: spacing.md, borderRadius: 16, backgroundColor: theme.colors.surface },
+  statCard: { flex: 1, alignItems: 'center', padding: spacing.md, borderRadius: 16, backgroundColor: colors.surface, gap: 2 },
+  statValue: { fontWeight: '300' },
+  statLabel: { color: colors.onSurfaceVariant, textAlign: 'center' },
+  sectionTitle: { fontWeight: '300', marginBottom: spacing.sm },
+  heatmapCard: { padding: spacing.md, borderRadius: 16, backgroundColor: colors.surface },
 });

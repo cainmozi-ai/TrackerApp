@@ -48,7 +48,7 @@ export default function HabitsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {habits.length > 0 && (
           <MotionCard style={styles.summary} noEnter>
-            <Text variant="displaySmall" style={[styles.count, { color: moduleColors.habits }]}>
+            <Text variant="displaySmall" style={[styles.count, { color: colors.accentText }]}>
               {completed}/{habits.length}
             </Text>
             <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: 100 },
   summary: { alignItems: 'center', marginBottom: spacing.lg, paddingVertical: spacing.lg },
-  count: { fontWeight: '800' },
+  count: { fontWeight: '300' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   hint: { textAlign: 'center', marginTop: spacing.sm },
   fab: { position: 'absolute', right: 16, bottom: 24, borderRadius: shape.pill },

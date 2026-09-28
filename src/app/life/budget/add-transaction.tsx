@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   segmented: { marginBottom: spacing.md },
   input: { marginBottom: spacing.md },
-  label: { marginBottom: spacing.sm, fontWeight: '700' },
+  label: { marginBottom: spacing.sm, fontWeight: '300' },
   noteInput: { marginTop: spacing.lg },
-  saveBtn: { marginTop: spacing.lg, borderRadius: shape.pill },
+  saveBtn: { marginTop: spacing.lg, borderRadius: shape.md },
 });

@@ -4,10 +4,11 @@ import { Text, IconButton, Surface, Button, Portal, Dialog, TextInput } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing } from '@/theme';
-import { useAppTheme } from '@/theme/ThemeContext';
+import { moduleColors, spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useReminderStore } from '@/stores/reminderStore';
 import { mechanicLabel } from '@/utils/muscles';
 import { effectiveIncrement } from '@/utils/progression';
 import type { TemplateExercise, WorkoutLog } from '@/types';
@@ -17,6 +18,7 @@ function Stepper({ label, value, step, min, onChange }: {
   label: string; value: string; step: number; min: number; onChange: (v: string) => void;
 }) {
   const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const num = parseFloat(value) || 0;
   const setNum = (n: number) => onChange(String(Math.max(min, Math.round(n * 100) / 100)));
   return (
@@ -33,6 +35,8 @@ function Stepper({ label, value, step, min, onChange }: {
 }
 
 export default function TemplateDetailScreen() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const templateId = Number(id);
   const {
@@ -42,6 +46,7 @@ export default function TemplateDetailScreen() {
   const [exercises, setExercises] = useState<TemplateExercise[]>([]);
   const [existing, setExisting] = useState<WorkoutLog | null>(null);
   const [guard, setGuard] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Edit dialog state
   const [editing, setEditing] = useState<TemplateExercise | null>(null);
@@ -127,7 +132,9 @@ export default function TemplateDetailScreen() {
   };
 
   const handleDelete = async () => {
+    setConfirmDelete(false);
     await deleteTemplate(templateId);
+    await useReminderStore.getState().rescheduleWorkout();
     router.back();
   };
 
@@ -135,13 +142,12 @@ export default function TemplateDetailScreen() {
     te.targetRepMin != null && te.targetRepMax != null
       ? `${te.targetRepMin}–${te.targetRepMax}`
       : `${te.targetReps}`;
-
-  const { colors } = useAppTheme();
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader
+        align="left"
         title={template?.name || 'Routine'}
-        right={<IconButton icon="delete-outline" onPress={handleDelete} />}
+        right={<IconButton icon="delete-outline" onPress={() => setConfirmDelete(true)} accessibilityLabel="Delete routine" />}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -185,7 +191,7 @@ export default function TemplateDetailScreen() {
 
       {exercises.length > 0 && (
         <View style={[styles.startBar, { backgroundColor: colors.surface, borderTopColor: colors.outline }]}>
-          <Button mode="contained" icon="play" onPress={handleStart} style={styles.startBtn}>
+          <Button mode="contained" icon="play" onPress={handleStart} style={styles.startBtn} contentStyle={styles.primaryContent}>
             Start Workout
           </Button>
         </View>
@@ -214,6 +220,19 @@ export default function TemplateDetailScreen() {
           </Dialog.Actions>
         </Dialog>
 
+        <Dialog visible={confirmDelete} onDismiss={() => setConfirmDelete(false)}>
+          <Dialog.Title>Delete {template?.name || 'this routine'}?</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
+              This removes the routine and its {exercises.length} exercise{exercises.length === 1 ? '' : 's'}, and clears it from your Weekly Split. Workouts you've already logged stay in your history.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button textColor={colors.onSurface} onPress={() => setConfirmDelete(false)}>Cancel</Button>
+            <Button textColor={colors.error} onPress={handleDelete}>Delete</Button>
+          </Dialog.Actions>
+        </Dialog>
+
         <Dialog visible={guard} onDismiss={() => setGuard(false)}>
           <Dialog.Title>Workout in progress</Dialog.Title>
           <Dialog.Content>
@@ -231,11 +250,11 @@ export default function TemplateDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: spacing.md, paddingBottom: 100 },
   emptyState: { alignItems: 'center', paddingTop: spacing.xl, gap: spacing.sm },
-  emptyText: { color: theme.colors.onSurfaceVariant, textAlign: 'center' },
+  emptyText: { color: colors.onSurfaceVariant, textAlign: 'center' },
   exRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -245,13 +264,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     gap: spacing.sm,
   },
-  exIndex: { color: moduleColors.workout, fontWeight: '700', width: 20 },
+  exIndex: { color: colors.accentText, fontWeight: '300', width: 20 },
   exInfo: { flex: 1 },
   moveCol: { justifyContent: 'center' },
   moveBtn: { margin: 0, height: 22 },
   addBtn: { marginTop: spacing.sm },
   startBar: { padding: spacing.md, borderTopWidth: 1 },
   startBtn: { borderRadius: 12 },
+  primaryContent: { height: 48 },
   stepRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 2 },
   stepBtn: { margin: 0 },
   stepInput: { width: 72, height: 40 },

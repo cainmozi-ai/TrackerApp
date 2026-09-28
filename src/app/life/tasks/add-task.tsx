@@ -3,14 +3,16 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput, Button, IconButton, SegmentedButtons } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { theme, spacing } from '@/theme';
-import { useAppTheme } from '@/theme/ThemeContext';
+import { spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useTaskStore } from '@/stores/taskStore';
 
 const CATEGORIES = ['general', 'health', 'work', 'personal', 'shopping'];
 
 export default function AddTaskScreen() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
@@ -28,8 +30,6 @@ export default function AddTaskScreen() {
     });
     router.back();
   };
-
-  const { colors } = useAppTheme();
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="Add Task" />
@@ -68,13 +68,13 @@ export default function AddTaskScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   scrollContent: { padding: spacing.md },
-  input: { marginBottom: spacing.sm, backgroundColor: theme.colors.surface },
-  label: { marginTop: spacing.md, marginBottom: spacing.sm, fontWeight: '600' },
+  input: { marginBottom: spacing.sm, backgroundColor: colors.surface },
+  label: { marginTop: spacing.md, marginBottom: spacing.sm, fontWeight: '300' },
   segmented: { marginBottom: spacing.sm },
   saveBtn: { marginTop: spacing.xl },
 });

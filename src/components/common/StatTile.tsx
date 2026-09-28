@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   wide: { width: '100%' },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconChip: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  value: { fontWeight: '800', marginTop: spacing.xs },
+  value: { fontWeight: '300', marginTop: spacing.xs },
   track: { height: 6, borderRadius: 3, marginTop: spacing.xs, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 3 },
 });

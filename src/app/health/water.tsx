@@ -4,11 +4,14 @@ import { Button, Dialog, Portal, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { shape, spacing, accent } from '@/theme';
+import { shape, spacing } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { ProgressRing } from '@/components/common/ProgressRing';
 import { useUserStore } from '@/stores/userStore';
 import { useWaterStore } from '@/stores/waterStore';
+
+// The design gives the Water Intake screen its own blue-grey accent.
+const WATER = '#90A4AE';
 
 const QUICK_ADDS = [
   { label: '+1 Glass', amount: 250 },
@@ -41,10 +44,10 @@ export default function WaterScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <ScreenHeader title="Fluid Intake" />
+      <ScreenHeader title="Water Intake" />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={[styles.hero, { backgroundColor: colors.surface }]}>
-          <ProgressRing progress={todayTotal / targetMl} size={170} strokeWidth={16} color={accent} value={String(glasses)} label={`of ${profile?.waterTarget ?? 8} glasses`} />
+          <ProgressRing progress={todayTotal / targetMl} size={170} color={WATER} value={String(glasses)} label={`of ${profile?.waterTarget ?? 8} glasses`} />
           <Text variant="bodyMedium" style={{ color: colors.onSurface, marginTop: spacing.sm }}>
             {todayTotal}ml / {targetMl}ml
           </Text>
@@ -57,7 +60,7 @@ export default function WaterScreen() {
             </Button>
           ))}
         </View>
-        <Button mode="outlined" style={styles.customButton} contentStyle={styles.quickContent} onPress={() => setCustomOpen(true)}>Custom</Button>
+        <Button mode="outlined" style={[styles.customButton, { borderColor: WATER }]} textColor={WATER} contentStyle={styles.quickContent} onPress={() => setCustomOpen(true)}>Custom</Button>
 
         <Text variant="titleSmall" style={[styles.section, { color: colors.onSurface }]}>Today&apos;s Log</Text>
         <View style={styles.logList}>
@@ -99,6 +102,6 @@ const styles = StyleSheet.create({
   section: { marginTop: spacing.lg, marginBottom: spacing.sm },
   logList: { gap: spacing.sm },
   logRow: { height: 44, borderRadius: shape.md, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md },
-  dot: { width: 14, height: 14, borderRadius: 7, backgroundColor: accent, marginRight: spacing.sm },
+  dot: { width: 14, height: 14, borderRadius: 7, backgroundColor: WATER, marginRight: spacing.sm },
   logAmount: { flex: 1 },
 });
