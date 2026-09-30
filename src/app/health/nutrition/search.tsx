@@ -17,6 +17,7 @@ import {
 } from '@/services/foodSources';
 import { macroLine } from '@/utils/foodFormat';
 import { useMicroEstimate, MicroEstimateNote } from '@/components/nutrition/MicroEstimate';
+import { FoodMicroChips, FoodMicroList } from '@/components/nutrition/FoodMicros';
 import type { Food, MealType, SavedMeal } from '@/types';
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -63,7 +64,7 @@ export default function FoodSearchScreen() {
     loadAllFoods, loadRecents, loadSavedMeals,
     logFood, addCustomFood, logSavedMeal, applyMicroEstimate,
   } = useNutritionStore();
-  const { reward } = useUserStore();
+  const { reward, loadProfile } = useUserStore();
 
   // Refresh on focus so foods added on the custom-food screen show up on return.
   useFocusEffect(
@@ -71,6 +72,7 @@ export default function FoodSearchScreen() {
       loadAllFoods();
       loadRecents();
       loadSavedMeals();
+      loadProfile(); // vitamin/mineral % on the food cards use the profile's targets
     }, [])
   );
 
@@ -311,6 +313,7 @@ export default function FoodSearchScreen() {
               </Text>
             )}
             <MicroEstimateNote state={estimate} />
+            {pendingFood && <FoodMicroList food={estimate.apply(pendingFood)} servings={portionServings} />}
           </Dialog.Content>
           <Dialog.Actions>
             <Button textColor={colors.accentText} onPress={() => setPendingFood(null)}>Cancel</Button>
@@ -326,7 +329,6 @@ export default function FoodSearchScreen() {
 
 function FoodRow({ food, onAdd }: { food: Food; onAdd: () => void }) {
   const { colors } = useAppTheme();
-  const microCount = Object.keys(food.micros || {}).length;
   const badge = food.source && food.source !== 'custom' ? SOURCE_META[food.source].short : null;
   const unit = /^[a-z]{1,2}$/.test(food.servingUnit) ? food.servingUnit : ` ${food.servingUnit}`;
   return (
@@ -346,8 +348,8 @@ function FoodRow({ food, onAdd }: { food: Food; onAdd: () => void }) {
         )}
         <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
           {`${Math.round(food.calories)} cal · ${macroLine(food)} · ${food.servingSize}${unit}`}
-          {microCount > 0 ? ` · ${microCount} micronutrient${microCount === 1 ? '' : 's'}` : ''}
         </Text>
+        <FoodMicroChips food={food} />
       </View>
       <AddSquare />
     </Pressable>

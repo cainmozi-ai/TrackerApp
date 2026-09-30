@@ -16,6 +16,7 @@ import { useUserStore } from '@/stores/userStore';
 import type { FoodLog, MealType } from '@/types';
 import { localDate } from '@/utils/dates';
 import { macroLine, servingsLabel } from '@/utils/foodFormat';
+import { FoodMicroChips, FoodMicroList } from '@/components/nutrition/FoodMicros';
 
 const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const WEEKDAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -172,6 +173,7 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
                       {Math.round((log.food?.calories || 0) * log.servings)} cal
                       {log.food ? ` · ${macroLine(log.food, log.servings)}` : ''} · {servingsLabel(log.servings)}
                     </Text>
+                    {log.food && <FoodMicroChips food={log.food} servings={log.servings} max={3} />}
                   </Pressable>
                 ))
               )}
@@ -213,6 +215,7 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
                 {editLog?.food?.sodium != null ? `Sodium ${Math.round(editLog.food.sodium * (parseFloat(editServings) || 0))}mg` : ''}
               </Text>
             )}
+            {editLog?.food && <FoodMicroList food={editLog.food} servings={parseFloat(editServings) || 0} />}
           </Dialog.Content>
           <Dialog.Actions>
             <Button textColor={colors.error} onPress={handleDeleteLog} style={styles.deleteBtn}>Delete</Button>

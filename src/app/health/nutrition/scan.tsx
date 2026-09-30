@@ -9,6 +9,7 @@ import { moduleColors, spacing, shape, type AppColors } from '@/theme';
 import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { lookupBarcodeAll, SOURCE_META } from '@/services/foodSources';
 import { useMicroEstimate, MicroEstimateNote } from '@/components/nutrition/MicroEstimate';
+import { FoodMicroList } from '@/components/nutrition/FoodMicros';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
 import type { Food, MealType } from '@/types';
@@ -218,6 +219,7 @@ export default function ScanScreen() {
               {active.fiber != null ? ` · Fib${Math.round(active.fiber * servings)}` : ''}
               {active.sodium != null ? ` · Sod${Math.round(active.sodium * servings)}mg` : ''}
             </Text>
+            <FoodMicroList food={active} servings={servings} />
 
             <Text variant="labelMedium" style={styles.mealLabel}>Add to:</Text>
             <View style={styles.mealChips}>

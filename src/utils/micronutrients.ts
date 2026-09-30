@@ -353,6 +353,36 @@ export const MINERALS = MICROS.filter(m => m.group === 'mineral');
 export const OTHER_NUTRIENTS = MICROS.filter(m => m.group === 'other');
 export const MICRO_BY_KEY: Record<string, MicroDef> = Object.fromEntries(MICROS.map(m => [m.key, m]));
 
+/** Compact names for chips ("Vit C" rather than "Vitamin C (Ascorbic Acid)"). */
+const SHORT_LABELS: Record<string, string> = {
+  b1: 'B1', b2: 'B2', b3: 'B3', b5: 'B5', b6: 'B6', b7: 'Biotin', folate: 'Folate', b12: 'B12',
+  vitaminA: 'Vit A', vitaminC: 'Vit C', vitaminD: 'Vit D', vitaminE: 'Vit E', vitaminK: 'Vit K',
+};
+export const shortLabel = (key: string) => SHORT_LABELS[key] ?? MICRO_BY_KEY[key]?.label ?? key;
+
+export interface FoodMicro {
+  def: MicroDef;
+  /** Amount in the portion, in def.unit. */
+  amount: number;
+  /** % of this person's daily target, or null when NIH sets no target. */
+  pct: number | null;
+}
+
+/** A food's vitamins and minerals for a portion, in list order (vitamins,
+ * minerals, then other nutrients). Only nutrients the food reports. */
+export function foodMicros(micros: Record<string, number> | null | undefined, servings: number, profile?: NutrientProfile | null): FoodMicro[] {
+  if (!micros) return [];
+  const out: FoodMicro[] = [];
+  for (const def of [...VITAMINS, ...MINERALS, ...OTHER_NUTRIENTS]) {
+    const v = micros[def.key];
+    if (v == null) continue;
+    const amount = v * servings;
+    const target = targetFor(def.key, profile);
+    out.push({ def, amount, pct: target ? (amount / target) * 100 : null });
+  }
+  return out;
+}
+
 export const CATEGORIES: { key: CategoryKey; label: string; icon: string }[] = [
   { key: 'brain', label: 'Brainpower', icon: '🧠' },
   { key: 'muscle', label: 'Muscles', icon: '💪' },
@@ -482,5 +512,6 @@ export function parseMicros(raw: string | null | undefined): Record<string, numb
 export function formatAmount(v: number): string {
   if (v >= 10) return String(Math.round(v));
   if (v >= 0.1 || v === 0) return String(Math.round(v * 10) / 10);
+  if (v < 0.005) return '<0.01';
   return String(Math.round(v * 100) / 100);
 }
