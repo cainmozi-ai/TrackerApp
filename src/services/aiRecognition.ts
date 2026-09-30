@@ -84,6 +84,7 @@ export function recognizedToFood(r: RecognizedFood): Omit<Food, 'id' | 'createdA
     sodium: null,
     servingSize: 1,
     servingUnit: 'serving',
+    source: 'ai',
     isFavorite: false,
   };
 }

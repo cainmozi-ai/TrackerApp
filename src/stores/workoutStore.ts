@@ -311,6 +311,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const db = await getDatabase();
     await db.runAsync('DELETE FROM template_exercises WHERE template_id = ?', [id]);
     await db.runAsync('DELETE FROM workout_templates WHERE id = ?', [id]);
+    // Don't leave Weekly Split days pointing at a routine that no longer exists.
+    await db.runAsync('DELETE FROM weekly_schedule WHERE template_id = ?', [id]);
     await get().loadTemplates();
   },
 

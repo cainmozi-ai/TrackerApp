@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { shape, spacing } from '@/theme';
+import { shape, spacing, withAlpha } from '@/theme';
 
 export default function LearnScreen() {
   const { colors } = useAppTheme();
@@ -17,22 +17,22 @@ export default function LearnScreen() {
         </Text>
 
         <Text variant="labelSmall" style={[styles.kicker, { color: colors.onSurfaceVariant }]}>MODULES</Text>
-        <LearnRow title="Nutrition" subtitle="Understand Macros and Micros" icon="food-apple" iconColor="#BDB6A0" iconBg="#343330" onPress={() => router.push('/learn/nutrition')} />
-        <LearnRow title="Myology" subtitle="Study Muscles in the body" icon="arm-flex" iconColor="#BC0E0E" iconBg="#381B1B" onPress={() => router.push('/learn/myology')} />
-        <LearnRow title="Biomechanics" subtitle="Study the Biomechanics of your body" icon="cog-outline" iconColor="#A8C2BC" iconBg="#283431" onPress={() => router.push('/learn/biomechanics')} />
-        <LearnRow title="Basic Anatomy" subtitle="Get a basic grasp of the human anatomy" icon="human" iconColor="#BC0E0E" iconBg="#381B1B" onPress={() => router.push('/learn/anatomy')} />
+        <LearnRow title="Nutrition" subtitle="Understand Macros and Micros" icon="food-apple" iconColor="#BDB6A0" onPress={() => router.push('/learn/nutrition')} />
+        <LearnRow title="Myology" subtitle="Study Muscles in the body" icon="arm-flex" iconColor="#BC0E0E" onPress={() => router.push('/learn/myology')} />
+        <LearnRow title="Biomechanics" subtitle="Study the Biomechanics of your body" icon="cog-outline" iconColor="#A8C2BC" onPress={() => router.push('/learn/biomechanics')} />
+        <LearnRow title="Basic Anatomy" subtitle="Get a basic grasp of the human anatomy" icon="human" iconColor="#BC0E0E" onPress={() => router.push('/learn/anatomy')} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function LearnRow({ title, subtitle, icon, iconColor, iconBg, onPress }: {
-  title: string; subtitle: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; iconColor: string; iconBg: string; onPress: () => void;
+function LearnRow({ title, subtitle, icon, iconColor, onPress }: {
+  title: string; subtitle: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; iconColor: string; onPress: () => void;
 }) {
   const { colors } = useAppTheme();
   return (
     <Pressable onPress={onPress} style={[styles.row, { backgroundColor: colors.surface }]}> 
-      <View style={[styles.iconTile, { backgroundColor: iconBg }]}>
+      <View style={[styles.iconTile, { backgroundColor: withAlpha(iconColor, 0.16) }]}>
         <MaterialCommunityIcons name={icon} size={20} color={iconColor} />
       </View>
       <View style={styles.rowCopy}>
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
   scrollContent: { padding: spacing.md, paddingBottom: spacing.xxl },
   title: { fontWeight: '400' },
   subtitle: { marginTop: 2, marginBottom: spacing.xs, lineHeight: 15 },
-  kicker: { fontWeight: '700', marginBottom: spacing.sm },
+  kicker: { fontWeight: '300', marginBottom: spacing.sm },
   row: { height: 72, borderRadius: shape.lg, paddingHorizontal: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 12 },
   iconTile: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   rowCopy: { flex: 1, gap: 1 },

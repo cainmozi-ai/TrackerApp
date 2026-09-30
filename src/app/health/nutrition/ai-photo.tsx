@@ -1,19 +1,23 @@
 import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, IconButton, Surface, Button, ActivityIndicator, Chip } from 'react-native-paper';
+import { Text, IconButton, Surface, Button, ActivityIndicator } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing } from '@/theme';
+import { moduleColors, spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { isAiConfigured, recognizeFoodFromPhoto, recognizedToFood, type RecognizedFood } from '@/services/aiRecognition';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
 import type { MealType } from '@/types';
+import { Pill } from '@/components/common/Pill';
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 export default function AiPhotoScreen() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -93,7 +97,7 @@ export default function AiPhotoScreen() {
   }
 
   if (!permission) {
-    return <SafeAreaView style={styles.center}><ActivityIndicator color={theme.colors.primary} /></SafeAreaView>;
+    return <SafeAreaView style={styles.center}><ActivityIndicator color={colors.primary} /></SafeAreaView>;
   }
 
   if (!permission.granted) {
@@ -101,7 +105,7 @@ export default function AiPhotoScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Header />
         <View style={styles.center}>
-          <MaterialCommunityIcons name="camera-off" size={56} color={theme.colors.onSurfaceVariant} />
+          <MaterialCommunityIcons name="camera-off" size={56} color={colors.onSurfaceVariant} />
           <Text variant="titleMedium" style={styles.infoTitle}>Camera Access Needed</Text>
           <Button mode="contained" onPress={requestPermission} style={styles.fallbackBtn}>Grant Permission</Button>
         </View>
@@ -133,9 +137,8 @@ export default function AiPhotoScreen() {
               <Text variant="labelMedium" style={styles.mealLabel}>Add to:</Text>
               <View style={styles.mealChips}>
                 {MEALS.map(m => (
-                  <Chip key={m} selected={meal === m} onPress={() => setMeal(m)} compact style={styles.mealChip} selectedColor={moduleColors.nutrition}>
-                    {m.charAt(0).toUpperCase() + m.slice(1)}
-                  </Chip>
+                  <Pill key={m} label={m.charAt(0).toUpperCase() + m.slice(1)} compact
+                    selected={meal === m} onPress={() => setMeal(m)} />
                 ))}
               </View>
               <Button mode="contained" onPress={handleLogAll} style={styles.fallbackBtn}>Log All Foods</Button>
@@ -171,6 +174,7 @@ export default function AiPhotoScreen() {
 }
 
 function Header() {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.header}>
       <IconButton icon="arrow-left" onPress={() => router.back()} />
@@ -180,32 +184,32 @@ function Header() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl, gap: spacing.sm },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   infoContent: { padding: spacing.lg, alignItems: 'center' },
   iconCircle: { width: 96, height: 96, borderRadius: 48, justifyContent: 'center', alignItems: 'center', marginVertical: spacing.md },
-  infoTitle: { fontWeight: '700', marginTop: spacing.sm },
-  infoText: { color: theme.colors.onSurfaceVariant, textAlign: 'center', marginVertical: spacing.sm },
-  setupCard: { padding: spacing.md, borderRadius: 16, backgroundColor: theme.colors.surface, alignSelf: 'stretch', marginVertical: spacing.md, gap: spacing.xs },
-  setupTitle: { fontWeight: '600', marginBottom: spacing.xs },
-  setupStep: { color: theme.colors.onSurfaceVariant, lineHeight: 20 },
-  code: { fontFamily: 'monospace', color: theme.colors.primary, backgroundColor: theme.colors.surfaceVariant },
+  infoTitle: { fontWeight: '300', marginTop: spacing.sm },
+  infoText: { color: colors.onSurfaceVariant, textAlign: 'center', marginVertical: spacing.sm },
+  setupCard: { padding: spacing.md, borderRadius: 16, backgroundColor: colors.surface, alignSelf: 'stretch', marginVertical: spacing.md, gap: spacing.xs },
+  setupTitle: { fontWeight: '300', marginBottom: spacing.xs },
+  setupStep: { color: colors.onSurfaceVariant, lineHeight: 20 },
+  code: { fontFamily: 'monospace', color: colors.accentText, backgroundColor: colors.surfaceVariant },
   fallbackBtn: { marginTop: spacing.md, alignSelf: 'stretch' },
   cameraWrap: { flex: 1, margin: spacing.md, borderRadius: 16, overflow: 'hidden' },
   camera: { flex: 1 },
   analyzeOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', gap: spacing.md },
   analyzeText: { color: '#fff' },
-  errorText: { color: theme.colors.error, textAlign: 'center', paddingHorizontal: spacing.md },
+  errorText: { color: colors.error, textAlign: 'center', paddingHorizontal: spacing.md },
   captureBar: { padding: spacing.md },
   captureBtn: { borderRadius: 12 },
   resultsContent: { padding: spacing.md },
-  resultsTitle: { fontWeight: '700', marginBottom: spacing.sm },
-  foodCard: { padding: spacing.md, borderRadius: 12, backgroundColor: theme.colors.surface, marginBottom: spacing.sm },
-  foodMacros: { color: theme.colors.onSurfaceVariant, marginTop: 2 },
-  mealLabel: { marginTop: spacing.md, marginBottom: spacing.xs, fontWeight: '600' },
+  resultsTitle: { fontWeight: '300', marginBottom: spacing.sm },
+  foodCard: { padding: spacing.md, borderRadius: 12, backgroundColor: colors.surface, marginBottom: spacing.sm },
+  foodMacros: { color: colors.onSurfaceVariant, marginTop: 2 },
+  mealLabel: { marginTop: spacing.md, marginBottom: spacing.xs, fontWeight: '300' },
   mealChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  mealChip: { backgroundColor: theme.colors.surfaceVariant },
+  mealChip: { backgroundColor: colors.surfaceVariant },
 });

@@ -93,11 +93,11 @@ export default function RecoveryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
-  kicker: { letterSpacing: 1, fontWeight: '700', marginBottom: spacing.sm },
+  kicker: { letterSpacing: 1, fontWeight: '300', marginBottom: spacing.sm },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   tile: { width: '31%', alignItems: 'center', paddingVertical: spacing.md, borderRadius: shape.md, gap: 6 },
   tileIcon: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  sectionTitle: { fontWeight: '700', marginTop: spacing.sm, marginBottom: spacing.sm },
+  sectionTitle: { fontWeight: '300', marginTop: spacing.sm, marginBottom: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingLeft: spacing.md, paddingVertical: 4, borderRadius: shape.sm, marginBottom: spacing.xs },
   recentRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 6 },
 });

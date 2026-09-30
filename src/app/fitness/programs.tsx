@@ -19,6 +19,9 @@ const PROGRAM_META: Record<string, { weeks: number; stripe: string; blurb: strin
 
 const LEVELS = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
+/** "5x5" → "5×5" for display; the stored program name stays as seeded. */
+const displayName = (name: string) => name.replace(/(\d)x(\d)/g, '$1×$2');
+
 export default function ProgramsScreen() {
   const { colors } = useAppTheme();
   const { loadPrograms, cloneProgram } = useWorkoutStore();
@@ -38,6 +41,7 @@ export default function ProgramsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="Programs" />
+      <Text variant="bodyMedium" style={[styles.subtitle, { color: colors.onSurface }]}>Choose a program to follow</Text>
       <SegmentedButtons
         value={level}
         onValueChange={setLevel}
@@ -55,9 +59,9 @@ export default function ProgramsScreen() {
               <MotionCard key={p.programName} index={i} style={styles.card}>
                 <View style={[styles.stripe, { backgroundColor: meta.stripe }]} />
                 <View style={styles.cardBody}>
-                  <Text variant="titleMedium" style={[styles.name, { color: colors.onSurface }]}>{p.programName}</Text>
+                  <Text variant="titleMedium" style={[styles.name, { color: colors.onSurface }]}>{displayName(p.programName)}</Text>
                   <View style={[styles.levelChip, { backgroundColor: withAlpha(meta.stripe, 0.18) }]}>
-                    <Text variant="labelSmall" style={{ color: meta.stripe, fontWeight: '700' }}>{p.level}</Text>
+                    <Text variant="labelSmall" style={{ color: meta.stripe, fontWeight: '300' }}>{p.level}</Text>
                   </View>
                   <Text variant="bodySmall" style={[styles.schedule, { color: colors.onSurfaceVariant }]}>
                     {p.daysPerWeek} days/week · {meta.weeks} weeks
@@ -82,13 +86,14 @@ export default function ProgramsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  subtitle: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
   segmented: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   // padding 0 so the stripe runs flush to the card edge; the body re-adds it
   card: { marginBottom: spacing.md, overflow: 'hidden', padding: 0, flexDirection: 'row' },
   stripe: { width: 4, alignSelf: 'stretch' },
   cardBody: { flex: 1, padding: spacing.md, gap: 6 },
-  name: { fontWeight: '700' },
+  name: { fontWeight: '300' },
   levelChip: { alignSelf: 'flex-start', borderRadius: shape.pill, paddingHorizontal: 10, paddingVertical: 3 },
   schedule: {},
   bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginTop: 2 },

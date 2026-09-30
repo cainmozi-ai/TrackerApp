@@ -1,7 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { localDate } from '@/utils/dates';
-import { theme, spacing } from '@/theme';
+import { spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 
 interface HabitHeatmapProps {
   data: Record<string, number>;
@@ -13,6 +14,8 @@ interface HabitHeatmapProps {
 const DAY_LABELS = ['', 'M', '', 'W', '', 'F', ''];
 
 export function HabitHeatmap({ data, color, weeks = 13, maxLevel = 1 }: HabitHeatmapProps) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const today = new Date();
   const todayDow = today.getDay();
 
@@ -35,7 +38,7 @@ export function HabitHeatmap({ data, color, weeks = 13, maxLevel = 1 }: HabitHea
 
   const cellColor = (count: number, future: boolean) => {
     if (future) return 'transparent';
-    if (count <= 0) return theme.colors.surfaceVariant;
+    if (count <= 0) return colors.surfaceVariant;
     const level = Math.min(count / maxLevel, 1);
     const opacity = 0.4 + level * 0.6;
     return color + Math.round(opacity * 255).toString(16).padStart(2, '0');
@@ -67,10 +70,10 @@ export function HabitHeatmap({ data, color, weeks = 13, maxLevel = 1 }: HabitHea
 const CELL = 13;
 const GAP = 3;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: AppColors) => StyleSheet.create({
   container: { flexDirection: 'row', gap: GAP },
   dayLabels: { justifyContent: 'space-between', paddingVertical: 0 },
-  dayLabel: { height: CELL + GAP, color: theme.colors.onSurfaceVariant, fontSize: 9, lineHeight: CELL + GAP },
+  dayLabel: { height: CELL + GAP, color: colors.onSurfaceVariant, fontSize: 9, lineHeight: CELL + GAP },
   grid: { flexDirection: 'row', gap: GAP, flex: 1 },
   column: { gap: GAP },
   cell: { width: CELL, height: CELL, borderRadius: 3 },

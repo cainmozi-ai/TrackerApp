@@ -1,7 +1,7 @@
 import { StyleSheet, View, Pressable } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { spacing, shape, accent, withAlpha } from '@/theme';
+import { spacing, shape, accent } from '@/theme';
 import { localDate } from '@/utils/dates';
 
 const WEEKDAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -23,8 +23,10 @@ export function lastSevenDays(): WeekDay[] {
   return out;
 }
 
-/** The seven day pills the design puts at the top of both Home and Nutrition:
- * weekday letter over the date, the selected day outlined in the accent. */
+/** The seven day tiles the design puts at the top of both Home and Nutrition:
+ * 46px rounded squares (Surface fill, 1.5px outline) with the weekday letter
+ * over the date. The selected day keeps an accent outline so you can tell
+ * which day Nutrition is showing. */
 export function WeekStrip({ selected, onSelect }: { selected: string; onSelect: (iso: string) => void }) {
   const { colors } = useAppTheme();
   return (
@@ -35,15 +37,15 @@ export function WeekStrip({ selected, onSelect }: { selected: string; onSelect: 
           <Pressable
             key={day.iso}
             onPress={() => onSelect(day.iso)}
-            style={[styles.pill, {
-              backgroundColor: isSelected ? withAlpha(accent, 0.2) : 'transparent',
+            accessibilityRole="button"
+            accessibilityState={{ selected: isSelected }}
+            style={[styles.tile, {
+              backgroundColor: colors.surface,
               borderColor: isSelected ? accent : colors.outline,
             }]}
           >
-            <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{day.letter}</Text>
-            <Text variant="titleSmall" style={{ color: isSelected ? accent : colors.onSurface, fontWeight: '700' }}>
-              {day.dayNum}
-            </Text>
+            <Text style={[styles.letter, { color: colors.onSurface }]}>{day.letter}</Text>
+            <Text style={[styles.date, { color: isSelected ? colors.accentText : colors.onSurface }]}>{day.dayNum}</Text>
           </Pressable>
         );
       })}
@@ -52,6 +54,8 @@ export function WeekStrip({ selected, onSelect }: { selected: string; onSelect: 
 }
 
 const styles = StyleSheet.create({
-  strip: { flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
-  pill: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: shape.pill, borderWidth: 1.5 },
+  strip: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
+  tile: { flex: 1, height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: shape.md, borderWidth: 1.5 },
+  letter: { fontSize: 10, fontWeight: '300' },
+  date: { fontSize: 14, fontWeight: '300', marginTop: 1 },
 });

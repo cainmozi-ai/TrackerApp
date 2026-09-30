@@ -1,22 +1,28 @@
 import { MD3LightTheme, MD3DarkTheme, configureFonts } from 'react-native-paper';
 
-// --- Typography: clean, slightly tightened (MacroFactor is data-dense) ---
+// --- Typography: the design sets every style in Helvetica Neue *Light*
+// (Display 30 · Headline 22 · Title 16 · Body 14 · Label 11). Helvetica is a
+// paid font, so we use the system face at weight 300; hierarchy comes from
+// size, not boldness. Keep inline styles free of heavy fontWeights. ---
+const LIGHT = '300' as const;
 const fontConfig = {
-  displayLarge: { fontFamily: 'System', fontSize: 54, fontWeight: '700' as const, letterSpacing: -0.5 },
-  displayMedium: { fontFamily: 'System', fontSize: 44, fontWeight: '700' as const, letterSpacing: -0.25 },
-  displaySmall: { fontFamily: 'System', fontSize: 34, fontWeight: '700' as const, letterSpacing: 0 },
-  headlineLarge: { fontFamily: 'System', fontSize: 30, fontWeight: '700' as const, letterSpacing: -0.25 },
-  headlineMedium: { fontFamily: 'System', fontSize: 26, fontWeight: '700' as const, letterSpacing: 0 },
-  headlineSmall: { fontFamily: 'System', fontSize: 22, fontWeight: '700' as const, letterSpacing: 0 },
-  titleLarge: { fontFamily: 'System', fontSize: 20, fontWeight: '700' as const, letterSpacing: 0 },
-  titleMedium: { fontFamily: 'System', fontSize: 16, fontWeight: '600' as const, letterSpacing: 0.1 },
-  titleSmall: { fontFamily: 'System', fontSize: 14, fontWeight: '600' as const, letterSpacing: 0.1 },
-  bodyLarge: { fontFamily: 'System', fontSize: 16, fontWeight: '400' as const, letterSpacing: 0.15 },
-  bodyMedium: { fontFamily: 'System', fontSize: 14, fontWeight: '400' as const, letterSpacing: 0.2 },
-  bodySmall: { fontFamily: 'System', fontSize: 12, fontWeight: '400' as const, letterSpacing: 0.3 },
-  labelLarge: { fontFamily: 'System', fontSize: 14, fontWeight: '600' as const, letterSpacing: 0.1 },
-  labelMedium: { fontFamily: 'System', fontSize: 12, fontWeight: '600' as const, letterSpacing: 0.4 },
-  labelSmall: { fontFamily: 'System', fontSize: 11, fontWeight: '600' as const, letterSpacing: 0.4 },
+  // Used by <Text> without a variant (e.g. nested spans), so it matches too.
+  default: { fontFamily: 'System', fontWeight: LIGHT, letterSpacing: 0 },
+  displayLarge: { fontFamily: 'System', fontSize: 54, fontWeight: LIGHT, letterSpacing: 0 },
+  displayMedium: { fontFamily: 'System', fontSize: 44, fontWeight: LIGHT, letterSpacing: 0 },
+  displaySmall: { fontFamily: 'System', fontSize: 34, fontWeight: LIGHT, letterSpacing: 0 },
+  headlineLarge: { fontFamily: 'System', fontSize: 30, fontWeight: LIGHT, letterSpacing: 0 },
+  headlineMedium: { fontFamily: 'System', fontSize: 26, fontWeight: LIGHT, letterSpacing: 0 },
+  headlineSmall: { fontFamily: 'System', fontSize: 22, fontWeight: LIGHT, letterSpacing: 0 },
+  titleLarge: { fontFamily: 'System', fontSize: 20, fontWeight: LIGHT, letterSpacing: 0 },
+  titleMedium: { fontFamily: 'System', fontSize: 16, fontWeight: LIGHT, letterSpacing: 0 },
+  titleSmall: { fontFamily: 'System', fontSize: 14, fontWeight: LIGHT, letterSpacing: 0 },
+  bodyLarge: { fontFamily: 'System', fontSize: 16, fontWeight: LIGHT, letterSpacing: 0 },
+  bodyMedium: { fontFamily: 'System', fontSize: 14, fontWeight: LIGHT, letterSpacing: 0 },
+  bodySmall: { fontFamily: 'System', fontSize: 12, fontWeight: LIGHT, letterSpacing: 0 },
+  labelLarge: { fontFamily: 'System', fontSize: 15, fontWeight: LIGHT, letterSpacing: 0 },
+  labelMedium: { fontFamily: 'System', fontSize: 12, fontWeight: LIGHT, letterSpacing: 0 },
+  labelSmall: { fontFamily: 'System', fontSize: 11, fontWeight: LIGHT, letterSpacing: 0 },
 };
 
 const fonts = configureFonts({ config: fontConfig });
@@ -51,6 +57,11 @@ const darkColors = {
   onSurfaceVariant: '#9A9AA0',
   outline: '#323234',
   outlineVariant: '#262628',
+  // Brand red is too dark to read as text on charcoal (~2.6:1). Use this
+  // lifted red for any red TEXT; keep `primary` for fills (buttons, rings).
+  accentText: '#E8766B',
+  // Snackbar action colour (sits on the light inverse surface).
+  inversePrimary: BRAND_DIM,
   elevation: {
     level0: 'transparent',
     level1: '#1C1C1E',
@@ -86,6 +97,8 @@ const lightColors = {
   onSurfaceVariant: '#5F6368',
   outline: '#DADCE0',
   outlineVariant: '#E8EAED',
+  accentText: BRAND_DIM,
+  inversePrimary: '#E8766B',
   elevation: {
     level0: 'transparent',
     level1: '#FFFFFF',
@@ -96,8 +109,12 @@ const lightColors = {
   },
 };
 
-export const lightTheme = { ...MD3LightTheme, colors: lightColors, fonts };
-export const darkTheme = { ...MD3DarkTheme, colors: darkColors, fonts };
+// Paper derives corner radii from `roundness`: MD3 buttons use 5×, so 2.4
+// gives the design's 12px buttons (and 12px segmented controls).
+const ROUNDNESS = 2.4;
+
+export const lightTheme = { ...MD3LightTheme, colors: lightColors, fonts, roundness: ROUNDNESS };
+export const darkTheme = { ...MD3DarkTheme, colors: darkColors, fonts, roundness: ROUNDNESS };
 
 /** Default/static theme is now DARK (MacroFactor aesthetic). Screens still
  * importing `theme` directly inherit dark; migrated screens use `useAppTheme()`. */
@@ -158,3 +175,4 @@ export function withAlpha(hex: string, alpha: number): string {
 }
 
 export type AppThemeType = typeof darkTheme;
+export type AppColors = AppThemeType['colors'];

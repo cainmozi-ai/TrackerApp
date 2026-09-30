@@ -55,7 +55,7 @@ export function WorkoutDateDialog({ visible, initial, onDismiss, onSave }: Props
                 return (
                   <Pressable key={ms} onPress={() => setDayMs(ms)}
                     style={[styles.dayChip, { backgroundColor: on ? colors.primary : colors.surfaceVariant }]}>
-                    <Text variant="labelMedium" style={{ color: on ? colors.onPrimary : colors.onSurface, fontWeight: '700' }}>
+                    <Text variant="labelMedium" style={{ color: on ? colors.onPrimary : colors.onSurface, fontWeight: '300' }}>
                       {dayLabel(ms)}
                     </Text>
                   </Pressable>
@@ -90,5 +90,5 @@ const styles = StyleSheet.create({
   dayStripRow: { flexDirection: 'row', gap: spacing.xs },
   dayChip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: shape.pill },
   timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  timeVal: { fontWeight: '800', width: 42, textAlign: 'center' },
+  timeVal: { fontWeight: '300', width: 42, textAlign: 'center' },
 });

@@ -58,8 +58,8 @@ export default function WeeklySplitScreen() {
             <Pressable key={d.dow} onPress={() => setPickDay(d.dow)}
               style={[styles.row, { backgroundColor: colors.surface, borderColor: isToday ? accent : 'transparent', borderWidth: isToday ? 1.5 : 0 }]}>
               <View style={styles.dayCol}>
-                <Text variant="titleSmall" style={{ color: isToday ? accent : colors.onSurface, fontWeight: '700' }}>{d.label}</Text>
-                {isToday && <Text variant="labelSmall" style={{ color: accent }}>Today</Text>}
+                <Text variant="titleSmall" style={{ color: isToday ? colors.accentText : colors.onSurface, fontWeight: '300' }}>{d.label}</Text>
+                {isToday && <Text variant="labelSmall" style={{ color: colors.accentText }}>Today</Text>}
               </View>
               <Text variant="bodyMedium" style={{ color: name ? colors.onSurface : colors.onSurfaceVariant, flex: 1 }}>
                 {name ?? 'Rest day'}

@@ -4,12 +4,14 @@ import { Text, IconButton, Surface } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing } from '@/theme';
-import { useAppTheme } from '@/theme/ThemeContext';
+import { moduleColors, spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useGamificationStore } from '@/stores/gamificationStore';
 
 export default function AchievementsScreen() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const { achievements, loadAchievements } = useGamificationStore();
 
   useEffect(() => {
@@ -17,8 +19,6 @@ export default function AchievementsScreen() {
   }, []);
 
   const unlockedCount = achievements.filter(a => a.unlockedAt).length;
-
-  const { colors } = useAppTheme();
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="Achievements" />
@@ -37,11 +37,11 @@ export default function AchievementsScreen() {
             const unlocked = !!a.unlockedAt;
             return (
               <Surface key={a.id} style={[styles.badge, !unlocked && styles.lockedBadge]} elevation={unlocked ? 2 : 0}>
-                <View style={[styles.badgeIcon, { backgroundColor: unlocked ? moduleColors.gamification + '30' : theme.colors.surfaceVariant }]}>
+                <View style={[styles.badgeIcon, { backgroundColor: unlocked ? moduleColors.gamification + '30' : colors.surfaceVariant }]}>
                   <MaterialCommunityIcons
                     name={(unlocked ? a.icon : 'lock') as any}
                     size={28}
-                    color={unlocked ? moduleColors.gamification : theme.colors.onSurfaceVariant}
+                    color={unlocked ? moduleColors.gamification : colors.onSurfaceVariant}
                   />
                 </View>
                 <Text variant="labelLarge" style={[styles.badgeName, !unlocked && styles.lockedText]} numberOfLines={1}>
@@ -62,20 +62,20 @@ export default function AchievementsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
-  summaryCard: { alignItems: 'center', padding: spacing.lg, borderRadius: 16, backgroundColor: theme.colors.surface, gap: 2, marginBottom: spacing.md },
-  summaryCount: { fontWeight: '700', color: moduleColors.gamification },
-  summaryLabel: { color: theme.colors.onSurfaceVariant },
+  summaryCard: { alignItems: 'center', padding: spacing.lg, borderRadius: 16, backgroundColor: colors.surface, gap: 2, marginBottom: spacing.md },
+  summaryCount: { fontWeight: '300', color: colors.accentText },
+  summaryLabel: { color: colors.onSurfaceVariant },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: spacing.sm },
-  badge: { width: '47%', alignItems: 'center', padding: spacing.md, borderRadius: 16, backgroundColor: theme.colors.surface, gap: 4, marginBottom: spacing.sm },
-  lockedBadge: { backgroundColor: theme.colors.surfaceVariant, opacity: 0.7 },
+  badge: { width: '47%', alignItems: 'center', padding: spacing.md, borderRadius: 16, backgroundColor: colors.surface, gap: 4, marginBottom: spacing.sm },
+  lockedBadge: { backgroundColor: colors.surfaceVariant, opacity: 0.7 },
   badgeIcon: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  badgeName: { fontWeight: '600', textAlign: 'center' },
-  lockedText: { color: theme.colors.onSurfaceVariant },
-  badgeDesc: { color: theme.colors.onSurfaceVariant, textAlign: 'center', minHeight: 28 },
-  badgeXp: { color: moduleColors.gamification, fontWeight: '700' },
+  badgeName: { fontWeight: '300', textAlign: 'center' },
+  lockedText: { color: colors.onSurfaceVariant },
+  badgeDesc: { color: colors.onSurfaceVariant, textAlign: 'center', minHeight: 28 },
+  badgeXp: { color: colors.accentText, fontWeight: '300' },
 });

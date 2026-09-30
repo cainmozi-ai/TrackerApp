@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  title: { fontWeight: '700', textAlign: 'center' },
+  title: { fontWeight: '300', textAlign: 'center' },
   body: { textAlign: 'center', lineHeight: 20 },
-  button: { marginTop: spacing.md, borderRadius: shape.pill },
+  button: { marginTop: spacing.md, borderRadius: shape.md },
 });

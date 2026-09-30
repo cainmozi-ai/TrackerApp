@@ -53,7 +53,7 @@ export function HabitTile({ name, icon, done, streak, onToggle, onLongPress }: H
       {streak > 0 ? (
         <View style={styles.streakRow}>
           <MaterialCommunityIcons name="fire" size={13} color="#A83232" />
-          <Text variant="labelSmall" style={styles.streakText}>{streak}</Text>
+          <Text variant="labelSmall" style={[styles.streakText, { color: colors.accentText }]}>{streak}</Text>
         </View>
       ) : (
         <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>—</Text>
@@ -67,5 +67,5 @@ const styles = StyleSheet.create({
   circle: { width: SIZE, height: SIZE, borderRadius: shape.pill, justifyContent: 'center', alignItems: 'center' },
   name: { textAlign: 'center', maxWidth: SIZE + 16 },
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  streakText: { color: '#A83232', fontWeight: '700' },
+  streakText: { fontWeight: '300' },
 });

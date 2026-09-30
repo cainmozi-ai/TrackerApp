@@ -4,13 +4,15 @@ import { Text, IconButton, Surface, FAB, Portal, Dialog, TextInput, Button, Touc
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing } from '@/theme';
-import { useAppTheme } from '@/theme/ThemeContext';
+import { moduleColors, spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import type { WorkoutLog } from '@/types';
 
 export default function RoutinesScreen() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const { templates, loadTemplates, createTemplate, getActiveWorkout, discardWorkout } = useWorkoutStore();
   const [dialogVisible, setDialogVisible] = useState(false);
   const [newName, setNewName] = useState('');
@@ -54,8 +56,6 @@ export default function RoutinesScreen() {
     setDialogVisible(false);
     router.push(`/fitness/template/${id}`);
   };
-
-  const { colors } = useAppTheme();
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="My Routines" />
@@ -98,7 +98,7 @@ export default function RoutinesScreen() {
                     {counts[t.id] ?? 0} exercises
                   </Text>
                 </View>
-                <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+                <MaterialCommunityIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
               </Surface>
             </TouchableRipple>
           ))
@@ -143,26 +143,26 @@ export default function RoutinesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   scrollContent: { padding: spacing.md, paddingBottom: 100 },
   emptyWorkoutBtn: { marginBottom: spacing.md },
   emptyState: { alignItems: 'center', paddingTop: spacing.xl, gap: spacing.sm },
-  emptyText: { color: theme.colors.onSurfaceVariant },
+  emptyText: { color: colors.onSurfaceVariant },
   touchable: { borderRadius: 16, marginBottom: spacing.sm },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: 16,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: colors.surface,
     gap: spacing.md,
   },
   iconBox: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   cardContent: { flex: 1 },
-  cardDesc: { color: theme.colors.onSurfaceVariant, marginTop: 1 },
-  exCount: { color: moduleColors.workout, marginTop: 2 },
+  cardDesc: { color: colors.onSurfaceVariant, marginTop: 1 },
+  exCount: { color: colors.accentText, marginTop: 2 },
   fab: { position: 'absolute', right: 16, bottom: 24, backgroundColor: moduleColors.workout, borderRadius: 28 },
 });

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Food, FoodLog, MealType, SavedMeal } from '@/types';
 import { getDatabase } from '@/database/schema';
 import { localToday, localDaysAgo } from '@/utils/dates';
-import { MICRO_KEYS, parseMicros } from '@/utils/micronutrients';
+import { MICRO_KEYS, LIMIT_FORM_KEYS, parseMicros } from '@/utils/micronutrients';
 
 interface NutritionState {
   /** The date currently shown on the nutrition screen (YYYY-MM-DD). */
@@ -21,6 +21,16 @@ interface NutritionState {
   todaySodium: number;
   /** Today's micronutrient totals keyed by micro key (mg/mcg). */
   todayMicros: Record<string, number>;
+  /** The share of todayMicros that came from supplements (NIH DSLD foods),
+   * for upper limits that only apply to supplements. For folate this is mcg
+   * of folic acid and for vitamin A mcg of preformed (retinol) vitamin A. */
+  todaySupplementMicros: Record<string, number>;
+  /** How many of today's logged foods report each nutrient (0 is a report). */
+  todayMicroCoverage: Record<string, number>;
+  /** Number of foods logged today, the denominator for coverage. */
+  todayLogCount: number;
+  /** How many of today's foods have micros estimated from a similar food. */
+  todayEstimatedCount: number;
 
   loadTodayLogs: (date?: string) => Promise<void>;
   loadFavorites: () => Promise<void>;
@@ -32,6 +42,8 @@ interface NutritionState {
   updateLog: (logId: number, servings: number, mealType: MealType) => Promise<void>;
   deleteLog: (logId: number) => Promise<void>;
   addCustomFood: (food: Omit<Food, 'id' | 'createdAt' | 'isCustom'>) => Promise<number>;
+  /** Store micros estimated from a similar food on an existing food, then refresh today. */
+  applyMicroEstimate: (foodId: number, micros: Record<string, number>, from: string) => Promise<void>;
   toggleFavorite: (foodId: number) => Promise<void>;
   searchFoods: (query: string) => Promise<Food[]>;
   saveMealFromDay: (name: string, date?: string) => Promise<void>;
@@ -67,13 +79,17 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   todaySugar: 0,
   todaySodium: 0,
   todayMicros: {},
+  todaySupplementMicros: {},
+  todayMicroCoverage: {},
+  todayLogCount: 0,
+  todayEstimatedCount: 0,
 
   loadTodayLogs: async (date?: string) => {
     const db = await getDatabase();
     const targetDate = date || get().currentDate;
     set({ currentDate: targetDate });
     const rows = await db.getAllAsync<Record<string, unknown>>(
-      `SELECT fl.*, f.name, f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, f.serving_size, f.serving_unit, f.brand, f.micros
+      `SELECT fl.*, f.name, f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.sodium, f.serving_size, f.serving_unit, f.brand, f.micros, f.source, f.micros_estimated_from
        FROM food_logs fl JOIN foods f ON fl.food_id = f.id
        WHERE fl.log_date = ? ORDER BY fl.created_at`,
       [targetDate]
@@ -100,6 +116,8 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
         servingSize: r.serving_size as number,
         servingUnit: r.serving_unit as string,
         micros: parseMicros(r.micros as string | null),
+        source: (r.source as Food['source']) ?? null,
+        microsEstimatedFrom: (r.micros_estimated_from as string | null) ?? null,
         isCustom: false, isFavorite: false,
         createdAt: '',
       },
@@ -107,6 +125,8 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
 
     let cal = 0, pro = 0, car = 0, fa = 0, fib = 0, sug = 0, sod = 0;
     const micros: Record<string, number> = {};
+    const supplementMicros: Record<string, number> = {};
+    const coverage: Record<string, number> = {};
     for (const log of logs) {
       if (log.food) {
         cal += log.food.calories * log.servings;
@@ -116,13 +136,26 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
         fib += (log.food.fiber || 0) * log.servings;
         sug += (log.food.sugar || 0) * log.servings;
         sod += (log.food.sodium || 0) * log.servings;
-        if (log.food.micros) {
-          for (const k of MICRO_KEYS) {
-            const v = log.food.micros[k];
-            if (v) micros[k] = (micros[k] || 0) + v * log.servings;
+        const m = log.food.micros || {};
+        for (const k of MICRO_KEYS) {
+          const v = m[k];
+          if (v == null) continue;
+          coverage[k] = (coverage[k] || 0) + 1;
+          if (v) micros[k] = (micros[k] || 0) + v * log.servings;
+        }
+        if (log.food.sodium != null && m.sodium == null) coverage.sodium = (coverage.sodium || 0) + 1;
+        if (log.food.source === 'dsld') {
+          for (const k of [...MICRO_KEYS, ...LIMIT_FORM_KEYS]) {
+            const v = m[k];
+            if (v) supplementMicros[k] = (supplementMicros[k] || 0) + v * log.servings;
           }
         }
       }
+    }
+    // Limits that cover one form: use the form when the label said which one,
+    // otherwise assume the whole amount is that form (the cautious reading).
+    for (const [key, form, factor] of [['folate', 'folicAcid', 1 / 1.7], ['vitaminA', 'vitaminAPreformed', 1]] as const) {
+      if (supplementMicros[form] == null && supplementMicros[key]) supplementMicros[form] = supplementMicros[key] * factor;
     }
     // Sodium is stored as a macro column, not in the micros blob — fold it in so
     // the micronutrient tracker shows it alongside the other minerals.
@@ -138,6 +171,10 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       todaySugar: Math.round(sug),
       todaySodium: Math.round(sod),
       todayMicros: micros,
+      todaySupplementMicros: supplementMicros,
+      todayMicroCoverage: coverage,
+      todayLogCount: logs.length,
+      todayEstimatedCount: logs.filter(l => l.food?.microsEstimatedFrom).length,
     });
   },
 
@@ -182,13 +219,40 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   addCustomFood: async (food) => {
     const db = await getDatabase();
     const microsJson = food.micros && Object.keys(food.micros).length > 0 ? JSON.stringify(food.micros) : null;
+    const source = food.source ?? 'custom';
+    // A food saved from an online database is stored once and reused, so
+    // logging the same product again doesn't pile up duplicate rows.
+    if (food.sourceId && source !== 'custom') {
+      const existing = await db.getFirstAsync<{ id: number; micros_estimated_from: string | null }>(
+        'SELECT id, micros_estimated_from FROM foods WHERE source = ? AND source_id = ?', [source, food.sourceId]
+      );
+      if (existing) {
+        // Saved before without an estimate — keep the one made this time.
+        if (food.microsEstimatedFrom && !existing.micros_estimated_from) {
+          await db.runAsync('UPDATE foods SET micros = ?, micros_estimated_from = ? WHERE id = ?',
+            [microsJson, food.microsEstimatedFrom, existing.id]);
+        }
+        return existing.id;
+      }
+    }
     const result = await db.runAsync(
-      `INSERT INTO foods (name, brand, barcode, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit, micros, is_custom, is_favorite)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+      `INSERT INTO foods (name, brand, barcode, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit, micros, is_custom, is_favorite, source, source_id, micros_estimated_from)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
       [food.name, food.brand, food.barcode, food.calories, food.protein, food.carbs, food.fat,
-       food.fiber, food.sugar, food.sodium, food.servingSize, food.servingUnit, microsJson, food.isFavorite ? 1 : 0]
+       food.fiber, food.sugar, food.sodium, food.servingSize, food.servingUnit, microsJson, food.isFavorite ? 1 : 0,
+       source, food.sourceId ?? null, food.microsEstimatedFrom ?? null]
     );
     return result.lastInsertRowId;
+  },
+
+  applyMicroEstimate: async (foodId, micros, from) => {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<{ micros: string | null }>('SELECT micros FROM foods WHERE id = ?', [foodId]);
+    // Label values win over estimates.
+    const merged = { ...micros, ...parseMicros(row?.micros) };
+    await db.runAsync('UPDATE foods SET micros = ?, micros_estimated_from = ? WHERE id = ?',
+      [JSON.stringify(merged), from, foodId]);
+    await get().loadTodayLogs();
   },
 
   toggleFavorite: async (foodId) => {
@@ -333,6 +397,9 @@ function mapFood(r: Record<string, unknown>): Food {
     servingSize: r.serving_size as number,
     servingUnit: r.serving_unit as string,
     micros: parseMicros(r.micros as string | null),
+    source: (r.source as Food['source']) ?? null,
+    sourceId: (r.source_id as string | null) ?? null,
+    microsEstimatedFrom: (r.micros_estimated_from as string | null) ?? null,
     isCustom: (r.is_custom as number) === 1,
     isFavorite: (r.is_favorite as number) === 1,
     createdAt: r.created_at as string,

@@ -1,20 +1,24 @@
 import { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
-import { Text, Surface, TextInput, Button, SegmentedButtons, Snackbar, TouchableRipple, Switch, Chip, Portal, Dialog } from 'react-native-paper';
+import { Text, Surface, TextInput, Button, Snackbar, TouchableRipple, Switch, Portal, Dialog } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing } from '@/theme';
-import { useAppTheme } from '@/theme/ThemeContext';
+import { moduleColors, spacing, shape, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
+import { Pill } from '@/components/common/Pill';
 import { useUserStore, getLevelName, getXpForCurrentLevel, getXpForNextLevel } from '@/stores/userStore';
 import { EQUIPMENT_GROUPS } from '@/stores/workoutStore';
 import { exportBackup, pickBackupFile, importBackup } from '@/services/backup';
 
 export default function ProfileScreen() {
+  const { colors, dark, toggle } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const { profile, loadProfile, updateProfile } = useUserStore();
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
+  const [sex, setSex] = useState<'male' | 'female' | 'other' | null>(null);
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
   const [calorieTarget, setCalorieTarget] = useState('');
@@ -100,6 +104,7 @@ export default function ProfileScreen() {
     if (profile) {
       setName(profile.name || '');
       setAge(profile.age ? String(profile.age) : '');
+      setSex(profile.sex === 'male' || profile.sex === 'female' || profile.sex === 'other' ? profile.sex : null);
       setWeight(profile.weight ? String(profile.weight) : '');
       setHeight(profile.height ? String(profile.height) : '');
       setCalorieTarget(String(profile.calorieTarget));
@@ -130,6 +135,7 @@ export default function ProfileScreen() {
     await updateProfile({
       name: name.trim() || null,
       age: age ? parseInt(age) : null,
+      sex,
       weight: weight ? parseFloat(weight) : null,
       height: height ? parseFloat(height) : null,
       calorieTarget: parseInt(calorieTarget) || 2000,
@@ -162,8 +168,6 @@ export default function ProfileScreen() {
   const xpCurrent = getXpForCurrentLevel(level);
   const xpNext = getXpForNextLevel(level);
   const xpProgress = xpNext > xpCurrent ? (xp - xpCurrent) / (xpNext - xpCurrent) : 1;
-
-  const { colors, dark, toggle } = useAppTheme();
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="Profile" />
@@ -187,19 +191,19 @@ export default function ProfileScreen() {
             <View style={styles.achievementsRow}>
               <MaterialCommunityIcons name="trophy" size={20} color={moduleColors.gamification} />
               <Text variant="bodyMedium" style={styles.achievementsText}>View Achievements</Text>
-              <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+              <MaterialCommunityIcons name="chevron-right" size={20} color={colors.onSurfaceVariant} />
             </View>
           </TouchableRipple>
         </Surface>
 
-        <Text variant="titleSmall" style={styles.sectionTitle}>Appearance</Text>
+        <Text variant="labelMedium" style={styles.sectionTitle}>APPEARANCE</Text>
         <Surface style={[styles.appearanceRow, { backgroundColor: colors.surface }]} elevation={1}>
           <MaterialCommunityIcons name={dark ? 'weather-night' : 'white-balance-sunny'} size={22} color={colors.primary} />
           <Text variant="bodyLarge" style={[styles.appearanceLabel, { color: colors.onSurface }]}>Dark Mode</Text>
           <Switch value={dark} onValueChange={toggle} color={colors.primary} />
         </Surface>
 
-        <Text variant="titleSmall" style={styles.sectionTitle}>Notifications</Text>
+        <Text variant="labelMedium" style={styles.sectionTitle}>NOTIFICATIONS</Text>
         <TouchableRipple onPress={() => router.push('/profile/reminders')} style={styles.linkRow} borderless>
           <View style={styles.linkRowInner}>
             <MaterialCommunityIcons name="bell-outline" size={22} color={colors.primary} />
@@ -211,7 +215,7 @@ export default function ProfileScreen() {
           </View>
         </TouchableRipple>
 
-        <Text variant="titleSmall" style={styles.sectionTitle}>About You</Text>
+        <Text variant="labelMedium" style={styles.sectionTitle}>ABOUT YOU</Text>
         <TextInput label="Name" value={name} onChangeText={setName} mode="outlined" style={styles.input} />
         <View style={styles.row}>
           <TextInput label="Age" value={age} onChangeText={setAge} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
@@ -219,15 +223,38 @@ export default function ProfileScreen() {
           <TextInput label="Height (cm)" value={height} onChangeText={setHeight} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
         </View>
 
-        <Text variant="labelLarge" style={styles.label}>Weight Unit</Text>
-        <SegmentedButtons
-          value={weightUnit}
-          onValueChange={setWeightUnit}
-          buttons={[{ value: 'kg', label: 'kg' }, { value: 'lbs', label: 'lbs' }]}
-          style={styles.segmented}
-        />
+        <Text variant="labelLarge" style={styles.label}>Sex</Text>
+        <View style={styles.unitRow}>
+          {(['male', 'female', 'other'] as const).map(v => (
+            <Pressable key={v} onPress={() => setSex(v)} accessibilityRole="radio"
+              accessibilityState={{ checked: sex === v }}
+              style={[styles.unitBtn, sex === v
+                ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                : { borderColor: colors.outline }]}>
+              <Text variant="bodyMedium" style={{ color: sex === v ? colors.onPrimary : colors.onSurface }}>
+                {v.charAt(0).toUpperCase() + v.slice(1)}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text variant="bodySmall" style={styles.equipmentHint}>
+          Age and sex set your NIH vitamin and mineral targets and your strength standards. “Other” uses the higher of the male and female targets.
+        </Text>
 
-        <Text variant="titleSmall" style={styles.sectionTitle}>My Gym Equipment</Text>
+        <Text variant="labelLarge" style={styles.label}>Weight Unit</Text>
+        <View style={styles.unitRow}>
+          {(['kg', 'lbs'] as const).map(u => (
+            <Pressable key={u} onPress={() => setWeightUnit(u)} accessibilityRole="radio"
+              accessibilityState={{ checked: weightUnit === u }}
+              style={[styles.unitBtn, weightUnit === u
+                ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                : { borderColor: colors.outline }]}>
+              <Text variant="bodyMedium" style={{ color: weightUnit === u ? colors.onPrimary : colors.onSurface }}>{u}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text variant="labelMedium" style={styles.sectionTitle}>MY GYM EQUIPMENT</Text>
         <Text variant="bodySmall" style={styles.equipmentHint}>
           Pick what your gym has — exercise lists can then filter to moves you can actually do. Tap a category name to select the whole category. Leave empty to always show everything.
         </Text>
@@ -236,7 +263,7 @@ export default function ProfileScreen() {
           return (
             <View key={group.label}>
               <Pressable onPress={() => toggleCategory(group.items)} style={styles.equipCatRow}>
-                <Text variant="labelLarge" style={[styles.equipCatLabel, allOn && { color: theme.colors.primary }]}>
+                <Text variant="labelLarge" style={[styles.equipCatLabel, allOn && { color: colors.accentText }]}>
                   {group.label}
                 </Text>
                 <Text variant="labelSmall" style={styles.equipCatHint}>
@@ -245,23 +272,15 @@ export default function ProfileScreen() {
               </Pressable>
               <View style={styles.equipmentWrap}>
                 {group.items.map(item => (
-                  <Chip
-                    key={item}
-                    selected={equipment.includes(item)}
-                    onPress={() => toggleEquipment(item)}
-                    showSelectedOverlay
-                    compact
-                    style={styles.equipmentChip}
-                  >
-                    {item}
-                  </Chip>
+                  <Pill key={item} label={item} selected={equipment.includes(item)}
+                    onPress={() => toggleEquipment(item)} />
                 ))}
               </View>
             </View>
           );
         })}
 
-        <Text variant="titleSmall" style={styles.sectionTitle}>Daily Target Ranges</Text>
+        <Text variant="labelMedium" style={styles.sectionTitle}>DAILY TARGET RANGES</Text>
         <TextInput label="Calorie target" value={calorieTarget} onChangeText={setCalorieTarget} mode="outlined" keyboardType="numeric" style={styles.input} />
         <View style={styles.row}>
           <TextInput label="Protein (g)" value={proteinTarget} onChangeText={setProteinTarget} mode="outlined" keyboardType="numeric" style={styles.thirdInput} />
@@ -283,11 +302,11 @@ export default function ProfileScreen() {
           <TextInput label="Monthly budget ($)" value={monthlyBudget} onChangeText={setMonthlyBudget} mode="outlined" keyboardType="numeric" style={styles.halfInput} />
         </View>
 
-        <Button mode="contained" onPress={handleSave} style={styles.saveBtn}>
+        <Button mode="contained" onPress={handleSave} style={styles.saveBtn} contentStyle={styles.primaryContent}>
           Save Changes
         </Button>
 
-        <Text variant="titleSmall" style={styles.sectionTitle}>Data & Backup</Text>
+        <Text variant="labelMedium" style={styles.sectionTitle}>DATA & BACKUP</Text>
         <Text variant="bodySmall" style={styles.equipmentHint}>
           Your data lives on this device and survives app updates. Export a backup before switching phones or uninstalling — progress photos aren't included, only their dates.
         </Text>
@@ -307,7 +326,7 @@ export default function ProfileScreen() {
         <Dialog visible={!!pendingImport} onDismiss={() => setPendingImport(null)}>
           <Dialog.Title>Restore backup?</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+            <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
               This replaces everything currently in the app — meals, workouts, habits, settings — with the contents of the backup file. This can't be undone.
             </Text>
           </Dialog.Content>
@@ -329,6 +348,7 @@ export default function ProfileScreen() {
 }
 
 function MacroRange({ label, min, max, setMin, setMax }: { label: string; min: string; max: string; setMin: (value: string) => void; setMax: (value: string) => void }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.rangeRow}>
       <Text variant="labelMedium" style={styles.rangeLabel}>{label}</Text>
@@ -338,42 +358,43 @@ function MacroRange({ label, min, max, setMin, setMax }: { label: string; min: s
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
-  levelCard: { padding: spacing.lg, borderRadius: 16, backgroundColor: theme.colors.surface, marginBottom: spacing.md },
+  levelCard: { padding: spacing.lg, borderRadius: 16, backgroundColor: colors.surface, marginBottom: spacing.md },
   levelTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   levelBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  levelNum: { fontWeight: '700' },
-  levelName: { color: moduleColors.gamification, fontWeight: '600' },
-  xpTrack: { height: 8, backgroundColor: theme.colors.surfaceVariant, borderRadius: 4, overflow: 'hidden' },
-  xpFill: { height: '100%', backgroundColor: theme.colors.primary, borderRadius: 4 },
-  xpText: { color: theme.colors.onSurfaceVariant, marginTop: 4 },
+  levelNum: { fontWeight: '300' },
+  levelName: { color: colors.accentText, fontWeight: '300' },
+  xpTrack: { height: 8, backgroundColor: colors.surfaceVariant, borderRadius: 4, overflow: 'hidden' },
+  xpFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 4 },
+  xpText: { color: colors.onSurfaceVariant, marginTop: 4 },
   achievementsLink: { marginTop: spacing.md, borderRadius: 10 },
   achievementsRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
-  achievementsText: { flex: 1, fontWeight: '500' },
-  sectionTitle: { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.sm },
+  achievementsText: { flex: 1, fontWeight: '300' },
+  sectionTitle: { fontWeight: '300', marginTop: spacing.lg, marginBottom: spacing.sm },
   appearanceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderRadius: 16 },
   linkRow: { borderRadius: 16 },
   linkRowInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
-  appearanceLabel: { flex: 1, fontWeight: '500' },
-  input: { marginBottom: spacing.sm, backgroundColor: theme.colors.surface },
+  appearanceLabel: { flex: 1, fontWeight: '300' },
+  input: { marginBottom: spacing.sm, backgroundColor: colors.surface },
   row: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-  thirdInput: { flex: 1, backgroundColor: theme.colors.surface },
-  halfInput: { flex: 1, backgroundColor: theme.colors.surface },
-  label: { marginBottom: spacing.sm, fontWeight: '600' },
-  equipmentHint: { color: theme.colors.onSurfaceVariant, marginBottom: spacing.sm },
+  thirdInput: { flex: 1, backgroundColor: colors.surface },
+  halfInput: { flex: 1, backgroundColor: colors.surface },
+  label: { marginBottom: spacing.sm, fontWeight: '300' },
+  equipmentHint: { color: colors.onSurfaceVariant, marginBottom: spacing.sm },
   equipmentWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
-  equipmentChip: { backgroundColor: theme.colors.surface },
   equipCatRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginTop: spacing.xs, marginBottom: spacing.xs },
-  equipCatLabel: { fontWeight: '700' },
-  equipCatHint: { color: theme.colors.onSurfaceVariant },
-  segmented: { marginBottom: spacing.sm },
+  equipCatLabel: { fontWeight: '300' },
+  equipCatHint: { color: colors.onSurfaceVariant },
+  unitRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  unitBtn: { flex: 1, height: 40, borderRadius: shape.md, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
   rangeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-  rangeLabel: { flex: 1, color: theme.colors.onSurfaceVariant },
-  rangeInput: { width: 78, backgroundColor: theme.colors.surface },
+  rangeLabel: { flex: 1, color: colors.onSurfaceVariant },
+  rangeInput: { width: 78, backgroundColor: colors.surface },
   saveBtn: { marginTop: spacing.lg },
-  version: { textAlign: 'center', color: theme.colors.onSurfaceVariant, marginTop: spacing.lg },
+  primaryContent: { height: 48 },
+  version: { textAlign: 'center', color: colors.onSurfaceVariant, marginTop: spacing.lg },
 });

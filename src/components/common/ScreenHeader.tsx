@@ -10,26 +10,30 @@ interface ScreenHeaderProps {
   showBack?: boolean;
   onBack?: () => void;
   right?: React.ReactNode;
+  /** 'left' puts the title beside the back arrow (Active Workout, Records,
+   * Routine Editor in the design); the default centres it. */
+  align?: 'center' | 'left';
 }
 
 /** Consistent screen header used across the app: optional back button,
- * centered title, optional right-side action. Replaces the ad-hoc
- * back/title/spacer rows that were duplicated in every screen. */
-export function ScreenHeader({ title, subtitle, showBack = true, onBack, right }: ScreenHeaderProps) {
+ * title, optional right-side action. */
+export function ScreenHeader({ title, subtitle, showBack = true, onBack, right, align = 'center' }: ScreenHeaderProps) {
   const { colors } = useAppTheme();
+  const left = align === 'left';
   return (
     <View style={styles.container}>
-      <View style={styles.side}>
+      <View style={left ? styles.sideLeft : styles.side}>
         {showBack && (
           <IconButton
             icon="arrow-left"
             iconColor={colors.onSurface}
             onPress={onBack ?? (() => router.back())}
+            accessibilityLabel="Back"
           />
         )}
       </View>
-      <View style={styles.center}>
-        <Text variant="titleLarge" style={[styles.title, { color: colors.onBackground }]}
+      <View style={[styles.center, left && styles.centerLeft]}>
+        <Text style={[left ? styles.titleLeft : styles.title, { color: colors.onBackground }]}
           numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72}>
           {title}
         </Text>
@@ -39,7 +43,7 @@ export function ScreenHeader({ title, subtitle, showBack = true, onBack, right }
           </Text>
         )}
       </View>
-      <View style={[styles.side, styles.right]}>{right}</View>
+      <View style={[left ? styles.sideRightLeft : styles.side, styles.right]}>{right}</View>
     </View>
   );
 }
@@ -52,8 +56,13 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   side: { width: 56, justifyContent: 'center' },
+  sideLeft: { justifyContent: 'center' },
+  sideRightLeft: { minWidth: 56, justifyContent: 'center', paddingRight: spacing.sm },
   right: { alignItems: 'flex-end' },
   center: { flex: 1, alignItems: 'center' },
-  title: { fontWeight: '700' },
+  centerLeft: { alignItems: 'flex-start' },
+  // Design: centred screen titles are 18px light; left-aligned ones 20px.
+  title: { fontSize: 18, fontWeight: '300', textAlign: 'center' },
+  titleLeft: { fontSize: 20, fontWeight: '300' },
   subtitle: { marginTop: 1 },
 });

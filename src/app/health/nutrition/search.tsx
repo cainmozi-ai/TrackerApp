@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
-import { Searchbar, Text, Chip, Button, SegmentedButtons, ActivityIndicator, Portal, Dialog, TextInput } from 'react-native-paper';
+import { Searchbar, Text, Button, SegmentedButtons, ActivityIndicator, Portal, Dialog, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,22 +8,46 @@ import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, moduleColors, withAlpha } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { EmptyState } from '@/components/common/EmptyState';
+import { Pill } from '@/components/common/Pill';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
-import { searchOpenFoodFacts } from '@/services/openFoodFacts';
+import {
+  searchAllSources, SOURCE_META, ONLINE_SOURCES,
+  type OnlineSourceId, type SourceStatus,
+} from '@/services/foodSources';
+import { macroLine } from '@/utils/foodFormat';
+import { useMicroEstimate, MicroEstimateNote } from '@/components/nutrition/MicroEstimate';
+import { FoodMicroChips, FoodMicroList } from '@/components/nutrition/FoodMicros';
 import type { Food, MealType, SavedMeal } from '@/types';
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const QUICK_SERVINGS = [0.5, 1, 1.5, 2, 3];
 
+const mealLabel = (m: MealType) => m.charAt(0).toUpperCase() + m.slice(1);
+
+/** Best guess at which meal you're logging, from the time of day. */
+function mealForNow(): MealType {
+  const h = new Date().getHours();
+  if (h < 11) return 'breakfast';
+  if (h < 16) return 'lunch';
+  if (h < 21) return 'dinner';
+  return 'snack';
+}
+
 export default function FoodSearchScreen() {
   const { colors } = useAppTheme();
   const { meal, date } = useLocalSearchParams<{ meal?: string; date?: string }>();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Food[]>([]);
+  // Your own library is searched as you type; the online databases only on
+  // demand (Enter or the "Search online" row) — their APIs are rate-limited.
+  const [localResults, setLocalResults] = useState<Food[]>([]);
+  const [localPending, setLocalPending] = useState(false);
+  const [onlineResults, setOnlineResults] = useState<Food[] | null>(null);
+  const [sourceStatus, setSourceStatus] = useState<Record<OnlineSourceId, SourceStatus> | null>(null);
   const [loading, setLoading] = useState(false);
+  const latestQuery = useRef('');
   const [selectedMeal, setSelectedMeal] = useState<MealType>(
-    MEALS.includes(meal as MealType) ? (meal as MealType) : 'lunch'
+    MEALS.includes(meal as MealType) ? (meal as MealType) : mealForNow()
   );
   const [tab, setTab] = useState<'all' | 'recent' | 'saved' | 'custom'>('all');
   // Portion dialog state
@@ -33,12 +57,14 @@ export default function FoodSearchScreen() {
   const [servingsText, setServingsText] = useState('1');
   const [amountText, setAmountText] = useState('100');
   const [logging, setLogging] = useState(false);
+  // Labels often list no vitamins/minerals — estimate them from a similar food.
+  const estimate = useMicroEstimate(pendingFood);
   const {
     allFoods, recents, savedMeals,
     loadAllFoods, loadRecents, loadSavedMeals,
-    logFood, addCustomFood, logSavedMeal,
+    logFood, addCustomFood, logSavedMeal, applyMicroEstimate,
   } = useNutritionStore();
-  const { reward } = useUserStore();
+  const { reward, loadProfile } = useUserStore();
 
   // Refresh on focus so foods added on the custom-food screen show up on return.
   useFocusEffect(
@@ -46,20 +72,42 @@ export default function FoodSearchScreen() {
       loadAllFoods();
       loadRecents();
       loadSavedMeals();
+      loadProfile(); // vitamin/mineral % on the food cards use the profile's targets
     }, [])
   );
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+  // Live local search, lightly debounced.
+  useEffect(() => {
+    const q = query.trim();
+    latestQuery.current = q;
+    setOnlineResults(null);
+    setSourceStatus(null);
+    setLoading(false);
+    if (!q) { setLocalResults([]); setLocalPending(false); return; }
+    setLocalPending(true);
+    const t = setTimeout(async () => {
+      const local = await useNutritionStore.getState().searchFoods(q);
+      if (latestQuery.current === q) { setLocalResults(local); setLocalPending(false); }
+    }, 150);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const handleSearchOnline = async () => {
+    const q = query.trim();
+    if (!q || loading) return;
     setLoading(true);
     try {
-      const local = await useNutritionStore.getState().searchFoods(query);
-      const api = await searchOpenFoodFacts(query);
-      setResults([...local, ...api.filter(a => !local.some(l => l.barcode === a.barcode && a.barcode))]);
+      // Results stream in as each database answers.
+      await searchAllSources(q, (results, status) => {
+        if (latestQuery.current !== q) return;
+        setOnlineResults(results.filter(a => !localResults.some(l =>
+          (a.barcode && l.barcode === a.barcode) || (a.sourceId && l.source === a.source && l.sourceId === a.sourceId))));
+        setSourceStatus(status);
+      });
     } catch {
-      setResults([]);
+      if (latestQuery.current === q) setOnlineResults([]);
     } finally {
-      setLoading(false);
+      if (latestQuery.current === q) setLoading(false);
     }
   };
 
@@ -82,7 +130,9 @@ export default function FoodSearchScreen() {
     setLogging(true);
     try {
       let foodId = pendingFood.id;
-      if (!foodId || foodId === 0) foodId = await addCustomFood(pendingFood);
+      const est = estimate.status === 'found' && estimate.include ? estimate.estimate : null;
+      if (!foodId || foodId === 0) foodId = await addCustomFood(estimate.apply(pendingFood));
+      else if (est) await applyMicroEstimate(foodId, est.micros, est.from);
       await logFood(foodId, selectedMeal, Math.round(portionServings * 100) / 100, date);
       await reward(10, 'meal', 'Logged a meal', 'first_meal');
       setPendingFood(null);
@@ -102,30 +152,29 @@ export default function FoodSearchScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <ScreenHeader title={`Add to ${selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1)}`} />
+      <ScreenHeader title={`Add to ${mealLabel(selectedMeal)}`} />
+
+      <View style={styles.mealRow} accessibilityRole="radiogroup" accessibilityLabel="Meal">
+        {MEALS.map(m => (
+          <Pill key={m} label={mealLabel(m)} selected={selectedMeal === m} onPress={() => setSelectedMeal(m)}
+            compact style={styles.mealChip} />
+        ))}
+      </View>
 
       <Searchbar
         placeholder="Search foods..."
         value={query}
         onChangeText={setQuery}
-        onSubmitEditing={handleSearch}
+        onSubmitEditing={handleSearchOnline}
+        returnKeyType="search"
         style={[styles.searchbar, { backgroundColor: colors.surface }]}
-        loading={loading}
       />
 
       <View style={styles.tabRow}>
         {([
           ['all', 'All'], ['recent', 'Recent'], ['saved', 'My Meals'], ['custom', 'Custom'],
         ] as const).map(([value, label]) => (
-          <Pressable
-            key={value}
-            onPress={() => setTab(value)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: tab === value }}
-            style={[styles.tab, { backgroundColor: tab === value ? moduleColors.nutrition : colors.surfaceVariant }]}
-          >
-            <Text variant="labelMedium" style={{ color: tab === value ? colors.onPrimary : colors.onSurface }}>{label}</Text>
-          </Pressable>
+          <Pill key={value} label={label} selected={tab === value} onPress={() => setTab(value)} />
         ))}
       </View>
 
@@ -142,16 +191,43 @@ export default function FoodSearchScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Text variant="labelSmall" style={[styles.resultsLabel, { color: colors.onSurfaceVariant }]}>RESULTS</Text>
         {searching ? (
-          loading ? (
-            <ActivityIndicator color={colors.primary} style={styles.loader} />
-          ) : results.length === 0 ? (
-            <EmptyState icon="food-off" color={moduleColors.nutrition} title="No matches"
-              body="Try another search, or add it as a custom food." />
-          ) : (
-            results.map((food, i) => (
-              <FoodRow key={`${food.barcode || food.name}-${i}`} food={food} onAdd={() => openPortionDialog(food)} />
-            ))
-          )
+          <>
+            {localResults.map(food => (
+              <FoodRow key={`local-${food.id}`} food={food} onAdd={() => openPortionDialog(food)} />
+            ))}
+            {sourceStatus && <SourceStatusRow status={sourceStatus} />}
+            {onlineResults === null || (loading && onlineResults.length === 0) ? (
+              loading ? (
+                <ActivityIndicator color={colors.primary} style={styles.loader} />
+              ) : (
+                <Pressable onPress={handleSearchOnline} accessibilityRole="button"
+                  style={[styles.row, styles.onlineRow, { borderColor: colors.outline }]}>
+                  <MaterialCommunityIcons name="web" size={22} color={colors.accentText} />
+                  <View style={styles.rowInfo}>
+                    <Text variant="titleSmall" style={{ color: colors.onSurface }}>Search online for “{query.trim()}”</Text>
+                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                      {localPending ? 'Searching your foods…'
+                        : localResults.length ? 'USDA, Canadian Nutrient File, Open Food Facts & NIH supplement labels'
+                        : 'Nothing in your library matches yet. Search USDA, Open Food Facts & more'}
+                    </Text>
+                  </View>
+                  <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
+                </Pressable>
+              )
+            ) : onlineResults.length === 0 && localResults.length === 0 ? (
+              <EmptyState icon="food-off" color={moduleColors.nutrition} title="No matches"
+                body="Try another search, or add it as a custom food." />
+            ) : (
+              <>
+                {onlineResults.length > 0 && (
+                  <Text variant="labelSmall" style={[styles.resultsLabel, styles.onlineLabel, { color: colors.onSurfaceVariant }]}>ONLINE</Text>
+                )}
+                {onlineResults.map((food, i) => (
+                  <FoodRow key={`${food.source}-${food.sourceId || food.name}-${i}`} food={food} onAdd={() => openPortionDialog(food)} />
+                ))}
+              </>
+            )}
+          </>
         ) : tab === 'all' ? (
           allFoods.map(food => <FoodRow key={food.id} food={food} onAdd={() => openPortionDialog(food)} />)
         ) : tab === 'recent' ? (
@@ -174,7 +250,7 @@ export default function FoodSearchScreen() {
                 <Text variant="titleSmall" style={{ color: colors.onSurface }}>{meal.name}</Text>
                 <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>{meal.totalCalories} cal</Text>
               </View>
-              <MaterialCommunityIcons name="plus-circle" size={24} color={moduleColors.nutrition} />
+              <AddSquare />
             </Pressable>
           ))
         ) : (
@@ -216,10 +292,8 @@ export default function FoodSearchScreen() {
                   mode="outlined" keyboardType="numeric" autoFocus />
                 <View style={styles.quickRow}>
                   {QUICK_SERVINGS.map(q => (
-                    <Chip key={q} compact onPress={() => setServingsText(String(q))}
-                      selected={parseFloat(servingsText) === q} showSelectedOverlay>
-                      {q}
-                    </Chip>
+                    <Pill key={q} label={String(q)} compact onPress={() => setServingsText(String(q))}
+                      selected={parseFloat(servingsText) === q} />
                   ))}
                 </View>
               </>
@@ -227,9 +301,9 @@ export default function FoodSearchScreen() {
               <TextInput label={`Amount (${amountUnit})`} value={amountText} onChangeText={setAmountText}
                 mode="outlined" keyboardType="numeric" autoFocus />
             )}
-            <Text variant="titleSmall" style={{ marginTop: spacing.sm, color: moduleColors.nutrition }}>
-              = {Math.round((pendingFood?.calories || 0) * portionServings)} cal ·
-              P{Math.round((pendingFood?.protein || 0) * portionServings)} C{Math.round((pendingFood?.carbs || 0) * portionServings)} F{Math.round((pendingFood?.fat || 0) * portionServings)}
+            <Text variant="titleSmall" style={{ marginTop: spacing.sm, color: colors.accentText }}>
+              = {Math.round((pendingFood?.calories || 0) * portionServings)} cal
+              {pendingFood ? ` · ${macroLine(pendingFood, portionServings)}` : ''}
             </Text>
             {(pendingFood?.fiber != null || pendingFood?.sugar != null || pendingFood?.sodium != null) && (
               <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
@@ -238,11 +312,13 @@ export default function FoodSearchScreen() {
                 {pendingFood?.sodium != null ? `Sodium ${Math.round(pendingFood.sodium * portionServings)}mg` : ''}
               </Text>
             )}
+            <MicroEstimateNote state={estimate} />
+            {pendingFood && <FoodMicroList food={estimate.apply(pendingFood)} servings={portionServings} />}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setPendingFood(null)}>Cancel</Button>
-            <Button onPress={handleConfirmLog} disabled={portionServings <= 0 || logging} loading={logging}>
-              Log to {selectedMeal}
+            <Button textColor={colors.accentText} onPress={() => setPendingFood(null)}>Cancel</Button>
+            <Button mode="contained" onPress={handleConfirmLog} disabled={portionServings <= 0 || logging} loading={logging}>
+              Log to {mealLabel(selectedMeal)}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -253,29 +329,86 @@ export default function FoodSearchScreen() {
 
 function FoodRow({ food, onAdd }: { food: Food; onAdd: () => void }) {
   const { colors } = useAppTheme();
+  const badge = food.source && food.source !== 'custom' ? SOURCE_META[food.source].short : null;
+  const unit = /^[a-z]{1,2}$/.test(food.servingUnit) ? food.servingUnit : ` ${food.servingUnit}`;
   return (
     <Pressable onPress={onAdd} style={[styles.row, { backgroundColor: colors.surface }]}>
       <View style={styles.rowInfo}>
         <Text variant="titleSmall" style={{ color: colors.onSurface }} numberOfLines={1}>{food.name}</Text>
-        {!!food.brand && <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }} numberOfLines={1}>{food.brand}</Text>}
+        {(!!food.brand || !!badge) && (
+          <View style={styles.metaRow}>
+            {!!badge && (
+              <View style={[styles.badge, { backgroundColor: colors.surfaceVariant }]}
+                accessibilityLabel={`Data from ${SOURCE_META[food.source!].label}`}>
+                <Text style={[styles.badgeText, { color: colors.onSurfaceVariant }]}>{badge}</Text>
+              </View>
+            )}
+            {!!food.brand && <Text variant="bodySmall" style={[styles.brand, { color: colors.onSurfaceVariant }]} numberOfLines={1}>{food.brand}</Text>}
+          </View>
+        )}
         <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-          {Math.round(food.calories)} cal · P{Math.round(food.protein)} C{Math.round(food.carbs)} F{Math.round(food.fat)} · per {food.servingSize}{food.servingUnit}
+          {`${Math.round(food.calories)} cal · ${macroLine(food)} · ${food.servingSize}${unit}`}
         </Text>
+        <FoodMicroChips food={food} />
       </View>
-      <MaterialCommunityIcons name="plus-circle" size={24} color={moduleColors.nutrition} />
+      <AddSquare />
     </Pressable>
+  );
+}
+
+/** One chip per online database: still searching, how many it found, or why it failed. */
+function SourceStatusRow({ status }: { status: Record<OnlineSourceId, SourceStatus> }) {
+  const { colors } = useAppTheme();
+  const errors = ONLINE_SOURCES.filter(s => status[s].state === 'error');
+  return (
+    <View style={styles.statusWrap}>
+      <View style={styles.statusRow}>
+        {ONLINE_SOURCES.map(s => {
+          const st = status[s];
+          const icon = st.state === 'loading' ? 'dots-horizontal' : st.state === 'error' ? 'alert-circle-outline' : 'check';
+          const said = st.state === 'loading' ? 'searching' : st.state === 'error' ? st.message : `${st.count} results`;
+          return (
+            <View key={s} style={[styles.statusChip, { backgroundColor: colors.surface }]}
+              accessibilityLabel={`${SOURCE_META[s].label}: ${said}`}>
+              <MaterialCommunityIcons name={icon} size={14} color={st.state === 'error' ? colors.error : colors.onSurfaceVariant} />
+              <Text style={[styles.badgeText, { color: colors.onSurface }]}>
+                {st.state === 'done' ? `${SOURCE_META[s].short} ${st.count}` : SOURCE_META[s].short}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+      {errors.map(s => (
+        <Text key={s} variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+          {`${SOURCE_META[s].short}: ${status[s].message}`}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
+/** The design's add affordance: a small grey rounded square with a "+". */
+function AddSquare() {
+  const { colors } = useAppTheme();
+  return (
+    <View style={[styles.addSquare, { backgroundColor: colors.surfaceVariant }]}>
+      <MaterialCommunityIcons name="plus" size={18} color={colors.onSurface} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   searchbar: { marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: shape.md },
+  mealRow: { flexDirection: 'row', paddingHorizontal: spacing.md, gap: spacing.xs, marginBottom: spacing.sm },
+  mealChip: { flex: 1, paddingHorizontal: 0 },
+  onlineRow: { borderWidth: 1, borderStyle: 'dashed', backgroundColor: 'transparent' },
+  onlineLabel: { marginTop: spacing.sm, marginBottom: spacing.sm },
   tabRow: { flexDirection: 'row', paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.md },
-  tab: { minWidth: 52, height: 32, paddingHorizontal: spacing.md, borderRadius: shape.pill, justifyContent: 'center', alignItems: 'center' },
   methodRow: { flexDirection: 'row', paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.md },
   methodBtn: { flex: 1 },
   scrollContent: { padding: spacing.md, paddingTop: 0, paddingBottom: 40 },
-  resultsLabel: { fontWeight: '700', marginBottom: spacing.md },
+  resultsLabel: { fontWeight: '300', marginBottom: spacing.md },
   loader: { marginTop: spacing.xl },
   row: {
     flexDirection: 'row',
@@ -285,7 +418,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     gap: spacing.md,
   },
+  addSquare: { width: 30, height: 30, borderRadius: shape.sm, justifyContent: 'center', alignItems: 'center' },
   iconChip: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   rowInfo: { flex: 1 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 1 },
+  badge: { borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
+  badgeText: { fontSize: 11, fontWeight: '400', letterSpacing: 0.3 },
+  brand: { flexShrink: 1 },
+  statusWrap: { marginBottom: spacing.sm, gap: 4 },
+  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  statusChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   quickRow: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm },
 });

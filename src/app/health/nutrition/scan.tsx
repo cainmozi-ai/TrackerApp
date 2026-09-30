@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
-import { Text, IconButton, Surface, Button, ActivityIndicator, Chip, TextInput } from 'react-native-paper';
+import { Text, IconButton, Surface, Button, ActivityIndicator, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing, shape } from '@/theme';
-import { lookupBarcode } from '@/services/openFoodFacts';
+import { moduleColors, spacing, shape, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
+import { lookupBarcodeAll, SOURCE_META } from '@/services/foodSources';
+import { useMicroEstimate, MicroEstimateNote } from '@/components/nutrition/MicroEstimate';
+import { FoodMicroList } from '@/components/nutrition/FoodMicros';
 import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
 import type { Food, MealType } from '@/types';
+import { Pill } from '@/components/common/Pill';
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const QUICK_SERVINGS = [0.5, 1, 1.5, 2, 3];
@@ -28,11 +32,18 @@ function per100Variant(food: Food): Food {
     fiber: food.fiber != null ? r1(food.fiber) : null,
     sugar: food.sugar != null ? r1(food.sugar) : null,
     sodium: food.sodium != null ? Math.round(food.sodium * factor) : null,
+    micros: food.micros
+      ? Object.fromEntries(Object.entries(food.micros).map(([k, v]) => [k, Math.round(v * factor * 1000) / 1000]))
+      : food.micros,
     servingSize: 100,
+    // Stored separately from the per-serving version so the two bases never mix.
+    sourceId: food.sourceId ? `${food.sourceId}:100` : food.sourceId,
   };
 }
 
 export default function ScanScreen() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const { meal: mealParam, date } = useLocalSearchParams<{ meal?: string; date?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -50,7 +61,7 @@ export default function ScanScreen() {
     setScanned(true);
     setLoading(true);
     setNotFound(false);
-    const food = await lookupBarcode(data);
+    const food = await lookupBarcodeAll(data);
     setLoading(false);
     if (food) {
       setResult(food);
@@ -69,7 +80,10 @@ export default function ScanScreen() {
 
   // The food in the basis the user picked. Has its own per-100 toggle so labels
   // with multiple serving columns can't mislead the log.
-  const active = result ? (basis === 'per100' || result.servingSize === 100 ? per100Variant(result) : result) : null;
+  // Fill vitamins/minerals the label doesn't list from a similar reference food.
+  const estimate = useMicroEstimate(result);
+  const base = result ? estimate.apply(result) : null;
+  const active = base ? (basis === 'per100' || base.servingSize === 100 ? per100Variant(base) : base) : null;
   const servings = parseFloat(servingsText) || 0;
 
   const handleLog = async () => {
@@ -83,7 +97,7 @@ export default function ScanScreen() {
   if (!permission) {
     return (
       <SafeAreaView style={styles.center}>
-        <ActivityIndicator color={theme.colors.primary} />
+        <ActivityIndicator color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -93,7 +107,7 @@ export default function ScanScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Header />
         <View style={styles.center}>
-          <MaterialCommunityIcons name="camera-off" size={56} color={theme.colors.onSurfaceVariant} />
+          <MaterialCommunityIcons name="camera-off" size={56} color={colors.onSurfaceVariant} />
           <Text variant="titleMedium" style={styles.permTitle}>Camera Access Needed</Text>
           <Text variant="bodyMedium" style={styles.permText}>
             Allow camera access to scan product barcodes.
@@ -136,10 +150,10 @@ export default function ScanScreen() {
 
       {notFound && (
         <View style={styles.center}>
-          <MaterialCommunityIcons name="barcode-off" size={56} color={theme.colors.onSurfaceVariant} />
+          <MaterialCommunityIcons name="barcode-off" size={56} color={colors.onSurfaceVariant} />
           <Text variant="titleMedium" style={styles.permTitle}>Product Not Found</Text>
           <Text variant="bodyMedium" style={styles.permText}>
-            This barcode isn't in the database. Try scanning again or add it manually.
+            We checked Open Food Facts, USDA FoodData Central and the NIH supplement database. Try scanning again or add it manually.
           </Text>
           <Button mode="contained" onPress={resetScan} style={styles.permBtn}>Scan Again</Button>
           <Button mode="text" onPress={() => router.replace('/health/nutrition/add-custom')}>
@@ -153,19 +167,19 @@ export default function ScanScreen() {
           <Surface style={styles.resultCard} elevation={2}>
             <Text variant="titleLarge" style={styles.resultName}>{result.name}</Text>
             {!!result.brand && <Text variant="bodyMedium" style={styles.resultBrand}>{result.brand}</Text>}
+            {!!result.source && (
+              <Text variant="bodySmall" style={styles.resultBrand}>Data: {SOURCE_META[result.source].label}</Text>
+            )}
+            <MicroEstimateNote state={estimate} />
 
-            {result.servingSize !== 100 && (
+            {result.servingSize !== 100 && (result.servingUnit === 'g' || result.servingUnit === 'ml') && (
               <>
                 <Text variant="labelMedium" style={styles.mealLabel}>Log by:</Text>
                 <View style={styles.mealChips}>
-                  <Chip selected={basis === 'serving'} onPress={() => setBasis('serving')} compact
-                    style={styles.mealChip} selectedColor={moduleColors.nutrition} showSelectedOverlay>
-                    Label serving ({result.servingSize}{result.servingUnit})
-                  </Chip>
-                  <Chip selected={basis === 'per100'} onPress={() => setBasis('per100')} compact
-                    style={styles.mealChip} selectedColor={moduleColors.nutrition} showSelectedOverlay>
-                    Per 100{result.servingUnit}
-                  </Chip>
+                  <Pill label={`Label serving (${result.servingSize}${result.servingUnit})`} compact
+                    selected={basis === 'serving'} onPress={() => setBasis('serving')} />
+                  <Pill label={`Per 100${result.servingUnit}`} compact
+                    selected={basis === 'per100'} onPress={() => setBasis('per100')} />
                 </View>
               </>
             )}
@@ -196,24 +210,22 @@ export default function ScanScreen() {
             />
             <View style={styles.quickRow}>
               {QUICK_SERVINGS.map(q => (
-                <Chip key={q} compact onPress={() => setServingsText(String(q))}
-                  selected={servings === q} showSelectedOverlay style={styles.mealChip}>
-                  {q}
-                </Chip>
+                <Pill key={q} label={String(q)} compact onPress={() => setServingsText(String(q))}
+                  selected={servings === q} />
               ))}
             </View>
-            <Text variant="titleSmall" style={{ color: moduleColors.nutrition, marginTop: spacing.xs }}>
+            <Text variant="titleSmall" style={{ color: colors.accentText, marginTop: spacing.xs }}>
               = {Math.round(active.calories * servings)} cal · P{Math.round(active.protein * servings)} C{Math.round(active.carbs * servings)} F{Math.round(active.fat * servings)}
               {active.fiber != null ? ` · Fib${Math.round(active.fiber * servings)}` : ''}
               {active.sodium != null ? ` · Sod${Math.round(active.sodium * servings)}mg` : ''}
             </Text>
+            <FoodMicroList food={active} servings={servings} />
 
             <Text variant="labelMedium" style={styles.mealLabel}>Add to:</Text>
             <View style={styles.mealChips}>
               {MEALS.map(m => (
-                <Chip key={m} selected={meal === m} onPress={() => setMeal(m)} compact style={styles.mealChip} selectedColor={moduleColors.nutrition}>
-                  {m.charAt(0).toUpperCase() + m.slice(1)}
-                </Chip>
+                <Pill key={m} label={m.charAt(0).toUpperCase() + m.slice(1)} compact
+                  selected={meal === m} onPress={() => setMeal(m)} />
               ))}
             </View>
 
@@ -229,6 +241,7 @@ export default function ScanScreen() {
 }
 
 function Header() {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.header}>
       <IconButton icon="arrow-left" onPress={() => router.back()} />
@@ -239,6 +252,7 @@ function Header() {
 }
 
 function Macro({ label, value, suffix = '' }: { label: string; value: number; suffix?: string }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.macro}>
       <Text variant="titleMedium" style={styles.macroValue}>{Math.round(value * 10) / 10}{suffix}</Text>
@@ -247,13 +261,13 @@ function Macro({ label, value, suffix = '' }: { label: string; value: number; su
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl, gap: spacing.sm },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
-  permTitle: { fontWeight: '700', marginTop: spacing.sm },
-  permText: { color: theme.colors.onSurfaceVariant, textAlign: 'center' },
+  title: { fontWeight: '300' },
+  permTitle: { fontWeight: '300', marginTop: spacing.sm },
+  permText: { color: colors.onSurfaceVariant, textAlign: 'center' },
   permBtn: { marginTop: spacing.md },
   cameraWrap: { flex: 1, margin: spacing.md, borderRadius: shape.lg, overflow: 'hidden' },
   camera: { flex: 1 },
@@ -268,17 +282,16 @@ const styles = StyleSheet.create({
   scanHint: { color: '#fff', marginTop: spacing.md, fontWeight: '400' },
   loader: { marginTop: spacing.sm },
   resultWrap: { flexGrow: 1, justifyContent: 'flex-end' },
-  resultCard: { padding: spacing.lg, borderTopLeftRadius: shape.xl, borderTopRightRadius: shape.xl, backgroundColor: theme.colors.surface },
-  resultName: { fontWeight: '700' },
-  resultBrand: { color: theme.colors.onSurfaceVariant },
+  resultCard: { padding: spacing.lg, borderTopLeftRadius: shape.xl, borderTopRightRadius: shape.xl, backgroundColor: colors.surface },
+  resultName: { fontWeight: '300' },
+  resultBrand: { color: colors.onSurfaceVariant },
   macroRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: spacing.md },
   macro: { alignItems: 'center' },
-  macroValue: { fontWeight: '700', color: moduleColors.nutrition },
-  macroLabel: { color: theme.colors.onSurfaceVariant },
-  serving: { color: theme.colors.onSurfaceVariant, textAlign: 'center', marginTop: spacing.xs },
-  mealLabel: { marginTop: spacing.md, marginBottom: spacing.xs, fontWeight: '600' },
+  macroValue: { fontWeight: '300', color: colors.accentText },
+  macroLabel: { color: colors.onSurfaceVariant },
+  serving: { color: colors.onSurfaceVariant, textAlign: 'center', marginTop: spacing.xs },
+  mealLabel: { marginTop: spacing.md, marginBottom: spacing.xs, fontWeight: '300' },
   mealChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  mealChip: { backgroundColor: theme.colors.surfaceVariant },
   quickRow: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm },
   logBtn: { marginTop: spacing.lg },
 });

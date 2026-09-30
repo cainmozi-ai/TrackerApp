@@ -2,21 +2,24 @@ import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import Svg, { Circle } from 'react-native-svg';
 import { useAppTheme } from '@/theme/ThemeContext';
-import { withAlpha } from '@/theme';
 
 interface ProgressRingProps {
   progress: number;
   size: number;
-  strokeWidth: number;
+  /** Defaults to the design's proportion — the ring is ~10.6% of its diameter. */
+  strokeWidth?: number;
   color: string;
   label?: string;
   value?: string;
   target?: string;
 }
 
+/** The design's ring: a Surface-2 grey track, a flat-ended accent arc and a
+ * light-weight value in the centre. */
 export function ProgressRing({ progress, size, strokeWidth, color, label, value, target }: ProgressRingProps) {
   const { colors } = useAppTheme();
-  const radius = (size - strokeWidth) / 2;
+  const stroke = strokeWidth ?? Math.round(size * 0.106);
+  const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const clampedProgress = Math.min(Math.max(progress, 0), 1);
   const strokeDashoffset = circumference * (1 - clampedProgress);
@@ -29,8 +32,8 @@ export function ProgressRing({ progress, size, strokeWidth, color, label, value,
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke={withAlpha(color, 0.18)}
-            strokeWidth={strokeWidth}
+            stroke={colors.surfaceVariant}
+            strokeWidth={stroke}
             fill="transparent"
           />
           <Circle
@@ -38,17 +41,17 @@ export function ProgressRing({ progress, size, strokeWidth, color, label, value,
             cy={size / 2}
             r={radius}
             stroke={color}
-            strokeWidth={strokeWidth}
+            strokeWidth={stroke}
             fill="transparent"
             strokeDasharray={`${circumference}`}
             strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
+            strokeLinecap="butt"
             transform={`rotate(-90 ${size / 2} ${size / 2})`}
           />
         </Svg>
         {!!value && (
           <View style={[styles.centerText, { width: size, height: size }]}>
-            <Text variant="titleMedium" style={[styles.value, { color }]}>{value}</Text>
+            <Text style={[styles.value, { color: colors.onSurface, fontSize: size >= 100 ? 20 : 18 }]}>{value}</Text>
           </View>
         )}
       </View>
@@ -61,7 +64,7 @@ export function ProgressRing({ progress, size, strokeWidth, color, label, value,
 const styles = StyleSheet.create({
   container: { alignItems: 'center', gap: 2 },
   centerText: { position: 'absolute', justifyContent: 'center', alignItems: 'center' },
-  value: { fontWeight: '800' },
-  label: { fontWeight: '600' },
+  value: { fontWeight: '300' },
+  label: { fontWeight: '300' },
   target: { fontSize: 10 },
 });

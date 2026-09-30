@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, SegmentedButtons } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, accent, moduleColors, withAlpha } from '@/theme';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { MotionCard } from '@/components/common/MotionCard';
+import { Pill } from '@/components/common/Pill';
 import { useWorkoutStore, type ExerciseRecord } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
 import { assessStrength, STRENGTH_LEVELS, STRENGTH_STANDARDS } from '@/data/strengthStandards';
@@ -27,7 +28,7 @@ export default function RecordsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <ScreenHeader title="Records" />
+      <ScreenHeader title="Records" align="left" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {records.length === 0 ? (
           <View style={styles.empty}>
@@ -41,13 +42,13 @@ export default function RecordsScreen() {
             {/* Strength standards */}
             <View style={styles.headRow}>
               <Text variant="titleMedium" style={[styles.sectionTitle, { color: colors.onSurface }]}>Strength standards</Text>
-              <SegmentedButtons
-                density="small"
-                value={sex.toLowerCase().startsWith('f') ? 'female' : 'male'}
-                onValueChange={v => updateProfile({ sex: v })}
-                buttons={[{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }]}
-                style={styles.sexToggle}
-              />
+              <View style={styles.sexToggle}>
+                {(['male', 'female'] as const).map(v => (
+                  <Pill key={v} label={v === 'male' ? 'Male' : 'Female'} compact
+                    selected={(sex.toLowerCase().startsWith('f') ? 'female' : 'male') === v}
+                    onPress={() => updateProfile({ sex: v })} />
+                ))}
+              </View>
             </View>
 
             {bodyweight <= 0 && (
@@ -65,10 +66,10 @@ export default function RecordsScreen() {
               return (
                 <MotionCard key={r.exercise.id} index={i} style={styles.card}>
                   <View style={styles.cardTop}>
-                    <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700', flex: 1 }}>{r.exercise.name}</Text>
+                    <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '300', flex: 1 }}>{r.exercise.name}</Text>
                     {a && (
                       <View style={[styles.levelPill, { backgroundColor: withAlpha(accent, 0.16) }]}>
-                        <Text variant="labelMedium" style={{ color: accent, fontWeight: '800' }}>{a.level}</Text>
+                        <Text variant="labelMedium" style={{ color: colors.accentText, fontWeight: '300' }}>{a.level}</Text>
                       </View>
                     )}
                   </View>
@@ -107,7 +108,7 @@ export default function RecordsScreen() {
               <View key={r.exercise.id} style={[styles.prRow, { backgroundColor: colors.surface }]}>
                 <MaterialCommunityIcons name="trophy" size={20} color={accent} />
                 <View style={styles.prInfo}>
-                  <Text variant="bodyMedium" style={{ color: colors.onSurface, fontWeight: '600' }}>{r.exercise.name}</Text>
+                  <Text variant="bodyMedium" style={{ color: colors.onSurface, fontWeight: '300' }}>{r.exercise.name}</Text>
                   <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
                     Top {r.bestWeight} {unit} × {r.bestWeightReps} · 1RM {r.best1RM} · best {r.bestReps} reps
                   </Text>
@@ -126,8 +127,8 @@ const styles = StyleSheet.create({
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   empty: { alignItems: 'center', paddingTop: spacing.xl },
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm, gap: spacing.sm },
-  sectionTitle: { fontWeight: '800', marginBottom: spacing.sm },
-  sexToggle: { transform: [{ scale: 0.85 }] },
+  sectionTitle: { fontWeight: '300', marginBottom: spacing.sm },
+  sexToggle: { flexDirection: 'row', gap: spacing.xs },
   card: { marginBottom: spacing.sm },
   cardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   levelPill: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: shape.pill },

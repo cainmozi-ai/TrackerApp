@@ -4,7 +4,8 @@ import { Text, IconButton, Surface, Button, Portal, Dialog, Searchbar, Touchable
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme, moduleColors, spacing } from '@/theme';
+import { moduleColors, spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useMealPlanStore, getWeekStart } from '@/stores/mealPlanStore';
 import { useNutritionStore } from '@/stores/nutritionStore';
@@ -21,6 +22,7 @@ function addDays(dateStr: string, days: number): string {
 }
 
 export default function MealPlannerScreen() {
+  const styles = useThemedStyles(makeStyles);
   const { plans, loadWeek, addToPlan, removeFromPlan, generateShoppingList } = useMealPlanStore();
   const { searchFoods } = useNutritionStore();
   const [weekStart, setWeekStart] = useState(getWeekStart());
@@ -141,24 +143,24 @@ export default function MealPlannerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   weekNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
-  dayCard: { padding: spacing.md, borderRadius: 16, marginBottom: spacing.sm, backgroundColor: theme.colors.surface },
-  dayTitle: { fontWeight: '700', color: moduleColors.nutrition, marginBottom: spacing.xs },
+  dayCard: { padding: spacing.md, borderRadius: 16, marginBottom: spacing.sm, backgroundColor: colors.surface },
+  dayTitle: { fontWeight: '300', color: colors.accentText, marginBottom: spacing.xs },
   mealRow: { marginTop: spacing.xs },
-  mealLabel: { color: theme.colors.onSurfaceVariant },
+  mealLabel: { color: colors.onSurfaceVariant },
   mealItems: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
-  foodChip: { backgroundColor: theme.colors.surfaceVariant },
+  foodChip: { backgroundColor: colors.surfaceVariant },
   addBtn: { margin: 0 },
   generateBtn: { marginTop: spacing.md },
   pickerDialog: { maxHeight: '80%' },
-  pickerSearch: { marginBottom: spacing.sm, backgroundColor: theme.colors.surfaceVariant },
+  pickerSearch: { marginBottom: spacing.sm, backgroundColor: colors.surfaceVariant },
   pickerList: { maxHeight: 320 },
   pickerItem: { paddingVertical: spacing.sm, paddingHorizontal: spacing.xs },
-  foodMeta: { color: theme.colors.onSurfaceVariant },
-  emptyText: { color: theme.colors.onSurfaceVariant, textAlign: 'center', padding: spacing.md },
+  foodMeta: { color: colors.onSurfaceVariant },
+  emptyText: { color: colors.onSurfaceVariant, textAlign: 'center', padding: spacing.md },
 });

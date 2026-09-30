@@ -10,7 +10,7 @@ import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { spacing, shape, accent, withAlpha } from '@/theme';
 import { useWorkoutStore, type WorkoutPR } from '@/stores/workoutStore';
-import { useUserStore } from '@/stores/userStore';
+import { useUserStore, getLevelName } from '@/stores/userStore';
 import { WorkoutDateDialog } from '@/components/workout/WorkoutDateDialog';
 import { MuscleMap } from '@/components/workout/MuscleMap';
 import { type LogType, formatSetCompact, formatDuration as formatSecs } from '@/utils/workout';
@@ -36,7 +36,9 @@ function prText(pr: WorkoutPR, unit: string): string {
 
 export default function WorkoutSummaryScreen() {
   const { colors } = useAppTheme();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, xp, levelUp } = useLocalSearchParams<{ id?: string; xp?: string; levelUp?: string }>();
+  const xpGained = Number(xp) || 0;
+  const newLevel = Number(levelUp) || 0;
   const { getWorkoutDetail, detectPRs, updateWorkoutDate } = useWorkoutStore();
   const { profile } = useUserStore();
   const [workout, setWorkout] = useState<WorkoutLog | null>(null);
@@ -135,8 +137,8 @@ export default function WorkoutSummaryScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View ref={shareCardRef} collapsable={false} style={{ backgroundColor: colors.background }}>
         <Animated.View entering={ZoomIn.duration(400)} style={styles.heroIcon}>
-          <View style={[styles.iconCircle, { backgroundColor: withAlpha(accent, 0.18) }]}>
-            <MaterialCommunityIcons name="trophy" size={48} color={accent} />
+          <View style={[styles.iconCircle, { backgroundColor: accent }]}>
+            <MaterialCommunityIcons name="check" size={44} color="#FFFFFF" />
           </View>
         </Animated.View>
 
@@ -149,42 +151,74 @@ export default function WorkoutSummaryScreen() {
         )}
 
         <Animated.View entering={FadeInUp.delay(150)} style={styles.statsGrid}>
-          <View style={styles.stat}>
-            <Text variant="headlineSmall" style={{ color: accent, fontWeight: '800' }}>{exerciseCount}</Text>
+          <View style={[styles.stat, { backgroundColor: colors.surface }]}>
+            <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>{exerciseCount}</Text>
             <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Exercises</Text>
           </View>
-          <View style={styles.stat}>
-            <Text variant="headlineSmall" style={{ color: accent, fontWeight: '800' }}>{sets.length}</Text>
+          <View style={[styles.stat, { backgroundColor: colors.surface }]}>
+            <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>{sets.length}</Text>
             <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Sets</Text>
           </View>
-          <View style={styles.stat}>
-            <Text variant="headlineSmall" style={{ color: accent, fontWeight: '800' }}>{totalReps}</Text>
+          <View style={[styles.stat, { backgroundColor: colors.surface }]}>
+            <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>{totalReps}</Text>
             <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Reps</Text>
           </View>
-          <View style={styles.stat}>
-            <Text variant="headlineSmall" style={{ color: accent, fontWeight: '800' }}>{totalVolume}</Text>
+          <View style={[styles.stat, { backgroundColor: colors.surface }]}>
+            <Text variant="headlineSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>{totalVolume}</Text>
             <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Volume ({weightUnit})</Text>
           </View>
         </Animated.View>
 
+        {prs.length > 0 && (
+          <Animated.View entering={FadeInUp.delay(220)}
+            style={[styles.prCard, { backgroundColor: withAlpha(accent, 0.12), borderColor: accent }]}>
+            <View style={styles.prHead}>
+              <MaterialCommunityIcons name="trophy" size={20} color={colors.accentText} />
+              <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>
+                {prs.length === 1 ? 'New personal record' : `${prs.length} new personal records`}
+              </Text>
+            </View>
+            {prs.map((pr, i) => (
+              <View key={`${pr.exerciseName}-${pr.type}-${i}`} style={styles.prRow}>
+                <Text variant="bodyMedium" style={{ color: colors.onSurface, flex: 1 }} numberOfLines={1}>{pr.exerciseName}</Text>
+                <Text variant="bodyMedium" style={{ color: colors.accentText, fontWeight: '300' }}>{prText(pr, weightUnit)}</Text>
+              </View>
+            ))}
+          </Animated.View>
+        )}
+
+        {xpGained > 0 && (
+          <Animated.View entering={FadeInUp.delay(260)} style={[styles.xpCard, { backgroundColor: colors.surface }]}>
+            <MaterialCommunityIcons name="star-four-points" size={20} color={colors.accentText} />
+            <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>+{xpGained} XP</Text>
+            {newLevel > 0 && (
+              <Text variant="bodyMedium" style={{ color: colors.accentText, fontWeight: '300' }}>
+                · Level up! Lv. {newLevel} {getLevelName(newLevel)}
+              </Text>
+            )}
+          </Animated.View>
+        )}
+
         {Object.keys(setsByGroup).length > 0 && (
           <Animated.View entering={FadeInUp.delay(300)} style={[styles.mapCard, { backgroundColor: colors.surface }]}> 
-            <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '800', marginBottom: spacing.xs }}>Muscles worked</Text>
+            <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '300', marginBottom: spacing.xs }}>Muscles worked</Text>
             <MuscleMap setsByGroup={setsByGroup} />
           </Animated.View>
         )}
         </View>
 
         <View style={styles.summaryActions}>
-          <Button mode="contained-tonal" icon="share-variant" style={styles.shareBtn} onPress={handleShare}>
-            {Platform.OS === 'web' ? 'Copy Summary' : 'Share Workout Card'}
+          <Button mode="contained" buttonColor={colors.surface} textColor={colors.onSurface} style={styles.shareBtn}
+            contentStyle={styles.secondaryContent} onPress={handleShare}>
+            {Platform.OS === 'web' ? 'Copy Summary' : 'Share Summary'}
           </Button>
-          <Button mode="contained-tonal" icon="calendar-clock" style={styles.shareBtn} onPress={() => setDateDlg(true)}>
+          <Button mode="contained" buttonColor={colors.surface} textColor={colors.onSurface} style={styles.shareBtn}
+            contentStyle={styles.secondaryContent} onPress={() => setDateDlg(true)}>
             Change date & time
           </Button>
         </View>
 
-        <Button mode="contained" buttonColor={accent} style={styles.doneBtn}
+        <Button mode="contained" buttonColor={accent} style={styles.doneBtn} contentStyle={styles.primaryContent}
           onPress={() => router.replace('/(tabs)/fitness')}>
           Done
         </Button>
@@ -214,14 +248,17 @@ const styles = StyleSheet.create({
   whenText: { textAlign: 'center', marginBottom: spacing.lg },
   changeDateBtn: { marginBottom: spacing.sm },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg, marginBottom: spacing.lg },
-  stat: { width: '48.5%', height: 72, borderRadius: shape.lg, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' },
+  stat: { width: '48.5%', height: 72, borderRadius: shape.lg, alignItems: 'center', justifyContent: 'center' },
   prCard: { padding: spacing.md, borderRadius: shape.lg, borderWidth: 1.5, marginBottom: spacing.sm },
+  prHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
   prRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4 },
   xpCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: shape.lg, marginBottom: spacing.sm },
   mapCard: { padding: spacing.md, borderRadius: shape.lg, marginBottom: spacing.sm },
   summaryActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   shareBtn: { flex: 1, borderRadius: shape.md },
-  sectionTitle: { fontWeight: '700', marginTop: spacing.sm, marginBottom: spacing.xs },
+  secondaryContent: { height: 44 },
+  sectionTitle: { fontWeight: '300', marginTop: spacing.sm, marginBottom: spacing.xs },
   exRow: { padding: spacing.md, borderRadius: shape.md, marginBottom: spacing.xs },
-  doneBtn: { marginTop: spacing.lg, borderRadius: shape.pill },
+  doneBtn: { marginTop: spacing.lg, borderRadius: shape.md },
+  primaryContent: { height: 48 },
 });

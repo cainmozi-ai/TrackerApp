@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from 'react';
 import { PaperProvider } from 'react-native-paper';
-import { lightTheme, darkTheme, type AppThemeType } from '@/theme';
+import { lightTheme, darkTheme, type AppThemeType, type AppColors } from '@/theme';
 import { getDatabase } from '@/database/schema';
 
 type ThemeMode = 'light' | 'dark';
@@ -59,6 +59,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useAppTheme(): ThemeContextValue {
   return useContext(ThemeContext);
+}
+
+/** Build a screen's StyleSheet from the active palette, so colours follow the
+ * light/dark toggle. `makeStyles` must be defined at module level:
+ *   const makeStyles = (colors: AppColors) => StyleSheet.create({ ... });
+ *   const styles = useThemedStyles(makeStyles); */
+export function useThemedStyles<T>(makeStyles: (colors: AppColors) => T): T {
+  const { colors } = useAppTheme();
+  return useMemo(() => makeStyles(colors), [colors, makeStyles]);
 }
 
 /** Loads the saved theme preference once the database is ready. Render this

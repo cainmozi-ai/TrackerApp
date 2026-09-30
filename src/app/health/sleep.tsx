@@ -59,7 +59,7 @@ export default function SleepScreen() {
         {todayLog && !editing ? (
           <MotionCard style={styles.todayCard} noEnter>
             <MaterialCommunityIcons name="moon-waning-crescent" size={36} color={moduleColors.sleep} />
-            <Text variant="headlineMedium" style={[styles.duration, { color: moduleColors.sleep }]}>{fmt(todayLog.durationMinutes)}</Text>
+            <Text variant="headlineMedium" style={[styles.duration, { color: colors.accentText }]}>{fmt(todayLog.durationMinutes)}</Text>
             <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>{todayLog.bedtime} → {todayLog.wakeTime}</Text>
             <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>Quality: {QUALITY_LABELS[todayLog.quality]}</Text>
             <Button mode="text" onPress={startEdit} compact icon="pencil">Edit</Button>
@@ -99,7 +99,7 @@ export default function SleepScreen() {
             {recentLogs.map((log, i) => (
               <MotionCard key={log.id} index={i} style={styles.historyRow}>
                 <Text variant="bodyMedium" style={{ color: colors.onSurface }}>{log.logDate}</Text>
-                <Text variant="bodyMedium" style={{ color: moduleColors.sleep, fontWeight: '700' }}>{fmt(log.durationMinutes)}</Text>
+                <Text variant="bodyMedium" style={{ color: colors.accentText, fontWeight: '300' }}>{fmt(log.durationMinutes)}</Text>
                 <View style={styles.starsInline}>
                   {[1, 2, 3, 4, 5].map(q => (
                     <MaterialCommunityIcons key={q} name={q <= log.quality ? 'star' : 'star-outline'} size={13}
@@ -121,16 +121,16 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: spacing.md },
   todayCard: { alignItems: 'center', gap: spacing.xs, marginBottom: spacing.lg, paddingVertical: spacing.xl },
-  duration: { fontWeight: '800' },
+  duration: { fontWeight: '300' },
   inputCard: { marginBottom: spacing.lg },
-  inputTitle: { fontWeight: '700', marginBottom: spacing.md },
+  inputTitle: { fontWeight: '300', marginBottom: spacing.md },
   timeRow: { flexDirection: 'row', gap: spacing.md },
   timeInput: { flex: 1 },
   starsRow: { flexDirection: 'row', justifyContent: 'center' },
   notes: { marginTop: spacing.sm },
-  saveBtn: { marginTop: spacing.md, borderRadius: shape.pill },
+  saveBtn: { marginTop: spacing.md, borderRadius: shape.md },
   history: {},
-  historyTitle: { fontWeight: '700', marginBottom: spacing.sm },
+  historyTitle: { fontWeight: '300', marginBottom: spacing.sm },
   historyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
   starsInline: { flexDirection: 'row' },
 });

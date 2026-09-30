@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, FAB, IconButton, Chip, Checkbox, Surface } from 'react-native-paper';
+import { Text, FAB, IconButton, Checkbox, Surface } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { theme, moduleColors, spacing } from '@/theme';
-import { useAppTheme } from '@/theme/ThemeContext';
+import { moduleColors, spacing, type AppColors } from '@/theme';
+import { useAppTheme, useThemedStyles } from '@/theme/ThemeContext';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
+import { Pill } from '@/components/common/Pill';
 import { useTaskStore } from '@/stores/taskStore';
 import { useUserStore } from '@/stores/userStore';
 import type { Task } from '@/types';
@@ -13,6 +14,8 @@ import type { Task } from '@/types';
 const PRIORITY_COLORS = { high: '#FF5252', medium: '#A83232', low: '#A83232' };
 
 export default function TasksScreen() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(makeStyles);
   const { tasks, loadTasks, toggleComplete, deleteTask } = useTaskStore();
   const { reward } = useUserStore();
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
@@ -31,23 +34,13 @@ export default function TasksScreen() {
   const filtered = filter === 'all' ? tasks
     : filter === 'active' ? tasks.filter(t => !t.isCompleted)
     : tasks.filter(t => t.isCompleted);
-
-  const { colors } = useAppTheme();
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScreenHeader title="Tasks" />
 
       <View style={styles.filters}>
         {(['all', 'active', 'completed'] as const).map(f => (
-          <Chip
-            key={f}
-            selected={filter === f}
-            onPress={() => setFilter(f)}
-            style={styles.chip}
-            selectedColor={moduleColors.tasks}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </Chip>
+          <Pill key={f} label={f.charAt(0).toUpperCase() + f.slice(1)} selected={filter === f} onPress={() => setFilter(f)} />
         ))}
       </View>
 
@@ -98,28 +91,27 @@ export default function TasksScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+const makeStyles = (colors: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-  title: { fontWeight: '700' },
+  title: { fontWeight: '300' },
   filters: { flexDirection: 'row', paddingHorizontal: spacing.md, gap: spacing.xs, marginBottom: spacing.sm },
-  chip: { backgroundColor: theme.colors.surface },
   scrollContent: { padding: spacing.md, paddingBottom: 100 },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
-  emptyText: { color: theme.colors.onSurfaceVariant },
+  emptyText: { color: colors.onSurfaceVariant },
   taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.sm,
     borderRadius: 12,
     marginBottom: spacing.sm,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: colors.surface,
   },
   taskContent: { flex: 1 },
-  taskTitle: { fontWeight: '500' },
-  completedTitle: { textDecorationLine: 'line-through', color: theme.colors.onSurfaceVariant },
+  taskTitle: { fontWeight: '300' },
+  completedTitle: { textDecorationLine: 'line-through', color: colors.onSurfaceVariant },
   taskMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   priorityDot: { width: 8, height: 8, borderRadius: 4, marginRight: 4 },
-  metaText: { color: theme.colors.onSurfaceVariant },
+  metaText: { color: colors.onSurfaceVariant },
   fab: { position: 'absolute', right: 16, bottom: 24, backgroundColor: moduleColors.tasks, borderRadius: 28 },
 });

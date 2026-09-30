@@ -66,15 +66,15 @@ export default function WorkoutDetailScreen() {
 
         <View style={[styles.statsRow, { backgroundColor: colors.surface }]}>
           <View style={styles.stat}>
-            <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{exerciseIds.length}</Text>
+            <Text variant="titleMedium" style={{ color: colors.accentText, fontWeight: '300' }}>{exerciseIds.length}</Text>
             <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Exercises</Text>
           </View>
           <View style={styles.stat}>
-            <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{sets.length}</Text>
+            <Text variant="titleMedium" style={{ color: colors.accentText, fontWeight: '300' }}>{sets.length}</Text>
             <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Sets</Text>
           </View>
           <View style={styles.stat}>
-            <Text variant="titleMedium" style={{ color: accent, fontWeight: '800' }}>{totalVolume}</Text>
+            <Text variant="titleMedium" style={{ color: colors.accentText, fontWeight: '300' }}>{totalVolume}</Text>
             <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Volume ({weightUnit})</Text>
           </View>
         </View>
@@ -92,7 +92,7 @@ export default function WorkoutDetailScreen() {
             <View key={exId} style={[styles.exCard, { backgroundColor: colors.surface }]}>
               <View style={styles.exHead}>
                 <MaterialCommunityIcons name="dumbbell" size={18} color={moduleColors.workout} />
-                <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700', flex: 1 }}>{name}</Text>
+                <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '300', flex: 1 }}>{name}</Text>
                 <IconButton icon="information-outline" size={18}
                   onPress={() => router.push(`/fitness/exercise-detail?id=${exId}`)} style={styles.infoBtn} />
               </View>
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   scrollContent: { padding: spacing.md, paddingBottom: 40 },
   statsRow: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: spacing.sm, borderRadius: shape.md, marginBottom: spacing.sm },
   stat: { alignItems: 'center' },
-  repeatBtn: { borderRadius: shape.pill, marginBottom: spacing.md },
+  repeatBtn: { borderRadius: shape.md, marginBottom: spacing.md },
   exCard: { padding: spacing.md, borderRadius: shape.md, marginBottom: spacing.sm },
   exHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   infoBtn: { margin: 0 },

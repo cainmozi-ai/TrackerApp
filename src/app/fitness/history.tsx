@@ -50,7 +50,7 @@ export default function HistoryScreen() {
           <MotionCard key={s.workout.id} index={i} style={styles.card}
             onPress={() => router.push(`/fitness/workout-detail?id=${s.workout.id}`)}>
             <View style={styles.head}>
-              <Text variant="titleMedium" style={{ color: colors.onSurface, fontWeight: '700', flex: 1 }}>
+              <Text variant="titleMedium" style={{ color: colors.onSurface, fontWeight: '300', flex: 1 }}>
                 {s.workout.name || 'Workout'}
               </Text>
               <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
@@ -67,7 +67,7 @@ export default function HistoryScreen() {
             <View style={styles.footRow}>
               {s.muscles.length > 0 && (
                 <View style={[styles.musclesChip, { backgroundColor: withAlpha(PR_CHIP, 0.16) }]}>
-                  <Text variant="labelSmall" style={{ color: PR_CHIP, fontWeight: '700' }}>
+                  <Text variant="labelSmall" style={{ color: PR_CHIP, fontWeight: '300' }}>
                     {s.muscles.slice(0, 3).join(' · ')}
                   </Text>
                 </View>
@@ -90,7 +90,7 @@ type C = ReturnType<typeof useAppTheme>['colors'];
 function Stat({ value, label, colors }: { value: string; label: string; colors: C }) {
   return (
     <View style={styles.stat}>
-      <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>{value}</Text>
+      <Text variant="titleSmall" style={{ color: colors.onSurface, fontWeight: '300' }}>{value}</Text>
       <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>{label}</Text>
     </View>
   );
