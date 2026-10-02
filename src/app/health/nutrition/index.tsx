@@ -15,7 +15,7 @@ import { useNutritionStore } from '@/stores/nutritionStore';
 import { useUserStore } from '@/stores/userStore';
 import type { FoodLog, MealType } from '@/types';
 import { localDate } from '@/utils/dates';
-import { macroLine, servingsLabel } from '@/utils/foodFormat';
+import { macroLine, servingsLabel, extrasLine } from '@/utils/foodFormat';
 import { FoodMicroChips, FoodMicroList } from '@/components/nutrition/FoodMicros';
 
 const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -208,14 +208,18 @@ export function NutritionScreen({ asTab = false }: { asTab?: boolean }) {
               = {Math.round((editLog?.food?.calories || 0) * (parseFloat(editServings) || 0))} cal
               {editLog?.food ? ` · ${macroLine(editLog.food, parseFloat(editServings) || 0)}` : ''}
             </Text>
-            {(editLog?.food?.fiber != null || editLog?.food?.sugar != null || editLog?.food?.sodium != null) && (
+            {!!editLog?.food && !!extrasLine(editLog.food) && (
               <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                {editLog?.food?.fiber != null ? `Fiber ${Math.round(editLog.food.fiber * (parseFloat(editServings) || 0) * 10) / 10}g · ` : ''}
-                {editLog?.food?.sugar != null ? `Sugar ${Math.round(editLog.food.sugar * (parseFloat(editServings) || 0) * 10) / 10}g · ` : ''}
-                {editLog?.food?.sodium != null ? `Sodium ${Math.round(editLog.food.sodium * (parseFloat(editServings) || 0))}mg` : ''}
+                {extrasLine(editLog.food, parseFloat(editServings) || 0)}
               </Text>
             )}
             {editLog?.food && <FoodMicroList food={editLog.food} servings={parseFloat(editServings) || 0} />}
+            {!!editLog?.food?.isCustom && (
+              <Button icon="pencil" mode="text" compact textColor={colors.onSurface} style={styles.editFoodBtn}
+                onPress={() => { const fid = editLog.foodId; setEditLog(null); router.push(`/health/nutrition/add-custom?id=${fid}`); }}>
+                Edit food
+              </Button>
+            )}
           </Dialog.Content>
           <Dialog.Actions>
             <Button textColor={colors.error} onPress={handleDeleteLog} style={styles.deleteBtn}>Delete</Button>
@@ -264,6 +268,7 @@ const styles = StyleSheet.create({
   empty: { marginTop: spacing.sm },
   foodRow: { paddingVertical: 4, marginTop: 4, gap: 2 },
   deleteBtn: { marginRight: 'auto' },
+  editFoodBtn: { alignSelf: 'flex-start', marginTop: spacing.xs },
 });
 
 /** Route wrapper — pushed from Home/deep links, so it keeps the back button. */

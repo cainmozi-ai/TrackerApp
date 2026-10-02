@@ -98,6 +98,10 @@ export interface Food {
    * (e.g. "USDA: Chocolate, dark, 70-85% cacao solids") because the label
    * didn't list them. */
   microsEstimatedFrom?: string | null;
+  /** Which micro keys came from that estimate (the rest are the label's). */
+  microsEstimatedKeys?: string[] | null;
+  /** The user turned estimates off for this food — never estimate it. */
+  noEstimate?: boolean;
   isCustom: boolean;
   isFavorite: boolean;
   createdAt: string;

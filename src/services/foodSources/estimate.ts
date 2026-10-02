@@ -31,7 +31,7 @@ export interface MicroEstimate {
 /** Whether a food is worth estimating: little micronutrient data, and not a
  * supplement (whose label is the whole story). */
 export function needsEstimate(food: Food): boolean {
-  return food.source !== 'dsld' && !food.microsEstimatedFrom && microCount(food) < ESTIMATE_BELOW
+  return food.source !== 'dsld' && !food.noEstimate && !food.microsEstimatedFrom && microCount(food) < ESTIMATE_BELOW
     && (food.calories > 0 || food.protein > 0 || food.carbs > 0 || food.fat > 0);
 }
 
@@ -186,5 +186,11 @@ export async function estimateMicros(food: Food): Promise<MicroEstimate | null> 
 
 /** The food with an estimate merged in (label values kept). */
 export function withEstimate(food: Food, est: MicroEstimate): Food {
-  return { ...food, micros: { ...est.micros, ...(food.micros || {}) }, microsEstimatedFrom: est.from };
+  const labelKeys = new Set(Object.keys(food.micros || {}));
+  return {
+    ...food,
+    micros: { ...est.micros, ...(food.micros || {}) },
+    microsEstimatedFrom: est.from,
+    microsEstimatedKeys: Object.keys(est.micros).filter(k => !labelKeys.has(k)),
+  };
 }
