@@ -88,7 +88,9 @@ export default function ScanScreen() {
 
   const handleLog = async () => {
     if (!active || servings <= 0) return;
-    const foodId = await addCustomFood(active);
+    // Switched off: remember it, so this food is never estimated again.
+    const declined = estimate.status === 'found' && !estimate.include;
+    const foodId = await addCustomFood(declined ? { ...active, noEstimate: true } : active);
     await logFood(foodId, meal, Math.round(servings * 100) / 100, date);
     await reward(10, 'meal', 'Logged a meal', 'first_meal');
     router.back();

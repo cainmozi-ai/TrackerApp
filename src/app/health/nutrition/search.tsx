@@ -15,7 +15,7 @@ import {
   searchAllSources, SOURCE_META, ONLINE_SOURCES,
   type OnlineSourceId, type SourceStatus,
 } from '@/services/foodSources';
-import { macroLine } from '@/utils/foodFormat';
+import { macroLine, extrasLine } from '@/utils/foodFormat';
 import { useMicroEstimate, MicroEstimateNote } from '@/components/nutrition/MicroEstimate';
 import { FoodMicroChips, FoodMicroList } from '@/components/nutrition/FoodMicros';
 import type { Food, MealType, SavedMeal } from '@/types';
@@ -62,7 +62,7 @@ export default function FoodSearchScreen() {
   const {
     allFoods, recents, savedMeals,
     loadAllFoods, loadRecents, loadSavedMeals,
-    logFood, addCustomFood, logSavedMeal, applyMicroEstimate,
+    logFood, addCustomFood, logSavedMeal, applyMicroEstimate, setNoEstimate,
   } = useNutritionStore();
   const { reward, loadProfile } = useUserStore();
 
@@ -131,8 +131,12 @@ export default function FoodSearchScreen() {
     try {
       let foodId = pendingFood.id;
       const est = estimate.status === 'found' && estimate.include ? estimate.estimate : null;
-      if (!foodId || foodId === 0) foodId = await addCustomFood(estimate.apply(pendingFood));
-      else if (est) await applyMicroEstimate(foodId, est.micros, est.from);
+      // Switched off: remember it, so this food is never estimated again.
+      const declined = estimate.status === 'found' && !estimate.include;
+      if (!foodId || foodId === 0) {
+        foodId = await addCustomFood(declined ? { ...pendingFood, noEstimate: true } : estimate.apply(pendingFood));
+      } else if (est) await applyMicroEstimate(foodId, est.micros, est.from);
+      else if (declined) await setNoEstimate(foodId, true);
       await logFood(foodId, selectedMeal, Math.round(portionServings * 100) / 100, date);
       await reward(10, 'meal', 'Logged a meal', 'first_meal');
       setPendingFood(null);
@@ -305,15 +309,17 @@ export default function FoodSearchScreen() {
               = {Math.round((pendingFood?.calories || 0) * portionServings)} cal
               {pendingFood ? ` · ${macroLine(pendingFood, portionServings)}` : ''}
             </Text>
-            {(pendingFood?.fiber != null || pendingFood?.sugar != null || pendingFood?.sodium != null) && (
-              <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                {pendingFood?.fiber != null ? `Fiber ${Math.round(pendingFood.fiber * portionServings * 10) / 10}g · ` : ''}
-                {pendingFood?.sugar != null ? `Sugar ${Math.round(pendingFood.sugar * portionServings * 10) / 10}g · ` : ''}
-                {pendingFood?.sodium != null ? `Sodium ${Math.round(pendingFood.sodium * portionServings)}mg` : ''}
-              </Text>
+            {!!pendingFood && !!extrasLine(pendingFood) && (
+              <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>{extrasLine(pendingFood, portionServings)}</Text>
             )}
             <MicroEstimateNote state={estimate} />
             {pendingFood && <FoodMicroList food={estimate.apply(pendingFood)} servings={portionServings} />}
+            {!!pendingFood?.isCustom && pendingFood.id > 0 && (
+              <Button icon="pencil" mode="text" compact textColor={colors.onSurface} style={styles.editFoodBtn}
+                onPress={() => { const fid = pendingFood.id; setPendingFood(null); router.push(`/health/nutrition/add-custom?id=${fid}`); }}>
+                Edit food
+              </Button>
+            )}
           </Dialog.Content>
           <Dialog.Actions>
             <Button textColor={colors.accentText} onPress={() => setPendingFood(null)}>Cancel</Button>
@@ -332,7 +338,10 @@ function FoodRow({ food, onAdd }: { food: Food; onAdd: () => void }) {
   const badge = food.source && food.source !== 'custom' ? SOURCE_META[food.source].short : null;
   const unit = /^[a-z]{1,2}$/.test(food.servingUnit) ? food.servingUnit : ` ${food.servingUnit}`;
   return (
-    <Pressable onPress={onAdd} style={[styles.row, { backgroundColor: colors.surface }]}>
+    <Pressable onPress={onAdd} style={[styles.row, { backgroundColor: colors.surface }]}
+      // Long-press a food you've saved or scanned to edit it.
+      onLongPress={food.isCustom && food.id > 0 ? () => router.push(`/health/nutrition/add-custom?id=${food.id}`) : undefined}
+      accessibilityHint={food.isCustom && food.id > 0 ? 'Long-press to edit this food' : undefined}>
       <View style={styles.rowInfo}>
         <Text variant="titleSmall" style={{ color: colors.onSurface }} numberOfLines={1}>{food.name}</Text>
         {(!!food.brand || !!badge) && (
@@ -421,6 +430,7 @@ const styles = StyleSheet.create({
   addSquare: { width: 30, height: 30, borderRadius: shape.sm, justifyContent: 'center', alignItems: 'center' },
   iconChip: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   rowInfo: { flex: 1 },
+  editFoodBtn: { alignSelf: 'flex-start', marginTop: spacing.xs },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 1 },
   badge: { borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
   badgeText: { fontSize: 11, fontWeight: '400', letterSpacing: 0.3 },

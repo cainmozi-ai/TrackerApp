@@ -77,7 +77,9 @@ export function MicroEstimateNote({ state }: { state: MicroEstimateState }) {
   return (
     <View style={[styles.row, styles.block]}>
       <Text variant="bodySmall" style={[styles.text, muted]}>
-        {`Estimate ${n} vitamins & minerals the label doesn’t list, from ${state.estimate.from}`}
+        {state.include
+          ? `Estimate ${n} vitamins & minerals the label doesn’t list, from ${state.estimate.from}`
+          : 'Won’t estimate vitamins & minerals for this food, now or next time. You can change this in Edit food.'}
       </Text>
       <Switch value={state.include} onValueChange={state.setInclude} color={colors.primary}
         accessibilityLabel="Include estimated vitamins and minerals" />

@@ -512,6 +512,9 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     'ALTER TABLE foods ADD COLUMN source_id TEXT',
     // Which reference food filled in micros a label didn't list (null = none estimated).
     'ALTER TABLE foods ADD COLUMN micros_estimated_from TEXT',
+    // JSON array of the micro keys that estimate added; and a per-food opt-out.
+    'ALTER TABLE foods ADD COLUMN micros_estimated_keys TEXT',
+    'ALTER TABLE foods ADD COLUMN no_estimate INTEGER DEFAULT 0',
   ];
   for (const sql of alters) {
     try {
